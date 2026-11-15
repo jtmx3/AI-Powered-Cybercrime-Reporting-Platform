@@ -1,0 +1,424 @@
+@page "/admin/cases/{CaseId:guid}/reassign"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "ADMIN")]
+@rendermode InteractiveServer
+
+@using ACCP.Domain.Enums
+@using ACCP.Web.Security
+
+@inject AdminCaseReassignmentService Reassignment
+@inject EmployeeManagementService Employees
+@inject ILogger<AdminCaseReassignment> Logger
+
+<PageTitle>نقل مسؤولية القضية | ACCP</PageTitle>
+
+<main class="container py-4" dir="rtl" style="max-width: 850px;">
+    <h1 class="h3 mb-3">نقل مسؤولية القضية</h1>
+
+    @if (isLoading)
+    {
+        <p role="status">
+            جارٍ التحقق من الإسناد وتحميل الموظفين...
+        </p>
+    }
+    else if (snapshot is null)
+    {
+        <div class="alert alert-warning" role="alert">
+            @message
+        </div>
+    }
+    else if (succeeded)
+    {
+        <div class="alert alert-success" role="status">
+            @message
+        </div>
+
+        <p>
+            القضية:
+            <bdi>@snapshot.CaseNumber</bdi>
+        </p>
+
+        <p>
+            الموظف الجديد:
+            <strong>@completedTargetName</strong>
+        </p>
+    }
+    else
+    {
+        <section class="card shadow-sm mb-3"
+                 aria-labelledby="assignment-heading">
+            <div class="card-body">
+                <h2 id="assignment-heading" class="h5">
+                    الإسناد الحالي
+                </h2>
+
+                <p>
+                    رقم القضية:
+                    <bdi>@snapshot.CaseNumber</bdi>
+                </p>
+
+                <p>الحالة: @StatusText(snapshot.Status)</p>
+
+                @if (sourceOfficer is not null)
+                {
+                    <p class="mb-1">
+                        الموظف المسؤول:
+                        <strong>@sourceOfficer.FullName</strong>
+                    </p>
+
+                    <p><bdi>@sourceOfficer.Email</bdi></p>
+
+                    <p class="mb-0">
+                        حالة الحساب:
+                        @(sourceOfficer.IsActive ? "مفعّل" : "معطّل")
+                    </p>
+                }
+                else
+                {
+                    <p class="mb-0">
+                        الحساب المسؤول غير مدرج ضمن الموظفين الحاليين.
+                    </p>
+                }
+            </div>
+        </section>
+
+        <div class="alert alert-warning">
+            <ul class="mb-0">
+                <li>
+                    تنتقل المسؤولية إلى الموظف الجديد وتنتهي
+                    صلاحية المسؤول السابق على هذه القضية.
+                </li>
+                <li>
+                    تُلغى طلبات النقل والمشاركة المعلّقة
+                    المرتبطة بالإسناد السابق.
+                </li>
+                <li>
+                    يبقى سجل المحادثة والأدلة والملاحظات محفوظًا،
+                    وتستمر صلاحيات المشاركين الآخرين.
+                </li>
+                <li>
+                    يُسجّل سبب النقل في سجل التدقيق وتُرسل
+                    إشعارات للأطراف المعنية.
+                </li>
+            </ul>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(message))
+        {
+            <div class="alert alert-warning" role="alert">
+                @message
+            </div>
+        }
+
+        @if (targets.Count == 0)
+        {
+            <p class="alert alert-info">
+                لا يوجد موظف بديل مفعّل متاح في القائمة الحالية.
+            </p>
+        }
+
+        <fieldset disabled="@(isSaving || mustRefresh || targets.Count == 0)">
+            <div class="mb-3">
+                <label for="reassignment-target" class="form-label">
+                    الموظف البديل
+                </label>
+
+                <select id="reassignment-target"
+                        class="form-select"
+                        value="@targetOfficerId"
+                        @onchange="ChangeTarget">
+                    <option value="">اختر الموظف</option>
+
+                    @foreach (var officer in targets)
+                    {
+                        <option value="@officer.Id.ToString("D")">
+                            @officer.FullName — @officer.Email
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="reassignment-reason" class="form-label">
+                    سبب النقل
+                </label>
+
+                <input id="reassignment-reason"
+                       type="text"
+                       class="form-control"
+                       maxlength="500"
+                       autocomplete="off"
+                       aria-describedby="reassignment-reason-help"
+                       @bind="reason"
+                       @bind:event="oninput" />
+
+                <div id="reassignment-reason-help" class="form-text">
+                    من 10 إلى 500 حرف في سطر واحد.
+                </div>
+            </div>
+
+            <div class="form-check mb-3">
+                <input id="reassignment-confirm"
+                       type="checkbox"
+                       class="form-check-input"
+                       @bind="confirmed" />
+
+                <label for="reassignment-confirm"
+                       class="form-check-label">
+                    راجعت رقم القضية والموظف البديل وأوافق على
+                    نقل المسؤولية وإلغاء الطلبات المعلّقة.
+                </label>
+            </div>
+
+            <button type="button"
+                    class="btn btn-danger"
+                    disabled="@(!CanSubmit)"
+                    @onclick="TransferAsync">
+                @(isSaving
+                    ? "جارٍ نقل المسؤولية..."
+                    : "تأكيد نقل المسؤولية")
+            </button>
+        </fieldset>
+
+        <button type="button"
+                class="btn btn-outline-secondary mt-3"
+                disabled="@isSaving"
+                @onclick="LoadAsync">
+            تحديث الإسناد والموظفين
+        </button>
+    }
+
+    @if (!isSaving)
+    {
+        <div class="mt-4">
+            <a href="/admin/workload"
+               class="btn btn-outline-primary">
+                العودة إلى متابعة التوزيع
+            </a>
+        </div>
+    }
+</main>
+
+@code {
+    [Parameter]
+    public Guid CaseId { get; set; }
+
+    private AdminCaseAssignmentSnapshot? snapshot;
+    private EmployeeAccountSummary? sourceOfficer;
+
+    private IReadOnlyList<EmployeeAccountSummary> targets = [];
+
+    private string targetOfficerId = string.Empty;
+    private string reason = string.Empty;
+    private string message = string.Empty;
+    private string completedTargetName = string.Empty;
+
+    private bool isLoading = true;
+    private bool isSaving;
+    private bool confirmed;
+    private bool succeeded;
+    private bool mustRefresh;
+
+    private int loadRevision;
+
+    private bool CanSubmit =>
+        !isLoading &&
+        !isSaving &&
+        !mustRefresh &&
+        confirmed &&
+        Guid.TryParse(targetOfficerId, out var id) &&
+        targets.Any(item => item.Id == id) &&
+        reason.Trim().Length is >= 10 and <= 500;
+
+    protected override Task OnParametersSetAsync() =>
+        LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var revision = ++loadRevision;
+        var requestedId = CaseId;
+
+        snapshot = null;
+        sourceOfficer = null;
+        targets = [];
+        targetOfficerId = string.Empty;
+        reason = string.Empty;
+        message = string.Empty;
+        completedTargetName = string.Empty;
+
+        confirmed = false;
+        succeeded = false;
+        mustRefresh = false;
+        isSaving = false;
+        isLoading = true;
+
+        try
+        {
+            var assignment = await Reassignment.GetCaseAsync(
+                requestedId);
+
+            if (revision != loadRevision)
+                return;
+
+            if (assignment is null)
+            {
+                message =
+                    "القضية غير متاحة للنقل: قد تكون محلولة " +
+                    "أو مغلقة أو غير مسندة. حدّث صفحة التوزيع.";
+
+                return;
+            }
+
+            var directory = await Employees.GetOfficersAsync();
+
+            if (revision != loadRevision)
+                return;
+
+            sourceOfficer = directory.FirstOrDefault(
+                item => item.Id == assignment.OfficerId);
+
+            targets = directory
+                .Where(item =>
+                    item.IsActive &&
+                    !item.HasAdminRole &&
+                    item.Id != assignment.OfficerId)
+                .OrderBy(item => item.FullName)
+                .ThenBy(item => item.Id)
+                .ToArray();
+
+            snapshot = assignment;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            if (revision == loadRevision)
+            {
+                message =
+                    "تحتاج إلى جلسة مدير صالحة أكملت " +
+                    "التحقق الثنائي. سجّل الدخول مجددًا.";
+            }
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(
+                "Administrative transfer page unavailable. Category: {Category}",
+                exception.GetType().Name);
+
+            if (revision == loadRevision)
+            {
+                message =
+                    "تعذر تحميل بيانات النقل. " +
+                    "ارجع لصفحة التوزيع وحاول مجددًا.";
+            }
+        }
+        finally
+        {
+            if (revision == loadRevision)
+                isLoading = false;
+        }
+    }
+
+    private void ChangeTarget(ChangeEventArgs args)
+    {
+        targetOfficerId =
+            args.Value?.ToString() ?? string.Empty;
+
+        confirmed = false;
+        message = string.Empty;
+    }
+
+    private async Task TransferAsync()
+    {
+        if (!CanSubmit ||
+            snapshot is null ||
+            !Guid.TryParse(targetOfficerId, out var id))
+        {
+            return;
+        }
+
+        var expected = snapshot;
+
+        var target = targets.FirstOrDefault(
+            item => item.Id == id);
+
+        if (target is null)
+            return;
+
+        var cleanReason = reason.Trim();
+
+        if (cleanReason.Any(char.IsControl))
+        {
+            message = "اكتب سبب النقل في سطر واحد.";
+            return;
+        }
+
+        var revision = loadRevision;
+
+        isSaving = true;
+        message = string.Empty;
+
+        try
+        {
+            var result = await Reassignment.ReassignAsync(
+                expected,
+                id,
+                cleanReason);
+
+            if (revision != loadRevision)
+                return;
+
+            succeeded = result.Succeeded;
+            mustRefresh = !result.Succeeded;
+            message = result.Message;
+            confirmed = false;
+
+            if (succeeded)
+            {
+                completedTargetName = target.FullName;
+                reason = string.Empty;
+            }
+        }
+        catch (UnauthorizedAccessException)
+        {
+            if (revision != loadRevision)
+                return;
+
+            snapshot = null;
+
+            message =
+                "انتهت صلاحية جلسة المدير. " +
+                "سجّل الدخول مجددًا.";
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(
+                "Administrative transfer result unavailable. Category: {Category}",
+                exception.GetType().Name);
+
+            if (revision != loadRevision)
+                return;
+
+            mustRefresh = true;
+            confirmed = false;
+
+            message =
+                "تعذر تأكيد نتيجة النقل. حدّث الإسناد " +
+                "وتحقق من المسؤول الحالي قبل المحاولة مجددًا.";
+        }
+        finally
+        {
+            if (revision == loadRevision)
+                isSaving = false;
+        }
+    }
+
+    private static string StatusText(CaseStatus status) =>
+        status switch
+        {
+            CaseStatus.New => "جديدة",
+            CaseStatus.UnderReview => "قيد المراجعة",
+            CaseStatus.Assigned => "تم تعيين موظف",
+            CaseStatus.InProgress => "قيد المعالجة",
+            CaseStatus.Resolved => "تم حلها",
+            CaseStatus.Closed => "مغلقة",
+            _ => "غير محددة"
+        };
+}

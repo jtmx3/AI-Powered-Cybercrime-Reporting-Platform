@@ -1,0 +1,416 @@
+@page "/admin/audit-logs"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "ADMIN")]
+@rendermode InteractiveServer
+
+@using ACCP.Application.Auditing
+@using ACCP.Domain.Entities
+@using ACCP.Domain.Enums
+
+@inject IAuditService AuditService
+
+<PageTitle>سجل التدقيق</PageTitle>
+
+<div dir="rtl" class="container-fluid mt-4 px-3 px-lg-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1">سجل التدقيق</h1>
+            <p class="text-muted mb-0">
+                متابعة العمليات الأمنية والتغييرات التي تمت داخل المنصة.
+            </p>
+        </div>
+
+        <button type="button"
+                class="btn btn-outline-secondary"
+                disabled="@isLoading"
+                @onclick="LoadAuditLogsAsync">
+            تحديث السجل
+        </button>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-xl-4">
+                    <label class="form-label">البحث</label>
+                    <input class="form-control"
+                           placeholder="البريد، رقم القضية، الوصف أو المعرّف"
+                           @bind="searchTerm"
+                           @bind:event="oninput" />
+                </div>
+
+                <div class="col-12 col-md-4 col-xl-3">
+                    <label class="form-label">نوع العملية</label>
+                    <select class="form-select"
+                            @bind="selectedActionValue">
+                        <option value="">جميع العمليات</option>
+
+                        @foreach (AuditAction action in
+                            Enum.GetValues<AuditAction>())
+                        {
+                            <option value="@action.ToString()">
+                                @GetActionText(action)
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-4 col-xl-2">
+                    <label class="form-label">النتيجة</label>
+                    <select class="form-select"
+                            @bind="selectedResultValue">
+                        <option value="">الكل</option>
+                        <option value="success">ناجحة</option>
+                        <option value="failed">فاشلة</option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-4 col-xl-1">
+                    <label class="form-label">العدد</label>
+                    <select class="form-select"
+                            @bind="resultLimit">
+                        <option value="100">100</option>
+                        <option value="200">200</option>
+                        <option value="500">500</option>
+                        <option value="1000">1000</option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-xl-2">
+                    <div class="d-grid d-sm-flex gap-2">
+                        <button type="button"
+                                class="btn btn-primary flex-grow-1"
+                                disabled="@isLoading"
+                                @onclick="LoadAuditLogsAsync">
+                            بحث
+                        </button>
+
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                disabled="@isLoading"
+                                @onclick="ResetFiltersAsync">
+                            مسح
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="alert alert-info">
+            جارٍ تحميل سجل التدقيق...
+        </div>
+    }
+    else
+    {
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">النتائج المعروضة</div>
+                        <div class="fs-3 fw-bold">@auditLogs.Count</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">العمليات الناجحة</div>
+                        <div class="fs-3 fw-bold text-success">
+                            @SuccessfulCount
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">العمليات الفاشلة</div>
+                        <div class="fs-3 fw-bold text-danger">
+                            @FailedCount
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (auditLogs.Count == 0)
+        {
+            <div class="alert alert-secondary">
+                لا توجد سجلات مطابقة لمعايير البحث الحالية.
+            </div>
+        }
+        else
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="text-nowrap">التاريخ</th>
+                                    <th>النتيجة</th>
+                                    <th>العملية</th>
+                                    <th>المستخدم</th>
+                                    <th>القضية</th>
+                                    <th>التفاصيل</th>
+                                    <th>الكيان</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (AuditLog auditLog in auditLogs)
+                                {
+                                    <tr @key="auditLog.Id">
+                                        <td class="text-nowrap">
+                                            @(auditLog.CreatedAtUtc
+                                                .ToLocalTime()
+                                                .ToString("yyyy-MM-dd HH:mm:ss"))
+                                        </td>
+
+                                        <td>
+                                            @if (auditLog.IsSuccessful)
+                                            {
+                                                <span class="badge bg-success">
+                                                    ناجحة
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">
+                                                    فاشلة
+                                                </span>
+                                            }
+                                        </td>
+
+                                        <td>
+                                            <span class="fw-semibold">
+                                                @GetActionText(auditLog.Action)
+                                            </span>
+                                        </td>
+
+                                        <td>
+                                            <div>
+                                                @(string.IsNullOrWhiteSpace(
+                                                    auditLog.ActorEmail)
+                                                    ? "غير محدد"
+                                                    : auditLog.ActorEmail)
+                                            </div>
+
+                                            <small class="text-muted">
+                                                @GetRoleText(auditLog.ActorRole)
+                                            </small>
+                                        </td>
+
+                                        <td>
+                                            @if (auditLog.CyberCaseId.HasValue)
+                                            {
+                                                <a class="btn btn-sm btn-outline-primary mb-1"
+                                                   href="@($"/officer/cases/{auditLog.CyberCaseId.Value}")">
+                                                    فتح القضية
+                                                </a>
+
+                                                <div>
+                                                    <code class="small">
+                                                        @GetShortId(
+                                                            auditLog.CyberCaseId.Value)
+                                                    </code>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">—</span>
+                                            }
+                                        </td>
+
+                                        <td style="min-width: 260px;">
+                                            <div>@auditLog.Description</div>
+
+                                            @if (!auditLog.IsSuccessful &&
+                                                !string.IsNullOrWhiteSpace(
+                                                    auditLog.FailureReason))
+                                            {
+                                                <div class="text-danger small mt-1">
+                                                    السبب: @auditLog.FailureReason
+                                                </div>
+                                            }
+
+                                            @if (!string.IsNullOrWhiteSpace(
+                                                auditLog.IpAddress))
+                                            {
+                                                <div class="text-muted small mt-1">
+                                                    عنوان الشبكة: @auditLog.IpAddress
+                                                </div>
+                                            }
+                                        </td>
+
+                                        <td>
+                                            <div>@GetEntityText(auditLog.EntityType)</div>
+
+                                            @if (auditLog.EntityId.HasValue)
+                                            {
+                                                <code class="small">
+                                                    @GetShortId(auditLog.EntityId.Value)
+                                                </code>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private IReadOnlyList<AuditLog> auditLogs = [];
+
+    private string searchTerm = string.Empty;
+    private string selectedActionValue = string.Empty;
+    private string selectedResultValue = string.Empty;
+    private string errorMessage = string.Empty;
+
+    private int resultLimit = 200;
+    private bool isLoading = true;
+
+    private int SuccessfulCount =>
+        auditLogs.Count(auditLog =>
+            auditLog.IsSuccessful);
+
+    private int FailedCount =>
+        auditLogs.Count(auditLog =>
+            !auditLog.IsSuccessful);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAuditLogsAsync();
+    }
+
+    private async Task LoadAuditLogsAsync()
+    {
+        isLoading = true;
+        errorMessage = string.Empty;
+
+        try
+        {
+            AuditAction? selectedAction = null;
+
+            if (Enum.TryParse(
+                    selectedActionValue,
+                    ignoreCase: true,
+                    out AuditAction parsedAction))
+            {
+                selectedAction = parsedAction;
+            }
+
+            bool? selectedResult =
+                selectedResultValue switch
+                {
+                    "success" => true,
+                    "failed" => false,
+                    _ => null
+                };
+
+            auditLogs =
+                await AuditService.SearchAsync(
+                    searchTerm,
+                    selectedAction,
+                    selectedResult,
+                    resultLimit);
+        }
+        catch
+        {
+            auditLogs = [];
+            errorMessage =
+                "حدث خطأ أثناء تحميل سجل التدقيق.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ResetFiltersAsync()
+    {
+        searchTerm = string.Empty;
+        selectedActionValue = string.Empty;
+        selectedResultValue = string.Empty;
+        resultLimit = 200;
+
+        await LoadAuditLogsAsync();
+    }
+
+    private static string GetActionText(
+        AuditAction action)
+    {
+        return action.ToString() switch
+        {
+            "UserLoggedIn" => "تسجيل دخول ناجح",
+            "UserLoginFailed" => "محاولة دخول فاشلة",
+            "UserLoggedOut" => "تسجيل خروج",
+            "CaseCreated" => "إنشاء قضية",
+            "CaseAssigned" => "تعيين موظف",
+            "CaseStatusChanged" => "تغيير حالة القضية",
+            "InternalNoteAdded" => "إضافة ملاحظة داخلية",
+            "CaseMessageSent" => "إرسال رسالة",
+            "ReporterIdentityDisclosed" => "الإفصاح عن هوية المشتكي",
+            "EvidenceUploaded" => "رفع دليل",
+            "EvidenceDisclosureGranted" => "السماح بعرض الدليل",
+            "EvidenceRevisionUploaded" => "رفع نسخة جديدة من الدليل",
+            "EvidenceViewed" => "عرض دليل",
+            "AccessDenied" => "محاولة وصول مرفوضة",
+            "AccountCreated" => "إنشاء حساب",
+            "UserRoleChanged" => "تغيير دور مستخدم",
+            "AccountActivated" => "تفعيل حساب",
+            "AccountDeactivated" => "تعطيل حساب",
+            _ => action.ToString()
+        };
+    }
+
+    private static string GetRoleText(string role)
+    {
+        return role.ToUpperInvariant() switch
+        {
+            "USER" => "مشتكي",
+            "OFFICER" => "موظف",
+            "ADMIN" => "مدير",
+            "SYSTEM" => "النظام",
+            _ => role
+        };
+    }
+
+    private static string GetEntityText(
+        string entityType)
+    {
+        return entityType switch
+        {
+            "CyberCase" => "قضية",
+            "CaseMessage" => "رسالة",
+            "CaseNote" => "ملاحظة داخلية",
+            "Evidence" => "دليل",
+            "EvidenceRevision" => "نسخة دليل",
+            "ApplicationUser" => "حساب مستخدم",
+            _ => entityType
+        };
+    }
+
+    private static string GetShortId(Guid id)
+    {
+        string value = id.ToString("N");
+
+        return value[..8];
+    }
+}

@@ -1,0 +1,1545 @@
+@page "/officer/cases/{Id:guid}"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "OFFICER,ADMIN")]
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using ACCP.Application.Cases
+@using ACCP.Application.CaseStaffing
+@using ACCP.Domain.Entities
+@using ACCP.Domain.Enums
+@using ACCP.Domain.Policies
+
+@inject ICaseService CaseService
+@inject ICaseStaffRequestService StaffRequestService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>تفاصيل القضية</PageTitle>
+
+<div dir="rtl" class="container mt-4">
+    @if (isLoading)
+    {
+        <div class="alert alert-info">
+            جارٍ تحميل القضية...
+        </div>
+    }
+    else if (cyberCase is null)
+    {
+        <div class="alert alert-warning" role="alert">
+            @if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                @errorMessage
+            }
+            else
+            {
+                <span>
+                    لم يتم العثور على القضية المطلوبة، أو لا تملك صلاحية عرضها.
+                </span>
+            }
+        </div>
+
+        <a class="btn btn-secondary" href="/officer/dashboard">
+            العودة إلى لوحة الموظف
+        </a>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1>تفاصيل القضية</h1>
+                <p class="text-muted mb-0">
+                    رقم القضية:
+                    <strong>@cyberCase.CaseNumber</strong>
+                </p>
+            </div>
+
+            <a class="btn btn-outline-secondary" href="/officer/dashboard">
+                العودة إلى لوحة الموظف
+            </a>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(successMessage))
+        {
+            <div class="alert alert-success">
+                @successMessage
+            </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="alert alert-danger">
+                @errorMessage
+            </div>
+        }
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">معلومات القضية</div>
+
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <strong>العنوان:</strong>
+                        <div>@cyberCase.Title</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <strong>نوع الحادثة:</strong>
+                        <div>@GetIncidentTypeText(cyberCase.IncidentType)</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <strong>مستوى الخطورة:</strong>
+                        <div>@GetSeverityText(cyberCase.SeverityLevel)</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <strong>الحالة الحالية:</strong>
+                        <div>@GetStatusText(cyberCase.Status)</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <strong>تاريخ الإنشاء:</strong>
+                        <div>
+                            @cyberCase.CreatedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <strong>وصف المشكلة:</strong>
+                        <div class="border rounded p-3 mt-2 bg-light"
+                             style="white-space: pre-wrap;">
+                            @cyberCase.Description
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <ACCP.Web.Components.Pages.OfficerIntakeHistory CaseId="@Id" @key="Id" />
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">الموظف المسؤول</div>
+
+            <div class="card-body">
+                @if (!cyberCase.AssignedOfficerId.HasValue)
+                {
+                    <div class="alert alert-warning">
+                        لم يتم تعيين موظف لهذه القضية بعد.
+                    </div>
+
+                    <button type="button"
+                            class="btn btn-success"
+                            disabled="@isAssigning"
+                            @onclick="AssignCase">
+                        @(isAssigning
+                            ? "جارٍ استلام القضية..."
+                            : "استلام القضية")
+                    </button>
+                }
+                else
+                {
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <strong>الموظف المسؤول:</strong>
+                            <div>@cyberCase.AssignedOfficerEmail</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <strong>وقت الاستلام:</strong>
+                            <div>
+                                @if (cyberCase.AssignedAtUtc.HasValue)
+                                {
+                                    @cyberCase.AssignedAtUtc.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                                }
+                                else
+                                {
+                                    <span>غير محدد</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (CanEditCase)
+                    {
+                        <div class="alert alert-success mt-3 mb-0">
+                            هذه القضية معيّنة لك ويمكنك تحديثها.
+                        </div>
+                    }
+                    else if (CanParticipateInCase)
+                    {
+                        <div class="alert alert-info mt-3 mb-0">
+                            أنت موظف مشارك في هذه القضية. يمكنك قراءة المحادثة
+                            وإرسال الرسائل وإضافة الملاحظات. تعديل الحالة
+                            وطلبات النقل من صلاحيات الموظف المسؤول.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning mt-3 mb-0">
+                            هذه القضية معيّنة لموظف آخر ولا يمكنك تعديلها.
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                طلب نقل القضية أو إضافة موظف مشارك
+            </div>
+
+            <div class="card-body">
+                @if (isAdmin)
+                {
+                    <div class="alert alert-info mb-0">
+                        يستطيع الموظف المسؤول إرسال الطلب من هذه الصفحة،
+                        وتتم مراجعة الطلبات من لوحة المدير.
+                    </div>
+                }
+                else if (!CanEditCase)
+                {
+                    <div class="alert alert-warning mb-0">
+                        لا يستطيع إرسال هذا الطلب إلا الموظف المسؤول حاليًا
+                        عن القضية.
+                    </div>
+                }
+                else
+                {
+                    @if (PendingStaffRequest is CaseStaffRequest pendingRequest)
+                    {
+                        <div class="alert alert-warning">
+                            يوجد طلب معلّق لهذه القضية، ولا يمكن إرسال طلب آخر
+                            قبل أن يراجعه المدير أو تقوم بإلغائه.
+                        </div>
+
+                        <dl class="row mb-3">
+                            <dt class="col-md-3">نوع الطلب</dt>
+                            <dd class="col-md-9">
+                                @GetStaffRequestTypeText(pendingRequest.RequestType)
+                            </dd>
+
+                            <dt class="col-md-3">سبب الطلب</dt>
+                            <dd class="col-md-9" style="white-space: pre-wrap;">
+                                @pendingRequest.Reason
+                            </dd>
+
+                            <dt class="col-md-3">وقت الإرسال</dt>
+                            <dd class="col-md-9">
+                                @pendingRequest.CreatedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                            </dd>
+                        </dl>
+
+                        <button type="button"
+                                class="btn btn-outline-danger"
+                                disabled="@isCancellingStaffRequest"
+                                @onclick="CancelPendingStaffRequest">
+                            @(isCancellingStaffRequest
+                                ? "جارٍ إلغاء الطلب..."
+                                : "إلغاء الطلب المعلّق")
+                        </button>
+                    }
+                    else
+                    {
+                        <div class="alert alert-secondary">
+                            <strong>نقل القضية:</strong>
+                            تنتقل المسؤولية كاملة إلى موظف آخر بعد موافقة المدير.
+                            <br />
+                            <strong>إضافة موظف مشارك:</strong>
+                            يبقى الموظف الحالي مسؤولًا، ويُسمح لموظف آخر
+                            بالمشاركة في متابعة القضية والمحادثة.
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-5">
+                                <label class="form-label">نوع الطلب</label>
+
+                                <InputSelect class="form-select"
+                                             @bind-Value="selectedStaffRequestType">
+                                    <option value="@CaseStaffRequestType.TransferAssignment">
+                                        نقل مسؤولية القضية إلى موظف آخر
+                                    </option>
+                                    <option value="@CaseStaffRequestType.AddCollaborator">
+                                        إضافة موظف مشارك في القضية
+                                    </option>
+                                </InputSelect>
+                            </div>
+
+                            <div class="col-md-7">
+                                <label class="form-label">سبب الطلب</label>
+
+                                <textarea class="form-control"
+                                          rows="4"
+                                          maxlength="1000"
+                                          placeholder="اشرح سبب الطلب بوضوح، 10 أحرف على الأقل."
+                                          @bind="staffRequestReason"
+                                          @bind:event="oninput"></textarea>
+
+                                <div class="form-text">
+                                    @staffRequestReason.Length / 1000
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="button"
+                                class="btn btn-primary mt-3"
+                                disabled="@(isSubmittingStaffRequest ||
+                                    staffRequestReason.Trim().Length < 10)"
+                                @onclick="SubmitStaffRequest">
+                            @(isSubmittingStaffRequest
+                                ? "جارٍ إرسال الطلب..."
+                                : "إرسال الطلب إلى المدير")
+                        </button>
+                    }
+
+                    @if (staffRequests.Count > 0)
+                    {
+                        <hr class="my-4" />
+                        <h5 class="mb-3">سجل طلبات هذه القضية</h5>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>نوع الطلب</th>
+                                        <th>الحالة</th>
+                                        <th>تاريخ الإرسال</th>
+                                        <th>الموظف المحدد</th>
+                                        <th>قرار المدير</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @foreach (CaseStaffRequest request in staffRequests)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @GetStaffRequestTypeText(request.RequestType)
+                                            </td>
+
+                                            <td>
+                                                <span class="badge @GetStaffRequestStatusBadgeClass(request.Status)">
+                                                    @GetStaffRequestStatusText(request.Status)
+                                                </span>
+                                            </td>
+
+                                            <td>
+                                                @request.CreatedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                                            </td>
+
+                                            <td>
+                                                @(string.IsNullOrWhiteSpace(request.TargetOfficerEmail)
+                                                    ? "—"
+                                                    : request.TargetOfficerEmail)
+                                            </td>
+
+                                            <td style="white-space: pre-wrap;">
+                                                @(string.IsNullOrWhiteSpace(request.DecisionNote)
+                                                    ? "—"
+                                                    : request.DecisionNote)
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">خصوصية وهوية المشتكي</div>
+
+            <div class="card-body">
+                @if (!CanEditCase)
+                {
+                    <div class="alert alert-warning mb-0">
+                        بيانات هوية المشتكي لا تظهر إلا للموظف المسؤول
+                        عن هذه القضية، وبعد موافقة المشتكي الصريحة.
+                    </div>
+                }
+                else if (!cyberCase.IsReporterIdentityDisclosed)
+                {
+                    <div class="alert alert-success mb-0">
+                        هوية المشتكي محمية. لم يوافق المشتكي على إظهار
+                        اسمه أو بريده الإلكتروني.
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-warning">
+                        وافق المشتكي صراحة على مشاركة بيانات هويته.
+                    </div>
+
+                    <dl class="row mb-0">
+                        <dt class="col-md-3">اسم المشتكي</dt>
+                        <dd class="col-md-9">
+                            @cyberCase.DisclosedReporterName
+                        </dd>
+
+                        <dt class="col-md-3">البريد الإلكتروني</dt>
+                        <dd class="col-md-9">
+                            @cyberCase.DisclosedReporterEmail
+                        </dd>
+
+                        <dt class="col-md-3">وقت الموافقة</dt>
+                        <dd class="col-md-9">
+                            @if (cyberCase.ReporterIdentityDisclosedAtUtc.HasValue)
+                            {
+                                @cyberCase.ReporterIdentityDisclosedAtUtc.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                            }
+                            else
+                            {
+                                <span>غير محدد</span>
+                            }
+                        </dd>
+                    </dl>
+                }
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">تحديث حالة القضية</div>
+
+            <div class="card-body">
+                @if (!cyberCase.AssignedOfficerId.HasValue)
+                {
+                    <div class="alert alert-info">
+                        يجب استلام القضية قبل تغيير حالتها.
+                    </div>
+                }
+                else if (!CanEditCase)
+                {
+                    <div class="alert alert-warning">
+                        لا يمكنك تعديل حالة قضية معيّنة لموظف آخر.
+                    </div>
+                }
+
+                <div class="row align-items-end g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="officer-new-case-status">الحالة الجديدة</label>
+
+                        <InputSelect id="officer-new-case-status"
+                                     class="form-select"
+                                     disabled="@(!CanEditCase || isSaving ||
+                                         !CaseStatusWorkflow.GetAllowedNextStatuses(cyberCase.Status).Any())"
+                                     @bind-Value="selectedStatus">
+                            <option value="@cyberCase.Status" disabled>
+                                الحالة الحالية: @GetStatusText(cyberCase.Status)
+                            </option>
+                            @foreach (var status in CaseStatusWorkflow.GetAllowedNextStatuses(cyberCase.Status))
+                            {
+                                <option value="@status">@GetStatusText(status)</option>
+                            }
+                        </InputSelect>
+                        @if (!CaseStatusWorkflow.GetAllowedNextStatuses(cyberCase.Status).Any())
+                        {
+                            <p class="form-text">لا توجد انتقالات متاحة من الحالة الحالية.</p>
+                        }
+                    </div>
+
+                    @if (CaseStatusWorkflow.CanTransition(cyberCase.Status, selectedStatus))
+                    {
+                        <div class="col-12">
+                            <label class="form-label" for="case-status-reason">
+                                سبب تغيير الحالة @(StatusReasonRequired ? "(مطلوب)" : "(اختياري)")
+                            </label>
+                            <textarea id="case-status-reason" class="form-control" rows="3"
+                                      maxlength="1000" disabled="@(!CanEditCase || isSaving)"
+                                      @bind="statusChangeReason" @bind:event="oninput"
+                                      aria-describedby="case-status-reason-help"></textarea>
+                            <div id="case-status-reason-help" class="form-text">
+                                من 10 إلى 1000 حرف عند إدخال سبب. يُحفظ في سجل تغييرات الحالة للموظفين.
+                                هذا الحقل لا يرسل رسالة إلى المشتكي.
+                            </div>
+                            <div class="form-text">@(statusChangeReason.Length) / 1000</div>
+                        </div>
+                    }
+
+                    <div class="col-md-6">
+                        <button type="button"
+                                class="btn btn-primary"
+                                disabled="@(!CanEditCase || isSaving || !StatusReasonValid ||
+                                    !CaseStatusWorkflow.CanTransition(cyberCase.Status, selectedStatus))"
+                                @onclick="UpdateStatus">
+                            @(isSaving ? "جارٍ الحفظ..." : "حفظ الحالة")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">المحادثة مع المشتكي</div>
+
+            <div class="card-body">
+                @if (!CanParticipateInCase)
+                {
+                    <div class="alert alert-warning mb-0">
+                        المحادثة متاحة للموظف المسؤول والمشاركين الفعّالين
+                        في القضية. لا تملك حاليًا صلاحية المشاركة
+                        في هذه المحادثة.
+                    </div>
+                }
+                else
+                {
+                    <div class="border rounded p-3 mb-3 bg-light"
+                         style="max-height: 420px; overflow-y: auto;">
+                        @if (cyberCase.Messages.Count == 0)
+                        {
+                            <div class="text-muted text-center">
+                                لا توجد رسائل في هذه القضية حتى الآن.
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (CaseMessage message in cyberCase.Messages)
+                            {
+                                bool sentByOfficer =
+                                    message.SenderType == MessageSenderType.Officer;
+
+                                <div class="d-flex mb-3 @(sentByOfficer
+                                    ? "justify-content-start"
+                                    : "justify-content-end")">
+                                    <div class="rounded p-3 @(sentByOfficer
+                                        ? "bg-primary text-white"
+                                        : "bg-white border")"
+                                         style="max-width: 75%;">
+                                        <div style="white-space: pre-wrap;">
+                                            @message.Content
+                                        </div>
+
+                                        <div class="small mt-2 @(sentByOfficer
+                                            ? "text-white-50"
+                                            : "text-muted")">
+                                            @(sentByOfficer
+                                                ? (message.SenderId == officerId
+                                                    ? "أنت"
+                                                    : "موظف مشارك")
+                                                : "مشتكي مجهول")
+                                            —
+                                            @message.CreatedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+
+                    <textarea class="form-control mb-2"
+                              rows="3"
+                              maxlength="4000"
+                              placeholder="اكتب رسالتك إلى المشتكي..."
+                              disabled="@isSendingMessage"
+                              @bind="messageContent"
+                              @bind:event="oninput"></textarea>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            @messageContent.Length من 4000 حرف
+                        </small>
+
+                        <button type="button"
+                                class="btn btn-primary"
+                                disabled="@(isSendingMessage ||
+                                    string.IsNullOrWhiteSpace(messageContent))"
+                                @onclick="SendOfficerMessage">
+                            @(isSendingMessage
+                                ? "جارٍ الإرسال..."
+                                : "إرسال الرسالة")
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">الملاحظات الداخلية</div>
+
+            <div class="card-body">
+                <div class="alert alert-secondary">
+                    هذه الملاحظات داخلية ويستطيع الموظفون فقط الاطلاع عليها.
+                    لن تظهر للمستخدم صاحب القضية.
+                </div>
+
+                @if (!CanParticipateInCase)
+                {
+                    <div class="alert alert-warning">
+                        إضافة الملاحظات متاحة للموظف المسؤول
+                        والمشاركين الفعّالين في القضية.
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label class="form-label">الملاحظة الجديدة</label>
+
+                    <textarea class="form-control"
+                              rows="4"
+                              maxlength="2000"
+                              placeholder="اكتب الملاحظة الداخلية هنا..."
+                              disabled="@(!CanParticipateInCase || isSavingNote)"
+                              @bind="noteContent"
+                              @bind:event="oninput"></textarea>
+
+                    <div class="form-text">
+                        @noteContent.Length من 2000 حرف
+                    </div>
+                </div>
+
+                <button type="button"
+                        class="btn btn-dark"
+                        disabled="@(!CanParticipateInCase ||
+                            isSavingNote ||
+                            string.IsNullOrWhiteSpace(noteContent))"
+                        @onclick="SaveInternalNote">
+                    @(isSavingNote
+                        ? "جارٍ حفظ الملاحظة..."
+                        : "حفظ الملاحظة")
+                </button>
+
+                <hr class="my-4" />
+                <h5 class="mb-3">الملاحظات السابقة</h5>
+
+                @if (cyberCase.InternalNotes.Count == 0)
+                {
+                    <div class="alert alert-info mb-0">
+                        لا توجد ملاحظات داخلية لهذه القضية.
+                    </div>
+                }
+                else
+                {
+                    @foreach (CaseNote note in cyberCase.InternalNotes)
+                    {
+                        <div class="border rounded p-3 mb-3 bg-light">
+                            <div style="white-space: pre-wrap;">
+                                @note.Content
+                            </div>
+
+                            <hr />
+
+                            <div class="small text-muted">
+                                الموظف:
+                                <strong>@note.OfficerEmail</strong>
+                                <span class="mx-2">|</span>
+                                التاريخ:
+                                <strong>
+                                    @note.CreatedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                                </strong>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">سجل تغييرات الحالة</div>
+
+            <div class="card-body">
+                @if (cyberCase.StatusHistory.Count == 0)
+                {
+                    <div class="alert alert-info mb-0">
+                        لم يتم تسجيل تغييرات على حالة القضية بعد.
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>الحالة السابقة</th>
+                                    <th>الحالة الجديدة</th>
+                                    <th>الموظف</th>
+                                    <th>وقت التغيير</th>
+                                    <th>سبب التغيير</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (CaseStatusHistory history in cyberCase.StatusHistory)
+                                {
+                                    <tr>
+                                        <td>@GetStatusText(history.OldStatus)</td>
+                                        <td>@GetStatusText(history.NewStatus)</td>
+                                        <td>@history.ChangedByEmail</td>
+                                        <td>
+                                            @history.ChangedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                                        </td>
+                                        <td style="white-space: pre-wrap; overflow-wrap: anywhere">@(string.IsNullOrWhiteSpace(history.Reason) ? "لم يُسجّل سبب" : history.Reason)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <h5 class="mb-1">الأدلة وسجل التعديلات</h5>
+                        <small class="text-muted">
+                            يظهر هذا السجل للموظف أو المدير فقط،
+                            ويحتوي على الدليل الأصلي وجميع النسخ اللاحقة.
+                        </small>
+                    </div>
+
+                    <span class="badge bg-primary">
+                        @cyberCase.EvidenceItems.Count دليل
+                    </span>
+                </div>
+            </div>
+
+            <div class="card-body">
+                @if (cyberCase.EvidenceItems.Count == 0)
+                {
+                    <div class="alert alert-info mb-0">
+                        لا توجد أدلة مرفوعة لهذه القضية.
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex flex-column gap-4">
+                        @foreach (Evidence evidence in cyberCase.EvidenceItems)
+                        {
+                            bool canViewEvidence =
+                                !evidence.IsRestricted ||
+                                evidence.IsDisclosedToOfficer;
+
+                            List<EvidenceRevision> revisions =
+                                evidence.Revisions
+                                    .OrderBy(revision => revision.VersionNumber)
+                                    .ToList();
+
+                            <div class="border rounded shadow-sm overflow-hidden">
+                                <div class="bg-light border-bottom p-3">
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                        <div class="text-break">
+                                            <strong>@evidence.OriginalFileName</strong>
+                                        </div>
+
+                                        <div class="d-flex flex-wrap gap-2">
+                                            @if (evidence.IsRestricted)
+                                            {
+                                                <span class="badge bg-danger">
+                                                    دليل مقيّد
+                                                </span>
+
+                                                @if (evidence.IsDisclosedToOfficer)
+                                                {
+                                                    <span class="badge bg-success">
+                                                        وافق المشتكي على العرض
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">
+                                                        لم تتم الموافقة على العرض
+                                                    </span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success">
+                                                    دليل متاح
+                                                </span>
+                                            }
+
+                                            <span class="badge bg-dark">
+                                                عدد التعديلات: @revisions.Count
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @if (!canViewEvidence)
+                                {
+                                    <div class="p-3">
+                                        <div class="alert alert-warning mb-0">
+                                            هذا الدليل مقيّد، ولم يوافق المشتكي
+                                            بعد على عرضه للموظف.
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="p-3">
+                                        <div class="card border-success mb-3">
+                                            <div class="card-header bg-success text-white">
+                                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                                    <strong>
+                                                        الدليل الأصلي — النسخة 1
+                                                    </strong>
+
+                                                    <span class="badge bg-light text-success">
+                                                        النسخة الأصلية
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div class="card-body">
+                                                <div class="row g-3">
+                                                    <div class="col-md-6 col-lg-3">
+                                                        <div class="text-muted small">
+                                                            اسم الملف
+                                                        </div>
+                                                        <div class="fw-semibold text-break">
+                                                            @evidence.OriginalFileName
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-6 col-lg-3">
+                                                        <div class="text-muted small">
+                                                            نوع الملف
+                                                        </div>
+                                                        <div class="fw-semibold">
+                                                            @GetEvidenceTypeText(evidence.Type)
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-6 col-lg-3">
+                                                        <div class="text-muted small">
+                                                            حجم الملف
+                                                        </div>
+                                                        <div class="fw-semibold">
+                                                            @FormatFileSize(evidence.FileSizeBytes)
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-6 col-lg-3">
+                                                        <div class="text-muted small">
+                                                            وقت الرفع الأصلي
+                                                        </div>
+                                                        <div class="fw-semibold">
+                                                            @evidence.UploadedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-12">
+                                                        <div class="text-muted small">
+                                                            البصمة الرقمية الأصلية
+                                                        </div>
+
+                                                        <code class="text-break"
+                                                              title="@evidence.Sha256Hash">
+                                                            @evidence.Sha256Hash
+                                                        </code>
+                                                    </div>
+
+                                                    <div class="col-12">
+                                                        <a class="btn btn-success"
+                                                           href="@($"/evidence/{evidence.Id}/view")"
+                                                           target="_blank"
+                                                           rel="noopener noreferrer">
+                                                            عرض الدليل الأصلي
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        @if (revisions.Count == 0)
+                                        {
+                                            <div class="alert alert-secondary mb-0">
+                                                لم يقم المشتكي بتعديل أو استبدال
+                                                هذا الدليل.
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="alert alert-warning">
+                                                تم تعديل أو استبدال هذا الدليل
+                                                @revisions.Count مرة.
+                                                بقي الدليل الأصلي ظاهرًا أعلاه للمراجعة.
+                                            </div>
+
+                                            <div class="d-flex flex-column gap-3">
+                                                @foreach (EvidenceRevision revision in revisions)
+                                                {
+                                                    <div class="card border-warning">
+                                                        <div class="card-header bg-warning-subtle">
+                                                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                                                <strong>
+                                                                    النسخة @revision.VersionNumber —
+                                                                    @GetEvidenceChangeTypeText(revision.ChangeType)
+                                                                </strong>
+
+                                                                <span class="badge bg-warning text-dark">
+                                                                    نسخة لاحقة
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="card-body">
+                                                            <div class="row g-3">
+                                                                <div class="col-md-6 col-lg-3">
+                                                                    <div class="text-muted small">
+                                                                        اسم الملف
+                                                                    </div>
+                                                                    <div class="fw-semibold text-break">
+                                                                        @revision.OriginalFileName
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="col-md-6 col-lg-3">
+                                                                    <div class="text-muted small">
+                                                                        نوع الملف
+                                                                    </div>
+                                                                    <div class="fw-semibold">
+                                                                        @GetEvidenceTypeText(revision.Type)
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="col-md-6 col-lg-3">
+                                                                    <div class="text-muted small">
+                                                                        حجم الملف
+                                                                    </div>
+                                                                    <div class="fw-semibold">
+                                                                        @FormatFileSize(revision.FileSizeBytes)
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="col-md-6 col-lg-3">
+                                                                    <div class="text-muted small">
+                                                                        وقت التغيير
+                                                                    </div>
+                                                                    <div class="fw-semibold">
+                                                                        @revision.CreatedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="col-12">
+                                                                    <div class="alert alert-light border mb-0">
+                                                                        <strong>
+                                                                            سبب التغيير الذي كتبه المشتكي:
+                                                                        </strong>
+
+                                                                        <div class="mt-2"
+                                                                             style="white-space: pre-wrap;">
+                                                                            @revision.ChangeReason
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="col-12">
+                                                                    <div class="text-muted small">
+                                                                        البصمة الرقمية لهذه النسخة
+                                                                    </div>
+
+                                                                    <code class="text-break"
+                                                                          title="@revision.Sha256Hash">
+                                                                        @revision.Sha256Hash
+                                                                    </code>
+                                                                </div>
+
+                                                                <div class="col-12">
+                                                                    <a class="btn btn-outline-warning text-dark"
+                                                                       href="@($"/evidence-revisions/{revision.Id}/view")"
+                                                                       target="_blank"
+                                                                       rel="noopener noreferrer">
+                                                                        عرض النسخة @revision.VersionNumber
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private Guid officerId;
+    private bool isAdmin;
+    private string officerEmail = string.Empty;
+    private CyberCase? cyberCase;
+    private List<CaseStaffRequest> staffRequests = [];
+
+    private CaseStatus selectedStatus;
+    private string statusChangeReason = string.Empty;
+    private bool StatusReasonRequired =>
+        selectedStatus is CaseStatus.Resolved or CaseStatus.Closed;
+    private bool StatusReasonValid =>
+        string.IsNullOrWhiteSpace(statusChangeReason)
+            ? !StatusReasonRequired
+            : statusChangeReason.Trim().Length is >= 10 and <= 1000;
+
+    private CaseStaffRequestType selectedStaffRequestType =
+        CaseStaffRequestType.TransferAssignment;
+
+    private string staffRequestReason = string.Empty;
+    private string noteContent = string.Empty;
+    private string messageContent = string.Empty;
+
+    private bool isLoading = true;
+    private bool isSaving;
+    private bool isAssigning;
+    private bool isSubmittingStaffRequest;
+    private bool isCancellingStaffRequest;
+    private bool isSavingNote;
+    private bool isSendingMessage;
+
+    private string successMessage = string.Empty;
+    private string errorMessage = string.Empty;
+
+    private bool CanEditCase =>
+        cyberCase is not null &&
+        cyberCase.AssignedOfficerId == officerId;
+
+    private bool CanParticipateInCase =>
+        officerId != Guid.Empty &&
+        cyberCase is not null &&
+        (cyberCase.AssignedOfficerId == officerId ||
+         cyberCase.Collaborators.Any(collaborator =>
+             collaborator.OfficerId == officerId &&
+             collaborator.IsActive));
+
+    private CaseStaffRequest? PendingStaffRequest =>
+        staffRequests.FirstOrDefault(request =>
+            request.Status == CaseStaffRequestStatus.Pending);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        errorMessage = string.Empty;
+
+        AuthenticationState authenticationState =
+            await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+        ClaimsPrincipal currentUser = authenticationState.User;
+
+        isAdmin = currentUser.IsInRole("ADMIN");
+
+        string? officerIdValue =
+            currentUser.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (!Guid.TryParse(officerIdValue, out officerId))
+        {
+            errorMessage = "تعذر التحقق من هوية الموظف.";
+            isLoading = false;
+            return;
+        }
+
+        officerEmail =
+            currentUser.FindFirstValue(ClaimTypes.Email)
+            ?? currentUser.Identity?.Name
+            ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(officerEmail))
+        {
+            errorMessage = "تعذر قراءة بريد الموظف.";
+            isLoading = false;
+            return;
+        }
+
+        await LoadCase();
+    }
+
+    private async Task LoadCase()
+    {
+        isLoading = true;
+
+        try
+        {
+            if (isAdmin)
+            {
+                cyberCase = await CaseService.GetByIdForAdminAsync(Id);
+            }
+            else
+            {
+                cyberCase = await CaseService.GetByIdForOfficerAsync(
+                    Id,
+                    officerId);
+            }
+
+            if (cyberCase is not null)
+            {
+                selectedStatus = cyberCase.Status;
+                statusChangeReason = string.Empty;
+
+                if (!isAdmin)
+                {
+                    await LoadStaffRequests();
+                }
+                else
+                {
+                    staffRequests.Clear();
+                }
+            }
+            else
+            {
+                staffRequests.Clear();
+            }
+        }
+        catch
+        {
+            cyberCase = null;
+            errorMessage = "حدث خطأ أثناء تحميل القضية.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadStaffRequests()
+    {
+        List<CaseStaffRequest> loadedRequests =
+            await StaffRequestService.GetForOfficerAsync(officerId);
+
+        staffRequests = loadedRequests
+            .Where(request => request.CyberCaseId == Id)
+            .OrderByDescending(request => request.CreatedAtUtc)
+            .ToList();
+    }
+
+    private async Task SubmitStaffRequest()
+    {
+        if (!CanEditCase || isAdmin)
+        {
+            errorMessage =
+                "لا يستطيع إرسال الطلب إلا الموظف المسؤول عن القضية.";
+            return;
+        }
+
+        string cleanReason = staffRequestReason.Trim();
+
+        if (cleanReason.Length < 10 ||
+            cleanReason.Length > 1000)
+        {
+            errorMessage =
+                "سبب الطلب يجب أن يكون بين 10 و1000 حرف.";
+            return;
+        }
+
+        try
+        {
+            isSubmittingStaffRequest = true;
+            successMessage = string.Empty;
+            errorMessage = string.Empty;
+
+            CaseStaffRequest? createdRequest =
+                await StaffRequestService.CreateForOfficerAsync(
+                    Id,
+                    selectedStaffRequestType,
+                    cleanReason,
+                    officerId,
+                    officerEmail);
+
+            if (createdRequest is null)
+            {
+                errorMessage =
+                    "تعذر إرسال الطلب. قد يوجد طلب معلّق لهذه القضية، " +
+                    "أو لم تعد القضية معيّنة لك.";
+                return;
+            }
+
+            staffRequestReason = string.Empty;
+
+            await LoadStaffRequests();
+
+            successMessage =
+                "تم إرسال الطلب إلى المدير بنجاح.";
+        }
+        catch
+        {
+            errorMessage =
+                "حدث خطأ أثناء إرسال الطلب إلى المدير.";
+        }
+        finally
+        {
+            isSubmittingStaffRequest = false;
+        }
+    }
+
+    private async Task CancelPendingStaffRequest()
+    {
+        CaseStaffRequest? pendingRequest = PendingStaffRequest;
+
+        if (pendingRequest is null || isAdmin)
+            return;
+
+        try
+        {
+            isCancellingStaffRequest = true;
+            successMessage = string.Empty;
+            errorMessage = string.Empty;
+
+            bool cancelled =
+                await StaffRequestService.CancelForOfficerAsync(
+                    pendingRequest.Id,
+                    officerId,
+                    officerEmail);
+
+            if (!cancelled)
+            {
+                errorMessage =
+                    "تعذر إلغاء الطلب. ربما تمت مراجعته بالفعل.";
+                return;
+            }
+
+            await LoadStaffRequests();
+
+            successMessage = "تم إلغاء الطلب بنجاح.";
+        }
+        catch
+        {
+            errorMessage =
+                "حدث خطأ أثناء إلغاء الطلب.";
+        }
+        finally
+        {
+            isCancellingStaffRequest = false;
+        }
+    }
+
+    private async Task AssignCase()
+    {
+        try
+        {
+            isAssigning = true;
+            successMessage = string.Empty;
+            errorMessage = string.Empty;
+
+            bool assigned =
+                await CaseService.AssignToOfficerAsync(
+                    Id,
+                    officerId,
+                    officerEmail);
+
+            if (!assigned)
+            {
+                errorMessage =
+                    "تعذر استلام القضية. قد تكون معيّنة لموظف آخر.";
+                return;
+            }
+
+            await LoadCase();
+
+            successMessage = "تم تعيين القضية لك بنجاح.";
+        }
+        catch
+        {
+            errorMessage = "حدث خطأ أثناء استلام القضية.";
+        }
+        finally
+        {
+            isAssigning = false;
+        }
+    }
+
+    private async Task UpdateStatus()
+    {
+        if (isSaving) return;
+        if (cyberCase is null ||
+            !CaseStatusWorkflow.CanTransition(cyberCase.Status, selectedStatus))
+        {
+            errorMessage = "اختر انتقالًا متاحًا من الحالة الحالية.";
+            return;
+        }
+        if (!StatusReasonValid)
+        {
+            errorMessage = "اكتب سببًا من 10 إلى 1000 حرف؛ السبب مطلوب عند حل القضية أو إغلاقها.";
+            return;
+        }
+        if (!CanEditCase)
+        {
+            errorMessage =
+                "يجب أن تكون القضية معيّنة لك قبل تعديلها.";
+            return;
+        }
+
+        try
+        {
+            isSaving = true;
+            successMessage = string.Empty;
+            errorMessage = string.Empty;
+
+            bool updated =
+                await CaseService.UpdateStatusForOfficerAsync(
+                    Id,
+                    selectedStatus,
+                    officerId,
+                    officerEmail,
+                    statusChangeReason);
+
+            if (!updated)
+            {
+                await LoadCase();
+
+                if (!string.IsNullOrWhiteSpace(errorMessage))
+                    return;
+
+                if (cyberCase is null)
+                {
+                    errorMessage =
+                        "تعذر حفظ التغيير. لم تعد القضية متاحة لك، أو تم حذفها.";
+                }
+                else if (!CanEditCase)
+                {
+                    errorMessage =
+                        "تعذر حفظ التغيير. لم تعد الموظف المسؤول عن هذه القضية.";
+                }
+                else
+                {
+                    errorMessage =
+                        "تعذر حفظ التغيير. قد تكون القضية تغيّرت أثناء الحفظ. " +
+                        "تم تحديث بياناتها؛ راجع الحالة الحالية ثم أعد المحاولة.";
+                }
+
+                return;
+            }
+
+            await LoadCase();
+
+            if (cyberCase is null ||
+                !string.IsNullOrWhiteSpace(errorMessage))
+            {
+                return;
+            }
+
+            successMessage =
+                "تم تحديث حالة القضية وتسجيل العملية بنجاح.";
+        }
+        catch
+        {
+            errorMessage = "حدث خطأ أثناء تحديث حالة القضية.";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task SaveInternalNote()
+    {
+        if (!CanParticipateInCase)
+        {
+            errorMessage =
+                "لا تملك حاليًا صلاحية إضافة ملاحظة إلى هذه القضية.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(noteContent))
+        {
+            errorMessage = "اكتب الملاحظة قبل الحفظ.";
+            return;
+        }
+
+        if (noteContent.Trim().Length > 2000)
+        {
+            errorMessage =
+                "الملاحظة يجب ألا تتجاوز 2000 حرف.";
+            return;
+        }
+
+        try
+        {
+            isSavingNote = true;
+            successMessage = string.Empty;
+            errorMessage = string.Empty;
+
+            CaseNote? savedNote =
+                await CaseService.AddInternalNoteForOfficerAsync(
+                    Id,
+                    noteContent,
+                    officerId,
+                    officerEmail);
+
+            if (savedNote is null)
+            {
+                errorMessage =
+                    "تعذر حفظ الملاحظة. تأكد أنك الموظف المسؤول أو مشارك فعّال في القضية.";
+                return;
+            }
+
+            noteContent = string.Empty;
+
+            await LoadCase();
+
+            successMessage = "تم حفظ الملاحظة الداخلية بنجاح.";
+        }
+        catch
+        {
+            errorMessage = "حدث خطأ أثناء حفظ الملاحظة.";
+        }
+        finally
+        {
+            isSavingNote = false;
+        }
+    }
+
+    private async Task SendOfficerMessage()
+    {
+        if (!CanParticipateInCase ||
+            string.IsNullOrWhiteSpace(messageContent))
+        {
+            return;
+        }
+
+        try
+        {
+            isSendingMessage = true;
+            successMessage = string.Empty;
+            errorMessage = string.Empty;
+
+            CaseMessage? savedMessage =
+                await CaseService.SendMessageByOfficerAsync(
+                    Id,
+                    messageContent,
+                    officerId,
+                    officerEmail);
+
+            if (savedMessage is null)
+            {
+                errorMessage = "تعذر إرسال الرسالة.";
+                return;
+            }
+
+            messageContent = string.Empty;
+
+            await LoadCase();
+
+            successMessage = "تم إرسال الرسالة بنجاح.";
+        }
+        catch
+        {
+            errorMessage = "حدث خطأ أثناء إرسال الرسالة.";
+        }
+        finally
+        {
+            isSendingMessage = false;
+        }
+    }
+
+    private static string GetIncidentTypeText(string incidentType)
+    {
+        return incidentType switch
+        {
+            "Blackmail" => "ابتزاز إلكتروني",
+            "Fraud" => "احتيال مالي",
+            "AccountHacking" => "اختراق حساب",
+            "IdentityTheft" => "انتحال شخصية",
+            "Threat" => "تهديد إلكتروني",
+            _ => "أخرى"
+        };
+    }
+
+    private static string GetSeverityText(SeverityLevel severityLevel)
+    {
+        return severityLevel switch
+        {
+            SeverityLevel.Low => "منخفضة",
+            SeverityLevel.Medium => "متوسطة",
+            SeverityLevel.High => "مرتفعة",
+            SeverityLevel.Critical => "حرجة",
+            _ => "غير محددة"
+        };
+    }
+
+    private static string GetStatusText(CaseStatus status)
+    {
+        return status switch
+        {
+            CaseStatus.New => "جديدة",
+            CaseStatus.UnderReview => "قيد المراجعة",
+            CaseStatus.Assigned => "تم تعيين موظف",
+            CaseStatus.InProgress => "قيد المعالجة",
+            CaseStatus.Resolved => "تم حلها",
+            CaseStatus.Closed => "مغلقة",
+            _ => "غير محددة"
+        };
+    }
+
+    private static string GetStaffRequestTypeText(
+        CaseStaffRequestType requestType)
+    {
+        return requestType switch
+        {
+            CaseStaffRequestType.TransferAssignment =>
+                "نقل مسؤولية القضية",
+
+            CaseStaffRequestType.AddCollaborator =>
+                "إضافة موظف مشارك",
+
+            _ => "طلب غير معروف"
+        };
+    }
+
+    private static string GetStaffRequestStatusText(
+        CaseStaffRequestStatus status)
+    {
+        return status switch
+        {
+            CaseStaffRequestStatus.Pending => "قيد المراجعة",
+            CaseStaffRequestStatus.Approved => "تمت الموافقة",
+            CaseStaffRequestStatus.Rejected => "مرفوض",
+            CaseStaffRequestStatus.Cancelled => "ملغى",
+            _ => "غير معروفة"
+        };
+    }
+
+    private static string GetStaffRequestStatusBadgeClass(
+        CaseStaffRequestStatus status)
+    {
+        return status switch
+        {
+            CaseStaffRequestStatus.Pending => "bg-warning text-dark",
+            CaseStaffRequestStatus.Approved => "bg-success",
+            CaseStaffRequestStatus.Rejected => "bg-danger",
+            CaseStaffRequestStatus.Cancelled => "bg-secondary",
+            _ => "bg-dark"
+        };
+    }
+
+    private static string GetEvidenceTypeText(
+        EvidenceType evidenceType)
+    {
+        return evidenceType switch
+        {
+            EvidenceType.Image => "صورة",
+            EvidenceType.Video => "فيديو",
+            EvidenceType.Audio => "تسجيل صوتي",
+            EvidenceType.Document => "مستند",
+            EvidenceType.Screenshot => "لقطة شاشة",
+            _ => "أخرى"
+        };
+    }
+
+    private static string GetEvidenceChangeTypeText(
+        EvidenceChangeType changeType)
+    {
+        return changeType switch
+        {
+            EvidenceChangeType.ModifiedVersion => "نسخة معدّلة",
+            EvidenceChangeType.Replacement => "استبدال الدليل",
+            _ => "تغيير غير محدد"
+        };
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        if (bytes >= 1024 * 1024)
+        {
+            return $"{bytes / 1024d / 1024d:F2} ميجابايت";
+        }
+
+        return $"{bytes / 1024d:F2} كيلوبايت";
+    }
+}

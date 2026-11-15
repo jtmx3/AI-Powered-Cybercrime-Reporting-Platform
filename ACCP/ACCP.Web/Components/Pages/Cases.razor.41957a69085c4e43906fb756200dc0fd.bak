@@ -1,0 +1,285 @@
+@page "/cases/new"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "USER")]
+@rendermode InteractiveServer
+@implements IDisposable
+@using System.Security.Claims
+@using ACCP.Application.Chat
+@using ACCP.Application.Cases
+@using ACCP.Domain.Entities
+@using ACCP.Domain.Enums
+@using Microsoft.AspNetCore.Components.Authorization
+@inject ICaseIntakeAssistant IntakeAssistant
+@inject ICaseService CaseService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ILogger<CreateCase> Logger
+
+<PageTitle>محادثة جديدة | ACCP</PageTitle>
+
+<main class="intake container py-4" dir="rtl">
+    <div class="heading">
+        <div><span class="eyebrow">ACCP · مساحة المحادثة</span><h1>احكِ لنا شو صار معك</h1>
+            <p>صف الموقف بطريقتك. المساعد يسأل عن التفاصيل ويقيّمها عند توفر المعلومات الكافية.</p></div>
+        <a href="/cases" class="btn btn-outline-secondary">طلباتي</a>
+    </div>
+    <section class="conversation" aria-label="المحادثة">
+        <header class="chat-header">
+            <span class="avatar" aria-hidden="true">م</span>
+            <div><strong>مساعد ACCP</strong><div class="muted small">لا يُقدّم بلاغ رسمي دون موافقتك</div></div>
+            <span class="status">@(savedCaseId.HasValue ? "تم تقديم البلاغ" : busy ? "جارٍ المعالجة…" : "محادثة جديدة")</span>
+        </header>
+        <div class="history" role="log" aria-label="رسائل المحادثة" aria-live="polite" aria-relevant="additions" tabindex="0">
+            <div class="messages">
+                <div class="message assistant"><span class="speaker">المساعد</span><div class="bubble">أهلاً بك. احكِ لي ماذا حدث وعلى أي تطبيق أو موقع. لا تكتب كلمات المرور أو رموز الدخول. لن يُرسل بلاغ قبل موافقتك الصريحة.</div></div>
+                @foreach (var message in messages)
+                {
+                    <div class="message @(message.Role == IntakeChatRole.User ? "user" : "assistant")">
+                        <span class="speaker">@(message.Role == IntakeChatRole.User ? "أنت" : "المساعد")</span>
+                        <div class="bubble">@message.Content</div>
+                    </div>
+                }
+                @if (busy) { <p class="muted" role="status">جارٍ المعالجة…</p> }
+            </div>
+        </div>
+        <div class="controls">
+            @if (!string.IsNullOrEmpty(error)) { <div class="alert alert-danger" role="alert">@error</div> }
+            @if (savedCaseId.HasValue)
+            {
+                <div class="alert alert-success" role="status">تم تقديم البلاغ رقم @savedCaseNumber للموظفين المختصين. يمكنك متابعة الردود من التفاصيل.</div>
+                <a href="@($"/cases/{savedCaseId.Value}")" class="btn btn-primary">متابعة البلاغ</a>
+            }
+            else
+            {
+                @if (assessment is not null)
+                {
+                    <section class="assessment" aria-labelledby="assessment-title">
+                        <h2 id="assessment-title">تقييم المساعد</h2>
+                        <p><strong>درجة الخطورة المقدّرة: @assessment.RiskPercentage.ToString("0.##")%</strong></p>
+                        <p>@assessment.RiskExplanation</p>
+                        <small class="muted">تقدير آلي للموقف، وليس احتمالًا مؤكدًا لوقوع جريمة.</small>
+                    </section>
+                }
+                @if (reviewing && assessment?.ShouldOfferFormalReport == true)
+                {
+                    <section class="review" aria-labelledby="review-title">
+                        <h2 id="review-title">راجع البلاغ قبل تقديمه</h2>
+                        <h3>@assessment.Title</h3><p class="summary">@assessment.Summary</p>
+                        <p class="muted">سيُشارك هذا الملخص مع الموظفين المختصين. هذه الخطوة لا تمنح موافقة على كشف هويتك أو مشاركة المرفقات.</p>
+                        <div class="form-check mb-3">
+                            <input id="formal-consent" type="checkbox" class="form-check-input" @bind="consent" disabled="@busy" />
+                            <label for="formal-consent" class="form-check-label">راجعت الملخص وأوافق على تقديمه كبلاغ رسمي.</label>
+                        </div>
+                        <div class="actions">
+                            <button class="btn btn-primary" type="button" disabled="@(busy || !consent)" @onclick="SubmitReport">@(busy ? "جارٍ التقديم…" : "تأكيد تقديم البلاغ")</button>
+                            <button class="btn btn-outline-secondary" type="button" disabled="@busy" @onclick="CancelReview">العودة للمحادثة</button>
+                        </div>
+                    </section>
+                }
+                else
+                {
+                    @if (assessment?.ShouldOfferFormalReport == true && !offerDeclined)
+                    {
+                        <section class="offer" aria-labelledby="offer-title">
+                            <h2 id="offer-title">هل تريد تقديم بلاغ رسمي؟</h2>
+                            <p>درجة الخطورة المقدّرة أعلى من 80%. إذا وافقت، تراجع الملخص أولًا قبل إرساله للموظفين المختصين.</p>
+                            <div class="actions">
+                                <button type="button" class="btn btn-primary" @onclick="ReviewReport" disabled="@busy">نعم، مراجعة البلاغ</button>
+                                <button type="button" class="btn btn-outline-secondary" @onclick="DeclineOffer" disabled="@busy">لا، متابعة المحادثة</button>
+                            </div>
+                        </section>
+                    }
+                    @if (offerDeclined) { <p class="muted" role="status">لم يتم تقديم بلاغ. يمكنك متابعة المحادثة.</p> }
+                    @if (pendingReply)
+                    {
+                        <div class="actions">
+                            <button type="button" class="btn btn-primary" disabled="@busy" @onclick="RequestReply">إعادة المحاولة</button>
+                            <button type="button" class="btn btn-outline-secondary" disabled="@busy" @onclick="EditPendingMessage">تعديل رسالتي</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <form @onsubmit="SendMessage" @onsubmit:preventDefault>
+                            <label for="chat-message" class="form-label fw-semibold">رسالتك</label>
+                            <textarea id="chat-message" class="form-control" rows="4" maxlength="3000" placeholder="اكتب ما حدث معك…"
+                                      @bind="draft" @bind:event="oninput" disabled="@busy" aria-describedby="message-help"></textarea>
+                            <div class="composer-footer">
+                                <small id="message-help" class="muted">@draft.Length / 3000</small>
+                                <button type="submit" class="btn btn-primary" disabled="@(busy || string.IsNullOrWhiteSpace(draft))">إرسال</button>
+                            </div>
+                        </form>
+                    }
+                }
+                <p class="session-note">المحادثة الحالية مؤقتة؛ تحديث الصفحة يفقد الرسائل. حفظ سجل المحادثة واستلام الموظف لها قيد التجهيز.</p>
+            }
+        </div>
+    </section>
+</main>
+
+<style>
+    .intake { max-width: 960px; color: #163f59; }
+    .heading { display: flex; justify-content: space-between; align-items: start; gap: 20px; margin-bottom: 28px; }
+    .heading .btn { flex-shrink: 0; }
+    .heading h1 { font-size: clamp(1.65rem, 4vw, 2.15rem); margin: 10px 0; }
+    .heading p, .muted { color: #5d7180; }
+    .eyebrow { font-size: .85rem; color: #0f766e; font-weight: 700; }
+    .conversation { background: white; border: 1px solid #dce5eb; border-radius: 22px; overflow: hidden; box-shadow: 0 16px 48px #163f590a; }
+    .chat-header { display: flex; align-items: center; gap: 14px; padding: 20px 24px; border-bottom: 1px solid #dce5eb; }
+    .avatar { display: grid; place-items: center; background: #163f59; color: white; border-radius: 14px; width: 46px; height: 46px; flex-shrink: 0; }
+    .status { margin-inline-start: auto; font-size: .8rem; background: #edf4f2; border-radius: 20px; padding: 5px 12px; }
+    .history { background: #f4f7fa; padding: 24px; min-height: 180px; max-height: 480px; overflow-y: auto; display: flex; flex-direction: column-reverse; }
+    .messages { display: flex; flex-direction: column; gap: 20px; }
+    .message { max-width: 88%; }
+    .message.user { align-self: flex-end; }
+    .speaker { display: block; font-size: .76rem; color: #5d7180; margin-bottom: 6px; }
+    .bubble { padding: 14px 18px; border-radius: 16px; background: white; border: 1px solid #dce5eb; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.85; }
+    .user .bubble { background: #163f59; border-color: #163f59; color: white; }
+    .controls { padding: 24px; }
+    .assessment, .offer, .review { padding: 20px; border: 1px solid #dce5eb; border-radius: 14px; margin-bottom: 20px; overflow-wrap: anywhere; }
+    .assessment { background: #f3f8f6; }
+    .offer { background: #fffaf0; }
+    .controls h2 { font-size: 1.12rem; margin-bottom: 12px; }
+    .controls h3 { font-size: 1.02rem; }
+    .summary { white-space: pre-wrap; line-height: 1.85; }
+    .actions, .composer-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+    .composer-footer { justify-content: space-between; margin-top: 12px; }
+    .controls textarea { resize: vertical; border-radius: 12px; line-height: 1.85; }
+    .session-note { color: #637684; font-size: .8rem; margin: 20px 0 0; }
+    .intake .btn-primary { background: #0f766e; border-color: #0f766e; }
+    .intake .btn-primary:hover { background: #0b5e58; border-color: #0b5e58; }
+    @@media (max-width: 575px) { .heading { flex-wrap: wrap; } .chat-header, .controls, .history { padding: 16px; } .message { max-width: 96%; } .status { font-size: .7rem; } }
+</style>
+
+@code {
+    private readonly List<IntakeChatMessage> messages = [];
+    private readonly CancellationTokenSource lifetime = new();
+    private string draft = string.Empty;
+    private string error = string.Empty;
+    private CaseRiskAssessment? assessment;
+    private bool busy, pendingReply, reviewing, consent, offerDeclined, disposed;
+    private Guid? savedCaseId;
+    private string savedCaseNumber = string.Empty;
+
+    private async Task SendMessage()
+    {
+        if (busy || pendingReply || reviewing || savedCaseId.HasValue || disposed) return;
+        var content = draft.Trim();
+        error = string.Empty;
+        if (content.Length is < 2 or > 3000) { error = "اكتب رسالة بين حرفين و3000 حرف."; return; }
+        if (messages.Count >= 38 || messages.Sum(x => x.Content.Length) + content.Length > 24000)
+        { error = "وصلت المحادثة للحد المتاح في هذه النسخة. لن تُرسل رسائل إضافية."; return; }
+        assessment = null;
+        offerDeclined = consent = false;
+        messages.Add(new(IntakeChatRole.User, content));
+        draft = string.Empty;
+        pendingReply = true;
+        await RequestReply();
+    }
+
+    private async Task RequestReply()
+    {
+        if (busy || !pendingReply || savedCaseId.HasValue || disposed) return;
+        busy = true;
+        error = string.Empty;
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
+            timeout.CancelAfter(TimeSpan.FromSeconds(45));
+            // Immutable snapshot; retries reuse the same user turn without duplicating it.
+            var reply = await IntakeAssistant.ReplyAsync(messages.ToArray(), timeout.Token)
+                .WaitAsync(timeout.Token);
+            if (disposed) return;
+            if (reply is null || string.IsNullOrWhiteSpace(reply.Message) || reply.Message.Length > 6000)
+                throw new InvalidOperationException("Invalid assistant reply.");
+            messages.Add(new(IntakeChatRole.Assistant, reply.Message));
+            assessment = reply.Assessment;
+            pendingReply = false;
+        }
+        catch (OperationCanceledException) when (!disposed)
+        { error = "انتهت مهلة الرد. رسالتك ما زالت هنا؛ يمكنك إعادة المحاولة."; }
+        catch (Exception exception) when (!disposed)
+        {
+            Logger.LogWarning("Intake reply unavailable. Failure category: {Category}", exception.GetType().Name);
+            error = "خدمة المساعد والتقييم غير متاحة حاليًا. رسالتك ما زالت هنا؛ لم يُنشأ تقييم أو يُرسل بلاغ.";
+        }
+        catch (OperationCanceledException) when (disposed) { }
+        finally { busy = false; }
+    }
+
+    private void EditPendingMessage()
+    {
+        if (busy || !pendingReply || messages.Count == 0 || disposed) return;
+        draft = messages[^1].Content;
+        messages.RemoveAt(messages.Count - 1);
+        pendingReply = false;
+        error = string.Empty;
+    }
+
+    private void ReviewReport()
+    {
+        if (busy || pendingReply || assessment?.ShouldOfferFormalReport != true || savedCaseId.HasValue) return;
+        reviewing = true;
+        consent = false;
+        error = string.Empty;
+    }
+
+    private void DeclineOffer()
+    {
+        if (busy || reviewing || savedCaseId.HasValue) return;
+        offerDeclined = true;
+        consent = false;
+    }
+
+    private void CancelReview()
+    {
+        if (busy) return;
+        reviewing = consent = false;
+        error = string.Empty;
+    }
+
+    private async Task SubmitReport()
+    {
+        if (busy || disposed || savedCaseId.HasValue || pendingReply || !reviewing || !consent ||
+            assessment is not { ShouldOfferFormalReport: true } current) return;
+        busy = true;
+        error = string.Empty;
+        try
+        {
+            var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (disposed) return;
+            var user = state.User;
+            if (user.Identity?.IsAuthenticated != true || !user.IsInRole("USER") ||
+                !Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var reporterId) || reporterId == Guid.Empty)
+            { error = "تعذر التحقق من حسابك. سجّل الدخول مجددًا."; return; }
+
+            // Submission uses only the current server-side assessment after explicit consent.
+            // High is a legacy coarse category for this >80 branch; the score itself
+            // is not persisted by CyberCase yet. No invented Critical threshold.
+            var saved = await CaseService.CreateForReporterAsync(new CyberCase
+            {
+                Title = current.Title,
+                Description = current.Summary,
+                IncidentType = current.IncidentType,
+                SeverityLevel = SeverityLevel.High,
+                Path = CasePath.FormalReport,
+                IsReporterIdentityDisclosed = false
+            }, reporterId);
+            savedCaseId = saved.Id;
+            savedCaseNumber = saved.CaseNumber;
+            consent = false;
+        }
+        catch (Exception exception) when (!disposed)
+        {
+            Logger.LogWarning("Intake report submission failed. Failure category: {Category}", exception.GetType().Name);
+            error = "تعذر تأكيد تقديم البلاغ. راجع طلباتي قبل إعادة المحاولة لتجنب التكرار.";
+            consent = false;
+        }
+        finally { busy = false; }
+    }
+
+    public void Dispose()
+    {
+        if (disposed) return;
+        disposed = true;
+        lifetime.Cancel();
+        lifetime.Dispose();
+    }
+}

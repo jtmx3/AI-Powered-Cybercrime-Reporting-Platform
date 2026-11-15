@@ -1,0 +1,17 @@
+﻿@page "/not-found"
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@layout ACCP.Web.Components.Layout.MainLayout
+
+<PageTitle>الصفحة غير موجودة | ACCP</PageTitle>
+
+<ACCP.Web.Components.Shared.StatusPanel
+    Code="404"
+    Title="الصفحة غير موجودة"
+    Description="تعذر العثور على الصفحة المطلوبة. تحقق من الرابط أو عد إلى الصفحة الرئيسية.">
+
+    <div class="status-actions">
+        <a class="status-link" href="/">
+            العودة إلى الرئيسية
+        </a>
+    </div>
+</ACCP.Web.Components.Shared.StatusPanel>

@@ -1,0 +1,250 @@
+@page "/admin/case-reopening"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "ADMIN")]
+@rendermode InteractiveServer
+@implements IDisposable
+@using ACCP.Application.Cases
+@using ACCP.Domain.Enums
+@using ACCP.Web.Security
+@inject AdminCaseReopeningService Reopening
+@inject ILogger<AdminCaseReopening> Logger
+
+<PageTitle>إعادة فتح القضايا | ACCP</PageTitle>
+
+<main class="container py-4" dir="rtl">
+    <header class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h3">إعادة فتح القضايا</h1>
+            <p class="text-muted mb-0">القضايا المحلولة والمغلقة؛ إعادة الفتح تعيدها إلى قيد المعالجة.</p>
+        </div>
+        <a class="btn btn-outline-secondary" href="/admin/workload">متابعة توزيع القضايا</a>
+    </header>
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="alert @(success ? "alert-success" : "alert-warning")" role="status">@message</div>
+    }
+    @if (accessLost)
+    {
+        <p class="alert alert-danger">انتهت صلاحية جلسة المدير أو تغيّرت صلاحيات الحساب.</p>
+        <a href="/login" data-enhance-nav="false" class="btn btn-primary">تسجيل الدخول</a>
+    }
+    else
+    {
+        <fieldset disabled="@busy">
+            <div class="row g-2 align-items-end mb-3">
+                <div class="col-md-8">
+                    <label for="reopen-search" class="form-label">رقم القضية كاملًا (اختياري)</label>
+                    <input id="reopen-search" class="form-control" maxlength="200" @bind="search" />
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-primary" type="button" @onclick="SearchAsync">بحث / تحديث</button>
+                </div>
+            </div>
+        </fieldset>
+        @if (busy)
+        {
+            <p role="status">جارٍ تنفيذ العملية...</p>
+        }
+        @if (selected is not null)
+        {
+            <section class="card shadow-sm mb-4" aria-labelledby="reopen-heading">
+                <div class="card-body">
+                    <h2 id="reopen-heading" class="h5">تأكيد إعادة الفتح</h2>
+                    <p>رقم القضية: <bdi>@selected.CaseNumber</bdi></p>
+                    <p>الحالة الحالية: @StatusText(selected.Status)</p>
+                    <div class="alert alert-info">
+                        يُحفظ السبب في سجل الحالة وتُرسل إشعارات المتابعة.
+                        إذا تغيّر الموظف المسؤول تنتهي صلاحية المسؤول السابق، وتبقى صلاحيات المشاركين الآخرين.
+                        تُلغى طلبات النقل والمشاركة المعلّقة السابقة.
+                    </div>
+                    <fieldset disabled="@(busy || mustRefresh)">
+                        <div class="mb-3">
+                            <label for="reopen-officer" class="form-label">الموظف المسؤول بعد إعادة الفتح</label>
+                            <select id="reopen-officer" class="form-select" @bind="targetId">
+                                <option value="@Guid.Empty">اختر موظفًا</option>
+                                @foreach (var officer in officers)
+                                {
+                                    <option value="@officer.Id">@officer.FullName — @officer.Email</option>
+                                }
+                            </select>
+                            <div class="form-text">يمكنك إبقاء الموظف الحالي إذا كان ضمن الموظفين المتاحين.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reopen-reason" class="form-label">سبب إعادة الفتح</label>
+                            <textarea id="reopen-reason" class="form-control" rows="3" maxlength="1000"
+                                      @bind="reason" @bind:event="oninput"></textarea>
+                            <div class="form-text">من 10 إلى 1000 حرف.</div>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input id="reopen-confirm" class="form-check-input" type="checkbox" @bind="confirmed" />
+                            <label class="form-check-label" for="reopen-confirm">
+                                راجعت رقم القضية والموظف والسبب وأوافق على إعادة فتحها.
+                            </label>
+                        </div>
+                        <button class="btn btn-danger" type="button" disabled="@(!CanSubmit)" @onclick="SubmitAsync">
+                            تأكيد إعادة الفتح
+                        </button>
+                    </fieldset>
+                    @if (mustRefresh)
+                    {
+                        <p class="text-muted mt-3">حدّث القائمة وتحقق من الحالة الحالية قبل أي محاولة أخرى.</p>
+                    }
+                    <button class="btn btn-outline-secondary mt-3" type="button" disabled="@busy" @onclick="ClearSelection">
+                        إغلاق النموذج
+                    </button>
+                </div>
+            </section>
+        }
+        @if (items.Count == 0 && !busy)
+        {
+            <p class="alert alert-info">لا توجد قضايا محلولة أو مغلقة مطابقة.</p>
+        }
+        else if (items.Count > 0)
+        {
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead><tr><th>رقم القضية</th><th>الحالة</th><th>الإجراء</th></tr></thead>
+                    <tbody>
+                        @foreach (var item in items)
+                        {
+                            <tr @key="item.CaseId">
+                                <td><bdi>@item.CaseNumber</bdi></td>
+                                <td>@StatusText(item.Status)</td>
+                                <td><button class="btn btn-sm btn-outline-primary" type="button" disabled="@(busy || mustRefresh)"
+                                            @onclick="() => SelectCase(item)">إعادة الفتح</button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        <div class="d-flex gap-2 align-items-center">
+            <button class="btn btn-outline-secondary" type="button" disabled="@(busy || page == 0)" @onclick="PreviousAsync">السابق</button>
+            <span>الصفحة @(page + 1)</span>
+            <button class="btn btn-outline-secondary" type="button" disabled="@(busy || !hasMore)" @onclick="NextAsync">التالي</button>
+        </div>
+    }
+</main>
+
+@code {
+    private readonly CancellationTokenSource lifetime = new();
+    private IReadOnlyList<CaseReopeningSnapshot> items = [];
+    private IReadOnlyList<ReopeningOfficer> officers = [];
+    private CaseReopeningSnapshot? selected;
+    private Guid targetId;
+    private string reason = string.Empty;
+    private string search = string.Empty;
+    private string appliedSearch = string.Empty;
+    private string message = string.Empty;
+    private int page;
+    private bool hasMore, busy, success, mustRefresh, accessLost, disposed;
+    private bool CanSubmit => !busy && !mustRefresh && selected is not null &&
+        confirmed && reason.Trim().Length is >= 10 and <= 1000 &&
+        officers.Any(item => item.Id == targetId);
+    private bool confirmed;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+    private async Task SearchAsync()
+    {
+        if (busy) return;
+        appliedSearch = search.Trim();
+        page = 0;
+        await LoadAsync();
+    }
+    private async Task PreviousAsync()
+    {
+        if (busy || page == 0) return;
+        page--;
+        await LoadAsync();
+    }
+    private async Task NextAsync()
+    {
+        if (busy || !hasMore) return;
+        page++;
+        await LoadAsync();
+    }
+    private async Task LoadAsync()
+    {
+        if (busy || disposed) return;
+        busy = true;
+        success = false;
+        message = string.Empty;
+        ClearSelection();
+        items = [];
+        hasMore = false;
+        try
+        {
+            var result = await Reopening.GetCasesAsync(page, appliedSearch, lifetime.Token);
+            var available = await Reopening.GetOfficersAsync(lifetime.Token);
+            if (disposed) return;
+            items = result.Items;
+            hasMore = result.HasMore;
+            officers = available;
+            mustRefresh = false;
+        }
+        catch (UnauthorizedAccessException) { accessLost = true; items = []; }
+        catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
+        catch (Exception exception)
+        {
+            Logger.LogWarning("Reopening list unavailable. Category: {Category}", exception.GetType().Name);
+            message = "تعذر تحميل القائمة. حاول تحديث البيانات.";
+        }
+        finally { busy = false; }
+    }
+    private void SelectCase(CaseReopeningSnapshot item)
+    {
+        if (busy || disposed || mustRefresh) return;
+        selected = item;
+        targetId = officers.Any(officer => officer.Id == item.OfficerId)
+            ? item.OfficerId!.Value : Guid.Empty;
+        reason = string.Empty;
+        confirmed = false;
+        message = officers.Count == 0 ? "لا يوجد موظف مفعّل متاح؛ فعّل حساب موظف ثم حدّث القائمة." : string.Empty;
+        success = false;
+    }
+    private void ClearSelection()
+    {
+        selected = null;
+        targetId = Guid.Empty;
+        reason = string.Empty;
+        confirmed = false;
+        // mustRefresh is reset only after a fresh server read, in LoadAsync.
+    }
+    private async Task SubmitAsync()
+    {
+        if (!CanSubmit || selected is null) return;
+        var expected = selected;
+        var submittedOfficer = targetId;
+        var submittedReason = reason;
+        busy = true;
+        mustRefresh = true;
+        try
+        {
+            var reopened = await Reopening.ReopenAsync(expected, submittedOfficer, submittedReason);
+            if (disposed) return;
+            success = reopened;
+            message = reopened
+                ? "أُعيد فتح القضية وأصبحت قيد المعالجة، وحُفظ السبب وأُرسلت الإشعارات. حدّث القائمة لمتابعة العمل."
+                : "لم تُنفّذ إعادة الفتح؛ قد تكون الحالة أو الإسناد أو صلاحيات الحساب تغيّرت. حدّث القائمة.";
+            if (reopened) items = items.Where(item => item.CaseId != expected.CaseId).ToList();
+        }
+        catch (UnauthorizedAccessException) { accessLost = true; items = []; ClearSelection(); }
+        catch (Exception exception)
+        {
+            Logger.LogWarning("Reopening outcome unavailable. Category: {Category}", exception.GetType().Name);
+            message = "تعذر تأكيد نتيجة العملية. حدّث القائمة وتحقق من حالة القضية قبل إعادة المحاولة.";
+        }
+        finally { busy = false; }
+    }
+    private static string StatusText(CaseStatus status) => status switch
+    {
+        CaseStatus.Resolved => "تم حلها",
+        CaseStatus.Closed => "مغلقة",
+        _ => "غير متاحة لإعادة الفتح"
+    };
+    public void Dispose()
+    {
+        disposed = true;
+        lifetime.Cancel();
+        lifetime.Dispose();
+    }
+}

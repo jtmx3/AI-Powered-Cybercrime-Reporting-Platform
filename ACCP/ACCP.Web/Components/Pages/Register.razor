@@ -1,0 +1,381 @@
+@page "/register"
+@rendermode InteractiveServer
+@using System.ComponentModel.DataAnnotations
+@using ACCP.Application.Auditing
+@using ACCP.Domain.Enums
+@using ACCP.Infrastructure.Identity
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<ApplicationUser> UserManager
+@inject IAuditService AuditService
+@inject IHttpContextAccessor HttpContextAccessor
+<PageTitle>إنشاء حساب مشتكي | ACCP</PageTitle>
+
+<main class="register-page" dir="rtl">
+    <a href="/" class="register-back"><span aria-hidden="true">→</span> العودة إلى الرئيسية</a>
+
+    <div class="register-shell">
+        <section class="register-form-panel" aria-labelledby="register-title">
+            <span class="register-eyebrow">ابدأ من هنا</span>
+            <h1 id="register-title">إنشاء حساب مشتكي</h1>
+            <p class="register-description">أنشئ حسابك لتوثيق تفاصيل المشكلة ومتابعة طلباتك وبلاغاتك.</p>
+
+            @if (!string.IsNullOrWhiteSpace(successMessage))
+            {
+                <div class="register-success" role="status" aria-live="polite">
+                    <span class="register-success-icon" aria-hidden="true">✓</span>
+                    <h2>حسابك جاهز</h2>
+                    <p>@successMessage</p>
+                    <a href="/login" data-enhance-nav="false" class="register-primary-link">الانتقال إلى تسجيل الدخول <span aria-hidden="true">←</span></a>
+                </div>
+            }
+            else
+            {
+                @if (errorMessages.Count > 0)
+                {
+                    <div class="register-errors" role="alert">
+                        <strong>تعذر إكمال التسجيل</strong>
+                        <ul>
+                            @foreach (string message in errorMessages)
+                            {
+                                <li>@message</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                <EditForm EditContext="@editContext" OnValidSubmit="@RegisterUser" FormName="register-user">
+                    <DataAnnotationsValidator />
+                    <fieldset class="register-fields" disabled="@isSubmitting">
+                        <div class="register-field">
+                            <label class="register-label" for="register-full-name">الاسم الكامل</label>
+                            <InputText id="register-full-name" class="form-control" autocomplete="name"
+                                       maxlength="100" dir="auto" aria-describedby="register-full-name-error"
+                                       @bind-Value="registerModel.FullName" />
+                            <ValidationMessage id="register-full-name-error" For="@(() => registerModel.FullName)" />
+                        </div>
+
+                        <div class="register-field">
+                            <label class="register-label" for="register-email">البريد الإلكتروني</label>
+                            <InputText id="register-email" class="form-control" type="email" dir="ltr"
+                                       autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false"
+                                       aria-describedby="register-email-error" @bind-Value="registerModel.Email" />
+                            <ValidationMessage id="register-email-error" For="@(() => registerModel.Email)" />
+                        </div>
+
+                        <div class="register-field">
+                            <label class="register-label" for="register-password">كلمة المرور</label>
+                            <InputText id="register-password" class="form-control" type="password" dir="ltr"
+                                       autocomplete="new-password" aria-describedby="register-password-help register-password-error"
+                                       @bind-Value="registerModel.Password" />
+                            <ValidationMessage id="register-password-error" For="@(() => registerModel.Password)" />
+                            <p id="register-password-help" class="register-field-help">8 أحرف على الأقل، تشمل حرفًا كبيرًا وحرفًا صغيرًا ورقمًا ورمزًا.</p>
+                        </div>
+
+                        <div class="register-field">
+                            <label class="register-label" for="register-password-confirm">تأكيد كلمة المرور</label>
+                            <InputText id="register-password-confirm" class="form-control" type="password" dir="ltr"
+                                       autocomplete="new-password" aria-describedby="register-confirm-error"
+                                       @bind-Value="registerModel.ConfirmPassword" />
+                            <ValidationMessage id="register-confirm-error" For="@(() => registerModel.ConfirmPassword)" />
+                        </div>
+
+                        <button type="submit" class="register-submit" disabled="@isSubmitting">
+                            @(isSubmitting ? "جارٍ إنشاء الحساب..." : "إنشاء الحساب")
+                            @if (!isSubmitting) { <span aria-hidden="true">←</span> }
+                        </button>
+                    </fieldset>
+                </EditForm>
+            }
+
+            <p class="register-login">لديك حساب بالفعل؟ <a href="/login" data-enhance-nav="false">تسجيل الدخول</a></p>
+        </section>
+
+        <aside class="register-introduction" aria-labelledby="register-introduction-title">
+            <span class="register-intro-badge">حسابك في ACCP</span>
+            <h2 id="register-introduction-title">تفاصيلك في مكانها.<br /><span>ومتابعتك أوضح.</span></h2>
+            <p class="register-intro-description">هذه الصفحة مخصّصة لإنشاء حساب مشتكي. حسابات الموظفين تُدار من مسؤول المنصة.</p>
+            <ol class="register-guide">
+                <li><span aria-hidden="true">01</span><div><h3>أنشئ حسابك</h3><p>أدخل اسمك وبريدك الإلكتروني واختر كلمة مرور لحسابك.</p></div></li>
+                <li><span aria-hidden="true">02</span><div><h3>سجّل الدخول</h3><p>بعد نجاح إنشاء الحساب، انتقل إلى صفحة تسجيل الدخول.</p></div></li>
+                <li><span aria-hidden="true">03</span><div><h3>ابدأ المتابعة</h3><p>وثّق تفاصيل المشكلة في محادثة، وتابع البلاغات والإشعارات المرتبطة بحسابك.</p></div></li>
+            </ol>
+            <div class="register-intro-note"><strong>قرار الإرسال لك</strong><p>إنشاء الحساب أو حفظ المحادثة لا يعني إرسال بلاغ رسمي؛ إرسال البلاغ يحتاج إلى موافقتك.</p></div>
+        </aside>
+    </div>
+</main>
+
+<style>
+    .register-page, .register-page * { box-sizing: border-box; }
+    .register-page { max-width: 1100px; width: 100%; margin-inline: auto; padding-block: .5rem 1.5rem; color: #20324a; font-family: "Segoe UI", Tahoma, Arial, sans-serif; line-height: 1.75; }
+    .register-back { display: inline-flex; align-items: center; gap: .5rem; min-height: 2.75rem; margin-bottom: 1rem; color: #526279; font-size: .8rem; text-decoration: none; }
+    .register-back:hover { color: #146c60; text-decoration: underline; }
+    .register-shell { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); background: #fff; border: 1px solid #dce5ed; border-radius: 1rem; overflow: hidden; box-shadow: 0 12px 40px #13243a06; }
+    .register-form-panel { min-width: 0; padding: clamp(1.4rem, 3vw, 2.6rem); }
+    .register-eyebrow { display: block; color: #146c60; font-size: .75rem; font-weight: 600; margin-bottom: .35rem; }
+    .register-form-panel h1 { font-size: clamp(1.4rem, 2.3vw, 1.9rem); color: #1b314b; line-height: 1.6; margin: 0 0 .6rem; }
+    .register-description { color: #617087; font-size: .86rem; line-height: 1.9; margin: 0 0 1.5rem; }
+    .register-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
+    .register-field { margin-bottom: 1.1rem; }
+    .register-label { display: block; color: #20324a; font-size: .83rem; font-weight: 600; margin-bottom: .4rem; }
+    .register-page .form-control { display: block; width: 100%; min-height: 2.9rem; padding: .65rem .8rem; border: 1px solid #c9d4e0; border-radius: .6rem; color: #20324a; background: #fff; font: inherit; font-size: .9rem; line-height: 1.5; }
+    .register-page .form-control:focus { outline: 0; border-color: #368c7e; box-shadow: 0 0 0 .2rem #146c601c; }
+    .register-page .form-control.invalid { border-color: #b42338; outline: 1px solid #b42338; }
+    .register-field-help { color: #617087; font-size: .72rem; line-height: 1.9; margin: .4rem 0 0; }
+    .register-page .validation-message { color: #b42338; font-size: .77rem; line-height: 1.8; margin-top: .3rem; }
+    .register-errors { color: #8e2030; background: #fff0f1; border: 1px solid #f0cbd1; border-radius: .65rem; padding: .9rem 1rem; margin-bottom: 1.2rem; font-size: .82rem; }
+    .register-errors strong { display: block; margin-bottom: .4rem; }
+    .register-errors ul { margin: 0; padding-inline-start: 1.15rem; }
+    .register-submit, .register-primary-link { display: flex; justify-content: center; align-items: center; gap: 1rem; width: 100%; min-height: 3rem; padding: .7rem 1rem; border: 1px solid #146c60; border-radius: .6rem; color: #fff; background: #146c60; font: 600 .9rem/1.5 "Segoe UI", Tahoma, Arial, sans-serif; text-decoration: none; cursor: pointer; }
+    .register-submit:hover, .register-primary-link:hover { color: #fff; background: #10584e; border-color: #10584e; }
+    .register-submit:disabled { opacity: .65; cursor: wait; }
+    .register-fields:disabled .form-control { background: #f5f7fa; }
+    .register-login { color: #617087; font-size: .8rem; text-align: center; border-top: 1px solid #e7edf3; padding-top: 1.1rem; margin: 1.3rem 0 0; }
+    .register-login a { color: #146c60; text-decoration: none; font-weight: 600; margin-inline-start: .25rem; }
+    .register-login a:hover { text-decoration: underline; }
+    .register-introduction { min-width: 0; display: flex; flex-direction: column; justify-content: center; padding: clamp(1.4rem, 3vw, 2.5rem); background: #13243a; color: #fff; }
+    .register-intro-badge { align-self: flex-start; color: #c1ead9; background: #204039; border: 1px solid #77bca54d; border-radius: 2rem; font-size: .71rem; padding: .3rem .7rem; margin-bottom: 1.25rem; }
+    .register-introduction h2 { font-size: clamp(1.5rem, 2.4vw, 2.1rem); color: #fff; line-height: 1.8; margin: 0 0 1rem; }
+    .register-introduction h2 span { color: #a5ddc8; }
+    .register-intro-description { color: #b9c9da; font-size: .82rem; line-height: 2; margin: 0 0 1.7rem; }
+    .register-guide { display: grid; gap: 1.2rem; list-style: none; margin: 0 0 1.8rem; padding: 0; }
+    .register-guide li { display: flex; align-items: start; gap: .75rem; }
+    .register-guide li > span { display: grid; place-items: center; flex-shrink: 0; width: 1.85rem; height: 1.85rem; border: 1px solid #ffffff26; border-radius: .5rem; color: #b9ddcf; font: 600 .7rem/1 "Segoe UI", sans-serif; }
+    .register-guide h3 { color: #fff; font-size: .85rem; margin: .1rem 0 .3rem; }
+    .register-guide p { color: #b9c9da; font-size: .73rem; line-height: 1.9; margin: 0; }
+    .register-intro-note { border-top: 1px solid #ffffff26; padding-top: 1.1rem; }
+    .register-intro-note strong { font-size: .78rem; color: #d1e6de; }
+    .register-intro-note p { color: #b9c9da; font-size: .73rem; line-height: 1.9; margin: .35rem 0 0; }
+    .register-success { display: flex; flex-direction: column; align-items: center; text-align: center; border: 1px solid #cde3d7; border-radius: .8rem; background: #f2f9f5; padding: 1.5rem; }
+    .register-success-icon { display: grid; place-items: center; width: 2.6rem; height: 2.6rem; font-size: 1.2rem; border-radius: 50%; color: #146c60; background: #dbeee3; margin-bottom: .75rem; }
+    .register-success h2 { font-size: 1.2rem; color: #1b5145; margin: 0 0 .6rem; }
+    .register-success p { color: #42665d; font-size: .86rem; margin: 0 0 1.25rem; line-height: 1.9; }
+    .register-page a:focus-visible, .register-submit:focus-visible { outline: 3px solid #247f73; outline-offset: 3px; }
+    @@media (min-width: 992px) and (max-width: 1199.98px) {
+        .register-shell { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+        .register-form-panel, .register-introduction { padding: 1.5rem; }
+        .register-introduction h2 { font-size: 1.5rem; }
+    }
+    @@media (max-width: 767.98px) {
+        .register-shell { grid-template-columns: minmax(0, 1fr); }
+        .register-form-panel, .register-introduction { padding: 1.4rem; }
+        .register-introduction h2 { font-size: 1.7rem; }
+    }
+    @@media (max-width: 399.98px) {
+        .register-form-panel, .register-introduction { padding: 1.15rem; }
+        .register-success { padding: 1.15rem; }
+    }
+</style>
+
+@code {
+    private RegisterModel registerModel = new();
+    private EditContext editContext = default!;
+    private readonly List<string> errorMessages = [];
+    private string successMessage = string.Empty;
+    private bool isSubmitting;
+    private string? requestIpAddress;
+    private string? requestUserAgent;
+    private string? requestCorrelationId;
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(registerModel);
+        HttpContext? httpContext =
+            HttpContextAccessor.HttpContext;
+        requestIpAddress =
+            httpContext?.Connection
+                .RemoteIpAddress
+                ?.ToString();
+        requestUserAgent =
+            httpContext?.Request.Headers[
+                "User-Agent"].ToString();
+        requestCorrelationId =
+            httpContext?.TraceIdentifier;
+    }
+    private async Task RegisterUser()
+    {
+        if (isSubmitting)
+        {
+            return;
+        }
+        isSubmitting = true;
+        successMessage = string.Empty;
+        errorMessages.Clear();
+        string normalizedEmail =
+            registerModel.Email.Trim();
+        ApplicationUser? user = null;
+        bool registrationCompleted = false;
+        try
+        {
+            user = new ApplicationUser
+            {
+                Id = Guid.NewGuid(),
+                FullName = registerModel.FullName.Trim(),
+                UserName = normalizedEmail,
+                Email = normalizedEmail,
+                IsActive = true
+            };
+            IdentityResult createResult =
+                await UserManager.CreateAsync(
+                    user,
+                    registerModel.Password);
+            if (!createResult.Succeeded)
+            {
+                foreach (IdentityError error
+                    in createResult.Errors)
+                {
+                    errorMessages.Add(
+                        TranslateIdentityError(error));
+                }
+                await WriteRegistrationAuditSafelyAsync(
+                    user: null,
+                    attemptedEmail: normalizedEmail,
+                    isSuccessful: false,
+                    failureReason: GetIdentityFailureReason(
+                        createResult));
+                return;
+            }
+            IdentityResult roleResult =
+                await UserManager.AddToRoleAsync(
+                    user,
+                    IdentityRoles.User);
+            if (!roleResult.Succeeded)
+            {
+                await UserManager.DeleteAsync(user);
+                errorMessages.Add(
+                    "تعذر تعيين صلاحية الحساب. حاول مرة أخرى.");
+                await WriteRegistrationAuditSafelyAsync(
+                    user,
+                    normalizedEmail,
+                    isSuccessful: false,
+                    failureReason:
+                        $"فشل تعيين الدور: {GetIdentityFailureReason(roleResult)}");
+                return;
+            }
+            registrationCompleted = true;
+            await WriteRegistrationAuditSafelyAsync(
+                user,
+                normalizedEmail,
+                isSuccessful: true);
+            successMessage =
+                "تم إنشاء الحساب بنجاح. يمكنك الآن تسجيل الدخول.";
+            registerModel = new RegisterModel();
+            editContext = new EditContext(registerModel);
+        }
+        catch (Exception exception)
+        {
+            if (user is not null &&
+                !registrationCompleted)
+            {
+                try
+                {
+                    await UserManager.DeleteAsync(user);
+                }
+                catch
+                {
+                    // لا نعرض تفاصيل داخلية للمستخدم.
+                }
+            }
+            errorMessages.Add(
+                "حدث خطأ أثناء إنشاء الحساب. حاول مرة أخرى.");
+            await WriteRegistrationAuditSafelyAsync(
+                registrationCompleted ? user : null,
+                normalizedEmail,
+                isSuccessful: false,
+                failureReason:
+                    $"استثناء غير متوقع: {exception.GetType().Name}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+    private async Task WriteRegistrationAuditSafelyAsync(
+        ApplicationUser? user,
+        string attemptedEmail,
+        bool isSuccessful,
+        string? failureReason = null)
+    {
+        try
+        {
+            await AuditService.WriteAsync(
+                new AuditLogRequest
+                {
+                    Action = AuditAction.AccountCreated,
+                    ActorUserId = user?.Id,
+                    ActorEmail = attemptedEmail,
+                    ActorRole = IdentityRoles.User,
+                    EntityType = nameof(ApplicationUser),
+                    EntityId = user?.Id,
+                    Description = isSuccessful
+                        ? "تم إنشاء حساب مستخدم جديد بنجاح."
+                        : "فشلت محاولة إنشاء حساب مستخدم جديد.",
+                    IsSuccessful = isSuccessful,
+                    FailureReason = failureReason,
+                    IpAddress = requestIpAddress,
+                    UserAgent = requestUserAgent,
+                    CorrelationId = requestCorrelationId
+                });
+        }
+        catch
+        {
+            // فشل سجل التدقيق لا يعرض تفاصيل تقنية ولا يعطل التسجيل.
+        }
+    }
+    private static string GetIdentityFailureReason(
+        IdentityResult result)
+    {
+        string failureReason = string.Join(
+            ", ",
+            result.Errors.Select(error => error.Code));
+        return string.IsNullOrWhiteSpace(failureReason)
+            ? "فشلت عملية Identity دون رمز خطأ."
+            : failureReason;
+    }
+    private static string TranslateIdentityError(
+        IdentityError error)
+    {
+        return error.Code switch
+        {
+            "DuplicateEmail" =>
+                "البريد الإلكتروني مستخدم مسبقًا.",
+            "DuplicateUserName" =>
+                "البريد الإلكتروني مستخدم مسبقًا.",
+            "PasswordTooShort" =>
+                "كلمة المرور قصيرة جدًا.",
+            "PasswordRequiresDigit" =>
+                "كلمة المرور يجب أن تحتوي على رقم.",
+            "PasswordRequiresLower" =>
+                "كلمة المرور يجب أن تحتوي على حرف صغير.",
+            "PasswordRequiresUpper" =>
+                "كلمة المرور يجب أن تحتوي على حرف كبير.",
+            "PasswordRequiresNonAlphanumeric" =>
+                "كلمة المرور يجب أن تحتوي على رمز.",
+            _ =>
+                "تعذر إنشاء الحساب. تحقق من البيانات وحاول مرة أخرى."
+        };
+    }
+    private sealed class RegisterModel
+    {
+        [Required(ErrorMessage = "الاسم الكامل مطلوب.")]
+        [StringLength(
+            100,
+            MinimumLength = 3,
+            ErrorMessage = "الاسم يجب أن يكون بين 3 و100 حرف.")]
+        public string FullName { get; set; } = string.Empty;
+        [Required(ErrorMessage = "البريد الإلكتروني مطلوب.")]
+        [EmailAddress(
+            ErrorMessage = "صيغة البريد الإلكتروني غير صحيحة.")]
+        public string Email { get; set; } = string.Empty;
+        [Required(ErrorMessage = "كلمة المرور مطلوبة.")]
+        [MinLength(
+            8,
+            ErrorMessage = "كلمة المرور يجب ألا تقل عن 8 أحرف.")]
+        public string Password { get; set; } = string.Empty;
+        [Required(ErrorMessage = "تأكيد كلمة المرور مطلوب.")]
+        [Compare(
+            nameof(Password),
+            ErrorMessage = "كلمتا المرور غير متطابقتين.")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+}

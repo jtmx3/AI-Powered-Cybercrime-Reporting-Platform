@@ -1,0 +1,60 @@
+@page "/access-denied"
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@using Microsoft.AspNetCore.Components.Authorization
+
+<PageTitle>رفض الوصول | ACCP</PageTitle>
+
+<ACCP.Web.Components.Shared.StatusPanel
+    Code="403"
+    Title="ليس لديك صلاحية الوصول"
+    Description="هذه الصفحة متاحة للحسابات التي تملك الصلاحية المطلوبة.">
+
+    <AuthorizeView Context="accessState">
+        <Authorized>
+            <p>
+                أنت مسجّل الدخول. يمكنك العودة إلى المساحة المناسبة لحسابك.
+            </p>
+
+            <div class="status-actions">
+                @if (accessState.User.IsInRole("ADMIN"))
+                {
+                    <a class="status-link" href="/admin/workload">
+                        العودة إلى إدارة القضايا
+                    </a>
+                }
+                else if (accessState.User.IsInRole("OFFICER"))
+                {
+                    <a class="status-link" href="/officer/dashboard">
+                        العودة إلى لوحة الموظف
+                    </a>
+                }
+                else if (accessState.User.IsInRole("USER"))
+                {
+                    <a class="status-link" href="/cases">
+                        العودة إلى طلباتي وبلاغاتي
+                    </a>
+                }
+
+                <a class="status-link secondary" href="/">
+                    الصفحة الرئيسية
+                </a>
+            </div>
+        </Authorized>
+
+        <NotAuthorized>
+            <p>سجّل الدخول بحساب يملك الصلاحية المطلوبة للمتابعة.</p>
+
+            <div class="status-actions">
+                <a class="status-link"
+                   href="/login"
+                   data-enhance-nav="false">
+                    تسجيل الدخول
+                </a>
+
+                <a class="status-link secondary" href="/">
+                    الصفحة الرئيسية
+                </a>
+            </div>
+        </NotAuthorized>
+    </AuthorizeView>
+</ACCP.Web.Components.Shared.StatusPanel>

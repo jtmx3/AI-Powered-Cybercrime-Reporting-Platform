@@ -1,0 +1,201 @@
+@page "/admin/employees/{EmployeeId:guid}/reset-two-factor"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "ADMIN")]
+@rendermode InteractiveServer
+
+@using ACCP.Web.Security
+
+@inject EmployeeManagementService Employees
+@inject EmployeeTwoFactorResetService TwoFactorReset
+@inject CaseAuthorizationService Authorization
+@inject ILogger<ResetEmployeeTwoFactor> Logger
+
+<PageTitle>إعادة تهيئة تحقق الموظف | ACCP</PageTitle>
+
+<main class="container py-4" dir="rtl" style="max-width: 820px;">
+    <h1 class="h3 mb-3">إعادة تهيئة تحقق الموظف</h1>
+
+    @if (isLoading)
+    {
+        <p role="status">جارٍ التحقق من الصلاحيات وتحميل الحساب...</p>
+    }
+    else if (employee is null)
+    {
+        <div class="alert alert-danger" role="alert">@message</div>
+    }
+    else if (succeeded)
+    {
+        <div class="alert alert-success" role="status">@message</div>
+        <p>يسجّل الموظف دخوله بكلمة مروره، ثم يربط تطبيق التحقق مجددًا ويؤكد الرمز الجديد.</p>
+    }
+    else
+    {
+        <section class="card shadow-sm mb-3" aria-labelledby="target-heading">
+            <div class="card-body">
+                <h2 id="target-heading" class="h5">الحساب المحدد</h2>
+                <p class="mb-1"><strong>@employee.FullName</strong></p>
+                <p><bdi>@employee.Email</bdi></p>
+                <p class="mb-1">حالة الحساب: @(employee.IsActive ? "مفعّل" : "معطّل")</p>
+                <p class="mb-0">التحقق الثنائي: @(employee.TwoFactorEnabled ? "مفعّل" : "غير مفعّل")</p>
+            </div>
+        </section>
+
+        <div class="alert alert-warning">
+            <p>نفّذ هذا الإجراء بعد التثبت من هوية الموظف وطلبه استعادة الوصول.</p>
+            <ul class="mb-0">
+                <li>سيُبطل مفتاح التحقق القديم وجلسات الموظف السابقة.</li>
+                <li>سيحتاج إلى إعداد التحقق مجددًا بعد إدخال كلمة مروره.</li>
+                <li>تبقى كلمة مروره وصلاحياته وحالة حسابه كما هي.</li>
+                <li>ستُسجّل العملية وسببها في سجل التدقيق.</li>
+            </ul>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(message))
+        {
+            <div class="alert alert-danger" role="alert">@message</div>
+        }
+
+        <fieldset disabled="@isSaving">
+            <div class="mb-3">
+                <label for="two-factor-reset-reason" class="form-label">سبب إعادة التهيئة</label>
+                <input id="two-factor-reset-reason" type="text" class="form-control"
+                       maxlength="500" autocomplete="off" aria-describedby="reset-reason-help"
+                       @bind="reason" @bind:event="oninput" />
+                <div id="reset-reason-help" class="form-text">من 10 إلى 500 حرف في سطر واحد.</div>
+            </div>
+
+            <div class="form-check mb-3">
+                <input id="two-factor-reset-confirm" type="checkbox" class="form-check-input"
+                       @bind="confirmed" />
+                <label for="two-factor-reset-confirm" class="form-check-label">
+                    تحققت من هوية الموظف وأوافق على إعادة تهيئة التحقق للحساب الموضح أعلاه.
+                </label>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-danger"
+                        disabled="@(!confirmed || reason.Trim().Length < 10)"
+                        @onclick="ResetAsync">
+                    @(isSaving ? "جارٍ التنفيذ..." : "تأكيد إعادة التهيئة")
+                </button>
+                <button type="button" class="btn btn-outline-secondary" @onclick="LoadAsync">
+                    تحديث بيانات الحساب
+                </button>
+            </div>
+        </fieldset>
+    }
+
+    @if (!isSaving)
+    {
+        <a href="/admin/employees" class="btn btn-outline-primary mt-4">العودة إلى إدارة الموظفين</a>
+    }
+</main>
+
+@code {
+    [Parameter]
+    public Guid EmployeeId { get; set; }
+
+    private EmployeeAccountSummary? employee;
+    private string reason = string.Empty;
+    private string message = string.Empty;
+    private bool confirmed;
+    private bool isLoading = true;
+    private bool isSaving;
+    private bool succeeded;
+    private int loadRevision;
+
+    protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var revision = ++loadRevision;
+        var requestedId = EmployeeId;
+        employee = null;
+        reason = string.Empty;
+        message = string.Empty;
+        confirmed = false;
+        succeeded = false;
+        isSaving = false;
+        isLoading = true;
+
+        try
+        {
+            var actor = await Authorization.GetCurrentActorAsync();
+            if (actor is null || !actor.HasRole("ADMIN"))
+                throw new UnauthorizedAccessException();
+
+            var directory = await Employees.GetOfficersAsync();
+            if (revision != loadRevision) return;
+
+            var target = directory.FirstOrDefault(item => item.Id == requestedId);
+            if (target is null || target.HasAdminRole || target.Id == actor.UserId)
+            {
+                message = "الحساب غير موجود أو محمي من هذه العملية.";
+                return;
+            }
+
+            employee = target;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            if (revision == loadRevision)
+                message = "تحتاج إلى جلسة مدير صالحة أكملت التحقق الثنائي. سجّل الدخول مجددًا.";
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning("Employee MFA reset page unavailable. Category: {Category}",
+                exception.GetType().Name);
+            if (revision == loadRevision)
+                message = "تعذر تحميل الحساب. ارجع إلى قائمة الموظفين وحاول مجددًا.";
+        }
+        finally
+        {
+            if (revision == loadRevision) isLoading = false;
+        }
+    }
+
+    private async Task ResetAsync()
+    {
+        if (isLoading || isSaving || succeeded || employee is null || !confirmed) return;
+
+        var target = employee;
+        var cleanReason = reason.Trim();
+        var revision = loadRevision;
+        if (cleanReason.Length is < 10 or > 500 || cleanReason.Any(char.IsControl))
+        {
+            message = "اكتب سببًا من 10 إلى 500 حرف في سطر واحد.";
+            return;
+        }
+
+        isSaving = true;
+        message = string.Empty;
+
+        try
+        {
+            var result = await TwoFactorReset.ResetOfficerTwoFactorAsync(
+                target.Id, cleanReason, target.ConcurrencyToken);
+
+            if (revision != loadRevision) return;
+            succeeded = result.Succeeded;
+            message = result.Message;
+            confirmed = false;
+            if (succeeded) reason = string.Empty;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            if (revision != loadRevision) return;
+            employee = null;
+            message = "انتهت صلاحية جلسة المدير. سجّل الدخول مجددًا.";
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning("Employee MFA reset result unavailable. Category: {Category}",
+                exception.GetType().Name);
+            if (revision == loadRevision)
+                message = "تعذر تأكيد نتيجة العملية. ارجع للقائمة وتحقق من حالة الحساب قبل تكرارها.";
+        }
+        finally
+        {
+            if (revision == loadRevision) isSaving = false;
+        }
+    }
+}

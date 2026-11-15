@@ -1,0 +1,572 @@
+/* حاوية صفحة تفاصيل القضية */
+.container {
+    max-width: 1180px;
+    margin-inline: auto;
+    padding: 30px 12px 48px;
+    color: #19324d;
+}
+
+/* رأس الصفحة */
+.container > .d-flex:first-child {
+    flex-wrap: wrap;
+    gap: 18px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #dce6ef;
+}
+
+.container h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.6rem, 3vw, 2rem);
+    font-weight: 750;
+    line-height: 1.5;
+}
+
+.container > .d-flex:first-child p {
+    font-size: .87rem;
+    line-height: 1.9;
+}
+
+.container > .d-flex:first-child strong {
+    display: inline-block;
+    direction: ltr;
+    unicode-bidi: isolate;
+    overflow-wrap: anywhere;
+}
+
+/* البطاقات الرئيسية والداخلية */
+.container .card {
+    min-width: 0;
+    border: 1px solid #dce6ef;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: none !important;
+}
+
+.container > .card {
+    margin-bottom: 22px !important;
+}
+
+.container .card-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid #e5edf3;
+    border-radius: 14px 14px 0 0;
+    background: #fff;
+    color: #19324d;
+    font-size: .98rem;
+    font-weight: 750;
+    line-height: 1.8;
+}
+
+.container .card-header h5 {
+    font-size: 1rem;
+    font-weight: 750;
+}
+
+.container .card-header small {
+    display: block;
+    margin-top: 5px;
+    font-size: .77rem;
+    font-weight: 400;
+    line-height: 1.9;
+}
+
+.container .card-body {
+    padding: 24px;
+    min-width: 0;
+}
+
+.container .card-body .card {
+    border-radius: 11px;
+}
+
+.container .card-body .card .card-header {
+    border-radius: 11px 11px 0 0;
+}
+
+.container .card-body .card .card-body {
+    padding: 20px;
+}
+
+/* معلومات القضية */
+.container > .card:first-of-type .row > div > strong {
+    display: block;
+    margin-bottom: 7px;
+    color: #667d94;
+    font-size: .79rem;
+    font-weight: 600;
+}
+
+.container .row > div > div {
+    overflow-wrap: anywhere;
+}
+
+.container .card-body .row {
+    row-gap: 18px;
+}
+
+.container .card-body strong {
+    line-height: 1.9;
+}
+
+.container .bg-light {
+    background-color: #f5f8fb !important;
+}
+
+.container .border {
+    border-color: #dce6ef !important;
+}
+
+.container .rounded {
+    border-radius: 10px !important;
+}
+
+.container .text-muted {
+    color: #657b92 !important;
+}
+
+.container .small,
+.container small {
+    line-height: 1.9;
+}
+
+.container [style*="white-space: pre-wrap"] {
+    overflow-wrap: anywhere;
+    line-height: 1.95;
+}
+
+/* التنبيهات */
+.container .alert {
+    padding: 15px 18px;
+    border: 1px solid;
+    border-radius: 10px;
+    font-size: .85rem;
+    line-height: 1.95;
+}
+
+.container .alert-info {
+    color: #275d7c;
+    background: #eef7fc;
+    border-color: #d4e7f3;
+}
+
+.container .alert-success {
+    color: #216650;
+    background: #eef8f2;
+    border-color: #d4eadd;
+}
+
+.container .alert-warning {
+    color: #805e1c;
+    background: #fff9e9;
+    border-color: #ecdfbb;
+}
+
+.container .alert-danger {
+    color: #993d46;
+    background: #fff0f2;
+    border-color: #efcdd2;
+}
+
+.container .alert-secondary {
+    color: #536a81;
+    background: #f3f6fa;
+    border-color: #dce5ee;
+}
+
+/* الحقول */
+.container .form-label {
+    margin-bottom: 9px;
+    color: #27435f;
+    font-size: .84rem;
+    font-weight: 650;
+}
+
+.container .form-control,
+.container ::deep .form-select {
+    min-height: 45px;
+    padding: 11px 13px;
+    border: 1px solid #cbd9e6;
+    border-radius: 9px;
+    background-color: #fff;
+    color: #19324d;
+    font: inherit;
+    font-size: .87rem;
+}
+
+.container textarea.form-control {
+    line-height: 1.9;
+    resize: vertical;
+}
+
+.container .form-control::placeholder {
+    color: #8294a7;
+    font-size: .82rem;
+}
+
+.container .form-control:focus,
+.container ::deep .form-select:focus {
+    border-color: #217d71;
+    outline: 0;
+    box-shadow: 0 0 0 3px #e1f1ec;
+}
+
+.container .form-control:disabled,
+.container ::deep .form-select:disabled {
+    color: #718399;
+    background-color: #f1f5f8;
+    cursor: not-allowed;
+}
+
+.container .form-text {
+    margin-top: 7px;
+    color: #71859a;
+    font-size: .75rem;
+    line-height: 1.9;
+}
+
+/* الأزرار */
+.container .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 10px 18px;
+    border-radius: 9px;
+    font-size: .84rem;
+    font-weight: 650;
+    line-height: 1.5;
+    text-decoration: none;
+    transition:
+        background-color .15s ease,
+        border-color .15s ease;
+}
+
+.container .btn-primary,
+.container .btn-success {
+    color: #fff;
+    background-color: #176d65;
+    border-color: #176d65;
+}
+
+.container .btn-primary:hover:not(:disabled),
+.container .btn-success:hover:not(:disabled) {
+    color: #fff;
+    background-color: #11564f;
+    border-color: #11564f;
+}
+
+.container .btn-dark {
+    color: #fff;
+    background-color: #19324d;
+    border-color: #19324d;
+}
+
+.container .btn-dark:hover:not(:disabled) {
+    background-color: #10263c;
+    border-color: #10263c;
+}
+
+.container .btn-outline-secondary,
+.container .btn-outline-primary {
+    color: #176d65;
+    background-color: #fff;
+    border-color: #c8dcd7;
+}
+
+.container .btn-outline-secondary:hover,
+.container .btn-outline-primary:hover {
+    color: #11564f;
+    background-color: #eef7f3;
+    border-color: #176d65;
+}
+
+.container .btn-secondary {
+    color: #36516b;
+    background-color: #edf2f7;
+    border-color: #d6e0ea;
+}
+
+.container .btn-outline-danger {
+    color: #a13e48;
+    background-color: #fff;
+    border-color: #e7c5ca;
+}
+
+.container .btn-outline-danger:hover:not(:disabled) {
+    color: #91333e;
+    background-color: #fff0f2;
+    border-color: #cc7c87;
+}
+
+.container .btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.container .btn:focus-visible,
+.container a:focus-visible {
+    outline: 3px solid #8bc7ba;
+    outline-offset: 3px;
+    box-shadow: none;
+}
+
+/* شارات الحالات والأدلة */
+.container .badge {
+    padding: 7px 10px;
+    border-radius: 7px;
+    font-size: .72rem;
+    font-weight: 650;
+    line-height: 1.5;
+    white-space: normal;
+}
+
+.container .badge.bg-primary {
+    color: #176d65 !important;
+    background-color: #e7f4ef !important;
+}
+
+.container .badge.bg-success {
+    color: #24694e !important;
+    background-color: #eaf6ee !important;
+}
+
+.container .badge.bg-warning {
+    color: #80601e !important;
+    background-color: #fff3d7 !important;
+}
+
+.container .badge.bg-danger {
+    color: #a13e48 !important;
+    background-color: #fcebee !important;
+}
+
+.container .badge.bg-secondary,
+.container .badge.bg-dark {
+    color: #4c657e !important;
+    background-color: #edf2f7 !important;
+}
+
+.container .badge.bg-light {
+    color: #176d65 !important;
+    background-color: #eef8f3 !important;
+}
+
+/* المحادثة */
+.container .card-body > .bg-light[style*="max-height"] {
+    padding: 20px !important;
+    background-color: #f6f9fc !important;
+    scrollbar-width: thin;
+    scrollbar-color: #c1d1df #f6f9fc;
+    overscroll-behavior: contain;
+}
+
+.container .d-flex > .bg-primary.text-white {
+    padding: 16px 18px !important;
+    color: #fff;
+    background-color: #176d65 !important;
+    border-radius: 14px 5px 14px 14px !important;
+    overflow-wrap: anywhere;
+}
+
+.container .d-flex > .bg-white.border {
+    padding: 16px 18px !important;
+    color: #233e58;
+    background-color: #fff !important;
+    border-color: #dbe5ee !important;
+    border-radius: 5px 14px 14px 14px !important;
+    overflow-wrap: anywhere;
+}
+
+.container .text-white-50 {
+    color: #d5eae5 !important;
+    font-size: .72rem;
+}
+
+/* الملاحظات الداخلية */
+.container .card-body > .border.bg-light {
+    padding: 18px !important;
+    border-inline-start: 3px solid #c0d7e3 !important;
+}
+
+.container .card-body h5 {
+    color: #294660;
+    font-size: .98rem;
+    line-height: 1.8;
+}
+
+/* الجداول وسجل تغييرات الحالة */
+.container .table-responsive {
+    border: 1px solid #e0e8f0;
+    border-radius: 10px;
+    scrollbar-width: thin;
+}
+
+.container .table {
+    margin-bottom: 0;
+    border-color: #e5ecf3;
+    font-size: .81rem;
+}
+
+.container .table th {
+    padding: 14px 16px;
+    background-color: #f4f7fb;
+    color: #4e6881;
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+.container .table td {
+    padding: 14px 16px;
+    color: #29455f;
+    vertical-align: middle;
+    line-height: 1.85;
+    min-width: 110px;
+    max-width: 400px;
+    overflow-wrap: anywhere;
+}
+
+.container .table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+/* الأدلة والنسخ */
+.container .overflow-hidden {
+    border-radius: 12px !important;
+}
+
+.container .border-success {
+    border-color: #cce3d9 !important;
+}
+
+.container .card-header.bg-success {
+    color: #215e4d !important;
+    background-color: #eaf6f0 !important;
+    border-bottom-color: #d6e9df;
+}
+
+.container .card-header.bg-warning {
+    color: #7c5d1b !important;
+    background-color: #fff6e0 !important;
+}
+
+.container .card-header.bg-primary {
+    color: #275d7b !important;
+    background-color: #edf5fb !important;
+}
+
+.container .border-bottom {
+    border-bottom-color: #dfe8f0 !important;
+}
+
+.container code {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    padding: 12px 14px;
+    border: 1px solid #e0e8ef;
+    border-radius: 8px;
+    background-color: #f4f7fa;
+    color: #476179;
+    direction: ltr;
+    unicode-bidi: isolate;
+    text-align: left;
+    font-size: .75rem;
+    line-height: 1.9;
+    overflow-wrap: anywhere;
+    word-break: break-all;
+}
+
+.container .text-break {
+    overflow-wrap: anywhere !important;
+}
+
+.container dl {
+    font-size: .85rem;
+    line-height: 1.9;
+}
+
+.container dt {
+    color: #687e94;
+    font-weight: 600;
+}
+
+.container dd {
+    overflow-wrap: anywhere;
+}
+
+.container hr {
+    margin-block: 22px;
+    border-color: #dce6ef;
+    opacity: 1;
+}
+
+/* الجوال */
+@media (max-width: 767px) {
+    .container {
+        padding: 20px 0 32px;
+    }
+
+    .container > .d-flex:first-child {
+        align-items: flex-start !important;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .container > .d-flex:first-child > a {
+        width: 100%;
+    }
+
+    .container .card-header {
+        padding: 16px 18px;
+    }
+
+    .container .card-body {
+        padding: 18px;
+    }
+
+    .container .card-body .card .card-body {
+        padding: 16px;
+    }
+
+    .container .alert {
+        padding: 13px 15px;
+        font-size: .81rem;
+    }
+
+    .container .card-body > .bg-light[style*="max-height"] {
+        padding: 12px !important;
+    }
+
+    .container .d-flex > .bg-primary.text-white,
+    .container .d-flex > .bg-white.border {
+        max-width: 92% !important;
+        padding: 13px 14px !important;
+    }
+
+    .container .card-body > .d-flex.justify-content-between {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .container .table th,
+    .container .table td {
+        padding: 12px;
+        font-size: .77rem;
+    }
+
+    .container .btn {
+        min-height: 44px;
+    }
+
+    .container code {
+        padding: 10px;
+        font-size: .7rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .container .btn {
+        transition: none;
+    }
+}

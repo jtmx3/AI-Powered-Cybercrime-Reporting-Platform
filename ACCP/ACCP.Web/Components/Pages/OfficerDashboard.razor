@@ -1,0 +1,610 @@
+@page "/officer/dashboard"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "OFFICER")]
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+@using ACCP.Application.Cases
+@using ACCP.Domain.Entities
+@using ACCP.Domain.Enums
+@using Microsoft.AspNetCore.Components.Authorization
+
+@inject ICaseService CaseService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>لوحة الموظف | ACCP</PageTitle>
+
+<main class="officer-dashboard" dir="rtl" aria-busy="@isBusy">
+    <header class="dashboard-header">
+        <div>
+            <span class="eyebrow">مساحة الموظف</span>
+            <h1>لوحة متابعة القضايا</h1>
+            <p>استلم البلاغات المتاحة، وتابع القضايا المسندة لك والتي تشارك فيها.</p>
+        </div>
+
+        <button type="button"
+                class="dashboard-button secondary"
+                disabled="@isBusy"
+                @onclick="LoadCasesAsync">
+            @(isBusy ? "جارٍ التحديث..." : "تحديث القائمة")
+        </button>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="dashboard-alert error" role="alert">
+            @errorMessage
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(actionMessage))
+    {
+        <div class="dashboard-alert notice" role="status">
+            @actionMessage
+        </div>
+    }
+
+    @if (cases is null)
+    {
+        <section class="empty-panel" role="status">
+            <h2>جارٍ تحميل القضايا...</h2>
+            <p>يتم تحميل القضايا المتاحة لحسابك.</p>
+        </section>
+    }
+    else
+    {
+        <section class="statistics" aria-label="إحصائيات القضايا">
+            <article class="stat-card">
+                <span>إجمالي القضايا المتاحة</span>
+                <strong>@cases.Count</strong>
+                <small>ضمن صلاحية الوصول الحالية لحسابك</small>
+            </article>
+
+            <article class="stat-card">
+                <span>بلاغات بانتظار الاستلام</span>
+                <strong class="teal">@cases.Count(CanClaim)</strong>
+                <small>بلاغات جديدة أو قيد المراجعة وغير مسندة</small>
+            </article>
+
+            <article class="stat-card">
+                <span>قضايا مسندة لي قيد المتابعة</span>
+                <strong class="blue">
+                    @cases.Count(item => item.AssignedOfficerId == currentOfficerId && IsOpen(item))
+                </strong>
+                <small>باستثناء القضايا المحلولة والمغلقة</small>
+            </article>
+
+            <article class="stat-card">
+                <span>مرتفعة أو حرجة قيد المتابعة</span>
+                <strong class="red">
+                    @cases.Count(item => IsOpen(item) &&
+                        item.SeverityLevel is SeverityLevel.High or SeverityLevel.Critical)
+                </strong>
+                <small>من القضايا المتاحة لحسابك</small>
+            </article>
+        </section>
+
+        <section class="filter-panel" aria-labelledby="filter-heading">
+            <div class="section-heading">
+                <div>
+                    <h2 id="filter-heading">ابحث عن القضية</h2>
+                    <p>حدّد القضايا التي تريد متابعتها.</p>
+                </div>
+
+                <button type="button"
+                        class="text-button"
+                        @onclick="ResetFilters">
+                    مسح عوامل التصفية
+                </button>
+            </div>
+
+            <div class="filter-grid">
+                <div class="search-field">
+                    <label for="officer-search">البحث برقم القضية أو عنوانها</label>
+                    <input id="officer-search"
+                           type="search"
+                           placeholder="اكتب رقم القضية أو عنوانها"
+                           maxlength="200"
+                           @bind="searchText"
+                           @bind:event="oninput"
+                           @bind:after="ResetPage" />
+                </div>
+
+                <div>
+                    <label for="assignment-filter">الإسناد</label>
+                    <select id="assignment-filter"
+                            @bind="assignmentFilter"
+                            @bind:after="ResetPage">
+                        <option value="all">جميع القضايا المتاحة</option>
+                        <option value="unassigned">بانتظار الاستلام</option>
+                        <option value="mine">مسندة لي</option>
+                        <option value="participating">أشارك فيها</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="status-filter">الحالة</label>
+                    <select id="status-filter"
+                            @bind="statusFilter"
+                            @bind:after="ResetPage">
+                        <option value="">جميع الحالات</option>
+                        <option value="@CaseStatus.New">جديدة</option>
+                        <option value="@CaseStatus.UnderReview">قيد المراجعة</option>
+                        <option value="@CaseStatus.Assigned">تم تعيين موظف</option>
+                        <option value="@CaseStatus.InProgress">قيد المعالجة</option>
+                        <option value="@CaseStatus.Resolved">تم حلها</option>
+                        <option value="@CaseStatus.Closed">مغلقة</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="severity-filter">الخطورة</label>
+                    <select id="severity-filter"
+                            @bind="severityFilter"
+                            @bind:after="ResetPage">
+                        <option value="">جميع المستويات</option>
+                        <option value="@SeverityLevel.Low">منخفضة</option>
+                        <option value="@SeverityLevel.Medium">متوسطة</option>
+                        <option value="@SeverityLevel.High">مرتفعة</option>
+                        <option value="@SeverityLevel.Critical">حرجة</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="incident-filter">نوع الحادثة</label>
+                    <select id="incident-filter"
+                            @bind="incidentTypeFilter"
+                            @bind:after="ResetPage">
+                        <option value="">جميع الأنواع</option>
+                        <option value="Blackmail">ابتزاز إلكتروني</option>
+                        <option value="Fraud">احتيال مالي</option>
+                        <option value="AccountHacking">اختراق حساب</option>
+                        <option value="IdentityTheft">انتحال شخصية</option>
+                        <option value="Threat">تهديد إلكتروني</option>
+                        <option value="Other">أخرى</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="sort-filter">ترتيب النتائج</label>
+                    <select id="sort-filter"
+                            @bind="sortOrder"
+                            @bind:after="ResetPage">
+                        <option value="newest">الأحدث أولًا</option>
+                        <option value="oldest">الأقدم أولًا</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        var filtered = GetFilteredCases();
+        var pageCount = Math.Max(1, (filtered.Count + PageSize - 1) / PageSize);
+        var displayedPage = Math.Clamp(currentPage, 1, pageCount);
+        var pageItems = filtered
+            .Skip((displayedPage - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+
+        <section class="results-panel" aria-labelledby="results-heading">
+            <div class="section-heading results-heading">
+                <div>
+                    <h2 id="results-heading">قائمة القضايا</h2>
+                    <p>عدد النتائج: <strong>@filtered.Count</strong></p>
+                </div>
+                <span class="privacy-note">
+                    تفاصيل البلاغ غير المسند تظهر بعد استلامه.
+                </span>
+            </div>
+
+            @if (cases.Count == 0)
+            {
+                <div class="empty-panel">
+                    <span class="empty-symbol" aria-hidden="true">—</span>
+                    <h3>لا توجد قضايا متاحة حاليًا</h3>
+                    <p>ستظهر هنا البلاغات المتاحة للاستلام والقضايا المسندة لك أو التي تشارك فيها.</p>
+                </div>
+            }
+            else if (filtered.Count == 0)
+            {
+                <div class="empty-panel">
+                    <h3>لا توجد نتائج مطابقة</h3>
+                    <p>جرّب تغيير البحث أو مسح عوامل التصفية.</p>
+                    <button type="button"
+                            class="dashboard-button secondary"
+                            @onclick="ResetFilters">
+                        عرض جميع القضايا
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="case-list">
+                    @foreach (var item in pageItems)
+                    {
+                        <article class="case-card" @key="item.Id">
+                            <div class="case-main">
+                                <div class="case-labels">
+                                    <span class="case-number" dir="ltr">
+                                        @item.CaseNumber
+                                    </span>
+                                    <span class="@GetSeverityClass(item.SeverityLevel)">
+                                        @GetSeverityText(item.SeverityLevel)
+                                    </span>
+                                    <span class="case-badge status-badge">
+                                        @GetStatusText(item.Status)
+                                    </span>
+                                </div>
+
+                                <h3>
+                                    @if (CanOpenDetails(item))
+                                    {
+                                        <a href="@($"/officer/cases/{item.Id:D}")">
+                                            @item.Title
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span>بلاغ جديد بانتظار الاستلام</span>
+                                    }
+                                </h3>
+
+                                <div class="case-meta">
+                                    <span>@GetIncidentTypeText(item.IncidentType)</span>
+                                    <span>
+                                        أُنشئت:
+                                        @item.CreatedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                                    </span>
+                                    @if (CanOpenDetails(item))
+                                    {
+                                        <span>
+                                            الأدلة المتاحة:
+                                            @item.EvidenceItems.Count(evidence =>
+                                                !evidence.IsRestricted || evidence.IsDisclosedToOfficer)
+                                        </span>
+                                    }
+                                </div>
+
+                                <div class="assignment-line">
+                                    @if (!item.AssignedOfficerId.HasValue)
+                                    {
+                                        <span class="assignment-indicator pending"></span>
+                                        <span>غير مسندة لموظف</span>
+                                    }
+                                    else if (item.AssignedOfficerId == currentOfficerId)
+                                    {
+                                        <span class="assignment-indicator"></span>
+                                        <span>أنت الموظف المسؤول</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="assignment-indicator collaborator"></span>
+                                        <span>أنت موظف مشارك</span>
+                                        @if (!string.IsNullOrWhiteSpace(item.AssignedOfficerEmail))
+                                        {
+                                            <span>
+                                                المسؤول:
+                                                <bdi>@item.AssignedOfficerEmail</bdi>
+                                            </span>
+                                        }
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="case-action">
+                                @if (CanClaim(item))
+                                {
+                                    <button type="button"
+                                            class="dashboard-button primary"
+                                            disabled="@isBusy"
+                                            @onclick="() => ClaimCaseAsync(item.Id)">
+                                        @(claimingCaseId == item.Id
+                                            ? "جارٍ الاستلام..."
+                                            : "استلام البلاغ")
+                                    </button>
+                                }
+                                else if (CanOpenDetails(item))
+                                {
+                                    <a class="dashboard-button secondary"
+                                       href="@($"/officer/cases/{item.Id:D}")">
+                                        فتح القضية
+                                    </a>
+                                }
+                            </div>
+                        </article>
+                    }
+                </div>
+
+                <nav class="pagination-bar" aria-label="صفحات القضايا">
+                    <button type="button"
+                            class="dashboard-button secondary"
+                            disabled="@(displayedPage <= 1)"
+                            @onclick="() => SetPage(displayedPage - 1)">
+                        السابق
+                    </button>
+
+                    <span role="status" aria-live="polite">
+                        الصفحة @displayedPage من @pageCount
+                    </span>
+
+                    <button type="button"
+                            class="dashboard-button secondary"
+                            disabled="@(displayedPage >= pageCount)"
+                            @onclick="() => SetPage(displayedPage + 1)">
+                        التالي
+                    </button>
+                </nav>
+            }
+        </section>
+    }
+</main>
+
+@code {
+    private const int PageSize = 10;
+
+    private List<CyberCase>? cases;
+    private Guid currentOfficerId;
+    private string currentOfficerEmail = string.Empty;
+
+    private bool isBusy;
+    private Guid? claimingCaseId;
+
+    private string errorMessage = string.Empty;
+    private string actionMessage = string.Empty;
+
+    private string searchText = string.Empty;
+    private string assignmentFilter = "all";
+    private string statusFilter = string.Empty;
+    private string severityFilter = string.Empty;
+    private string incidentTypeFilter = string.Empty;
+    private string sortOrder = "newest";
+    private int currentPage = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCasesAsync();
+    }
+
+    private async Task LoadCasesAsync()
+    {
+        if (isBusy)
+            return;
+
+        isBusy = true;
+        errorMessage = string.Empty;
+        actionMessage = string.Empty;
+
+        try
+        {
+            var state = await AuthenticationStateProvider
+                .GetAuthenticationStateAsync();
+
+            var user = state.User;
+
+            if (user.Identity?.IsAuthenticated != true ||
+                !user.IsInRole("OFFICER") ||
+                !Guid.TryParse(
+                    user.FindFirstValue(ClaimTypes.NameIdentifier),
+                    out currentOfficerId) ||
+                currentOfficerId == Guid.Empty)
+            {
+                currentOfficerId = Guid.Empty;
+                currentOfficerEmail = string.Empty;
+                cases = [];
+                errorMessage = "تعذر التحقق من حساب الموظف. سجّل الدخول مجددًا.";
+                return;
+            }
+
+            currentOfficerEmail =
+                user.FindFirstValue(ClaimTypes.Email)
+                ?? user.Identity?.Name
+                ?? string.Empty;
+
+            var loadedCases = await CaseService.GetAllForOfficerAsync();
+
+            cases = loadedCases
+                .Where(item => CanClaim(item) || CanOpenDetails(item))
+                .ToList();
+
+            currentPage = 1;
+        }
+        catch
+        {
+            cases = [];
+            errorMessage = "تعذر تحميل القضايا. حاول تحديث القائمة مجددًا.";
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private List<CyberCase> GetFilteredCases()
+    {
+        if (cases is null)
+            return [];
+
+        IEnumerable<CyberCase> result = cases;
+
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            var value = searchText.Trim();
+
+            result = result.Where(item =>
+                item.CaseNumber.Contains(
+                    value, StringComparison.OrdinalIgnoreCase) ||
+                (CanOpenDetails(item) &&
+                 item.Title.Contains(
+                     value, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        result = assignmentFilter switch
+        {
+            "unassigned" => result.Where(CanClaim),
+
+            "mine" => result.Where(item =>
+                item.AssignedOfficerId == currentOfficerId),
+
+            "participating" => result.Where(item =>
+                item.AssignedOfficerId != currentOfficerId &&
+                CanOpenDetails(item)),
+
+            _ => result
+        };
+
+        if (Enum.TryParse<CaseStatus>(statusFilter, out var selectedStatus))
+            result = result.Where(item => item.Status == selectedStatus);
+
+        if (Enum.TryParse<SeverityLevel>(severityFilter, out var selectedSeverity))
+            result = result.Where(item => item.SeverityLevel == selectedSeverity);
+
+        if (!string.IsNullOrWhiteSpace(incidentTypeFilter))
+            result = result.Where(item => item.IncidentType == incidentTypeFilter);
+
+        return sortOrder == "oldest"
+            ? result.OrderBy(item => item.CreatedAtUtc)
+                .ThenBy(item => item.Id).ToList()
+            : result.OrderByDescending(item => item.CreatedAtUtc)
+                .ThenBy(item => item.Id).ToList();
+    }
+
+    private bool CanOpenDetails(CyberCase item) =>
+        currentOfficerId != Guid.Empty &&
+        item.Path == CasePath.FormalReport &&
+        (item.AssignedOfficerId == currentOfficerId ||
+         item.Collaborators.Any(collaborator =>
+             collaborator.CyberCaseId == item.Id &&
+             collaborator.OfficerId == currentOfficerId &&
+             collaborator.IsActive));
+
+    private bool CanClaim(CyberCase item) =>
+        currentOfficerId != Guid.Empty &&
+        item.Path == CasePath.FormalReport &&
+        !item.AssignedOfficerId.HasValue &&
+        item.Status is CaseStatus.New or CaseStatus.UnderReview;
+
+    private static bool IsOpen(CyberCase item) =>
+        item.Status is not (CaseStatus.Resolved or CaseStatus.Closed);
+
+    private async Task ClaimCaseAsync(Guid caseId)
+    {
+        if (isBusy ||
+            caseId == Guid.Empty ||
+            cases?.Any(item => item.Id == caseId && CanClaim(item)) != true)
+            return;
+
+        isBusy = true;
+        claimingCaseId = caseId;
+        errorMessage = string.Empty;
+        actionMessage = string.Empty;
+
+        var claimed = false;
+        var refresh = false;
+
+        try
+        {
+            var state = await AuthenticationStateProvider
+                .GetAuthenticationStateAsync();
+
+            var user = state.User;
+
+            if (user.Identity?.IsAuthenticated != true ||
+                !user.IsInRole("OFFICER") ||
+                !Guid.TryParse(
+                    user.FindFirstValue(ClaimTypes.NameIdentifier),
+                    out var actorId) ||
+                actorId != currentOfficerId)
+            {
+                cases = [];
+                errorMessage = "تغيّرت جلسة الحساب. سجّل الدخول مجددًا قبل استلام البلاغ.";
+                return;
+            }
+
+            claimed = await CaseService.AssignToOfficerAsync(
+                caseId,
+                currentOfficerId,
+                currentOfficerEmail);
+
+            refresh = !claimed;
+        }
+        catch
+        {
+            errorMessage =
+                "تعذر تأكيد استلام البلاغ. حدّث القائمة للتحقق من حالته قبل المحاولة مجددًا.";
+        }
+        finally
+        {
+            claimingCaseId = null;
+            isBusy = false;
+        }
+
+        if (claimed)
+        {
+            NavigationManager.NavigateTo($"/officer/cases/{caseId:D}");
+        }
+        else if (refresh)
+        {
+            await LoadCasesAsync();
+
+            actionMessage =
+                "لم يُستلم البلاغ؛ ربما استلمه موظف آخر أو تغيّرت صلاحية الوصول. تم تحديث القائمة.";
+        }
+    }
+
+    private void ResetPage() => currentPage = 1;
+
+    private void SetPage(int page) => currentPage = Math.Max(1, page);
+
+    private void ResetFilters()
+    {
+        searchText = string.Empty;
+        assignmentFilter = "all";
+        statusFilter = string.Empty;
+        severityFilter = string.Empty;
+        incidentTypeFilter = string.Empty;
+        sortOrder = "newest";
+        currentPage = 1;
+    }
+
+    private static string GetSeverityClass(SeverityLevel severity) =>
+        severity switch
+        {
+            SeverityLevel.Low => "case-badge severity-low",
+            SeverityLevel.Medium => "case-badge severity-medium",
+            SeverityLevel.High => "case-badge severity-high",
+            SeverityLevel.Critical => "case-badge severity-critical",
+            _ => "case-badge status-badge"
+        };
+
+    private static string GetIncidentTypeText(string incidentType) =>
+        incidentType switch
+        {
+            "Blackmail" => "ابتزاز إلكتروني",
+            "Fraud" => "احتيال مالي",
+            "AccountHacking" => "اختراق حساب",
+            "IdentityTheft" => "انتحال شخصية",
+            "Threat" => "تهديد إلكتروني",
+            _ => "أخرى"
+        };
+
+    private static string GetSeverityText(SeverityLevel severity) =>
+        severity switch
+        {
+            SeverityLevel.Low => "منخفضة",
+            SeverityLevel.Medium => "متوسطة",
+            SeverityLevel.High => "مرتفعة",
+            SeverityLevel.Critical => "حرجة",
+            _ => "غير محددة"
+        };
+
+    private static string GetStatusText(CaseStatus status) =>
+        status switch
+        {
+            CaseStatus.New => "جديدة",
+            CaseStatus.UnderReview => "قيد المراجعة",
+            CaseStatus.Assigned => "تم تعيين موظف",
+            CaseStatus.InProgress => "قيد المعالجة",
+            CaseStatus.Resolved => "تم حلها",
+            CaseStatus.Closed => "مغلقة",
+            _ => "غير محددة"
+        };
+}

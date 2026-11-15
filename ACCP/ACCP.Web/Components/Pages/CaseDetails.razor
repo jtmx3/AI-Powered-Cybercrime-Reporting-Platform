@@ -1,0 +1,1214 @@
+@page "/cases/{Id:guid}"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "USER")]
+@rendermode InteractiveServer
+@using System.Security.Claims
+@using ACCP.Application.Cases
+@using ACCP.Application.EvidenceManagement
+@using ACCP.Domain.Entities
+@using ACCP.Domain.Enums
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@inject ICaseService CaseService
+@inject IEvidenceService EvidenceService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+<PageTitle>@DetailsTitle | ACCP</PageTitle>
+<main dir="rtl" class="case-details">
+    @if (isLoading)
+    {
+        <div class="details-loading" role="status"><span class="spinner-border text-primary" aria-hidden="true"></span><h1>جارٍ تحميل تفاصيل الطلب</h1><p>نجهّز المعلومات المتاحة لحسابك.</p></div>
+    }
+    else if (!string.IsNullOrWhiteSpace(pageErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">@pageErrorMessage</div>
+        <a href="/cases" class="btn btn-secondary">العودة إلى القضايا</a>
+    }
+    else if (cyberCase is null)
+    {
+        <div class="alert alert-warning">
+            لم يتم العثور على القضية المطلوبة، أو أنك لا تمتلك صلاحية الوصول إليها.
+        </div>
+        <a href="/cases" class="btn btn-secondary">العودة إلى القضايا</a>
+    }
+    else
+    {
+        <header class="details-header">
+            <div>
+                <a href="/cases" class="back-link"><span aria-hidden="true">→</span> طلباتي وبلاغاتي</a>
+                <span class="details-kicker">@DetailsTitle</span>
+                <h1>@cyberCase.Title</h1>
+                <div class="details-reference"><span>رقم الطلب / البلاغ</span><bdi>@cyberCase.CaseNumber</bdi></div>
+            </div>
+            <a href="#case-attachments" class="btn btn-outline-primary">عرض المرفقات <span class="attachment-count">@cyberCase.EvidenceItems.Count</span></a>
+        </header>
+        <section class="details-summary" aria-label="ملخص الطلب أو البلاغ">
+            <div class="summary-item"><span>الحالة الحالية</span><strong class="summary-state">@(IsFormalReport ? GetStatusText(cyberCase.Status) : "محفوظ")</strong></div>
+            <div class="summary-item"><span>نوع الحادثة</span><strong>@GetIncidentTypeText(cyberCase.IncidentType)</strong></div>
+            <div class="summary-item"><span>تاريخ الإنشاء</span><strong class="summary-date">@cyberCase.CreatedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</strong></div>
+            <div class="summary-item"><span>المرفقات المرتبطة</span><strong>@cyberCase.EvidenceItems.Count <small>@(IsFormalReport ? "دليل" : "مرفق")</small></strong></div>
+        </section>
+        <nav class="section-navigation" aria-label="أقسام تفاصيل الطلب">
+            <a href="#case-overview">تفاصيل المشكلة</a>
+            @if (IsFormalReport)
+            {
+                <a href="#case-privacy">خصوصية الهوية</a>
+                <a href="#case-conversation">المحادثة مع الموظف</a>
+            }
+            <a href="#case-upload">رفع مرفق</a>
+            <a href="#case-attachments">المرفقات والنسخ</a>
+        </nav>
+        @if (!string.IsNullOrWhiteSpace(actionSuccessMessage))
+        {
+            <div class="alert alert-success">@actionSuccessMessage</div>
+        }
+        @if (!string.IsNullOrWhiteSpace(actionErrorMessage))
+        {
+            <div class="alert alert-danger">@actionErrorMessage</div>
+        }
+        @if (!IsFormalReport)
+        {
+            <div class="alert alert-info">
+                هذا طلب خاص محفوظ في حسابك، ولا يظهر في قائمة البلاغات لدى الموظفين.
+                يمكنك إضافة المرفقات أو تحديثها هنا، ولا تُتاح مرفقاته للموظفين أو المدير.
+            </div>
+        }
+        <div id="case-overview" class="details-overview">
+            <section class="card details-panel description-panel">
+                <div class="card-header"><h2>وصف المشكلة</h2><span class="section-subtitle">التفاصيل المسجّلة في الطلب أو البلاغ</span></div>
+                <div class="card-body"><div class="incident-description" dir="auto">@cyberCase.Description</div></div>
+            </section>
+            <section class="card details-panel metadata-panel">
+                <div class="card-header"><h2>معلومات المتابعة</h2></div>
+                <div class="card-body">
+                    <dl class="case-metadata">
+                        <div><dt>المسار</dt><dd>@PathText</dd></div>
+                        <div><dt>مستوى الخطورة المسجّل</dt><dd>@GetSeverityText(cyberCase.SeverityLevel)</dd></div>
+                        @if (IsFormalReport)
+                        {
+                            <div><dt>متابعة الموظف</dt><dd>@(cyberCase.AssignedOfficerId.HasValue ? "تم تعيين موظف" : "بانتظار تعيين موظف")</dd></div>
+                            <div><dt>مشاركة الهوية</dt><dd>@(cyberCase.IsReporterIdentityDisclosed ? "وافقت على المشاركة" : "لم تتم مشاركة الهوية")</dd></div>
+                        }
+                    </dl>
+                </div>
+            </section>
+        </div>
+        @if (IsFormalReport)
+        {
+        <section id="case-privacy" class="card details-panel privacy-panel mb-4">
+            <div class="card-header"><h2>خصوصية هويتك</h2><span class="section-subtitle">قرار مشاركة الاسم والبريد الإلكتروني</span></div>
+            <div class="card-body">
+                @if (cyberCase.IsReporterIdentityDisclosed)
+                {
+                    <div class="alert alert-warning mb-0">
+                        لقد وافقت على مشاركة اسمك وبريدك الإلكتروني مع الموظف
+                        المسؤول عن القضية.
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-success">
+                        هويتك مخفية حاليًا. يظهر حسابك للموظف باسم
+                        <strong>مشتكي مجهول</strong> ولا يظهر اسمك أو بريدك الإلكتروني.
+                    </div>
+                    <div class="form-check mb-3">
+                        <input id="identityConsent"
+                               class="form-check-input"
+                               type="checkbox"
+                               @bind="identityConsentConfirmed" />
+                        <label class="form-check-label" for="identityConsent">
+                            أفهم أن تحديد هذا الخيار ثم الضغط على زر الإفصاح
+                            سيُظهر اسمي وبريدي الإلكتروني للموظف المسؤول،
+                            وأوافق على ذلك بإرادتي.
+                        </label>
+                    </div>
+                    <div class="alert alert-danger">
+                        تنبيه: بعد الإفصاح قد يكون الموظف قد شاهد بياناتك،
+                        لذلك لا يمكن اعتبار التراجع لاحقًا مسحًا لما تمت مشاهدته.
+                    </div>
+                    <button type="button"
+                            class="btn btn-warning"
+                            disabled="@(!identityConsentConfirmed || isDisclosingIdentity)"
+                            @onclick="DiscloseIdentity">
+                        @(isDisclosingIdentity
+                            ? "جارٍ تنفيذ الإفصاح..."
+                            : "الإفصاح عن هويتي للموظف")
+                    </button>
+                }
+            </div>
+        </section>
+        <section id="case-conversation" class="card details-panel conversation-panel mb-4">
+            <div class="card-header"><h2>المحادثة مع الموظف</h2><span class="section-subtitle">الرسائل المرتبطة بهذا البلاغ</span></div>
+            <div class="card-body">
+                @if (!cyberCase.AssignedOfficerId.HasValue)
+                {
+                    <div class="alert alert-info mb-0">
+                        لم يتم تعيين موظف للقضية بعد. ستتاح المحادثة بعد استلام موظف للقضية.
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-secondary">
+                        رسائلك تظهر للموظف باسم <strong>مشتكي مجهول</strong>،
+                        حتى لو اخترت مشاركة بيانات هويتك في القسم السابق.
+                    </div>
+                    <div class="case-message-list" role="region" aria-label="سجل الرسائل مع الموظف" tabindex="0">
+                        @if (cyberCase.Messages.Count == 0)
+                        {
+                            <div class="text-muted text-center">
+                                لا توجد رسائل حتى الآن.
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (CaseMessage message in cyberCase.Messages)
+                            {
+                                bool sentByUser =
+                                    message.SenderType == MessageSenderType.User;
+                                <div class="message-row @(sentByUser ? "message-outgoing" : "message-incoming")">
+                                    <div class="message-bubble">
+                                        <div class="message-text" dir="auto">@message.Content</div>
+                                        <div class="message-meta">
+                                            @(sentByUser ? "أنت" : "الموظف المختص")
+                                            —
+                                            @(message.CreatedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm"))
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                    <label class="form-label" for="reporter-message">رسالتك إلى الموظف</label>
+                    <textarea id="reporter-message" class="form-control mb-2" aria-describedby="reporter-message-count"
+                              rows="3"
+                              maxlength="4000"
+                              placeholder="اكتب رسالتك إلى الموظف..."
+                              disabled="@isSendingMessage"
+                              @bind="messageContent"
+                              @bind:event="oninput"></textarea>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small id="reporter-message-count" class="text-muted">
+                            @messageContent.Length من 4000 حرف
+                        </small>
+                        <button type="button"
+                                class="btn btn-primary"
+                                disabled="@(isSendingMessage || string.IsNullOrWhiteSpace(messageContent))"
+                                @onclick="SendReporterMessage">
+                            @(isSendingMessage ? "جارٍ الإرسال..." : "إرسال الرسالة")
+                        </button>
+                    </div>
+                }
+            </div>
+        </section>
+        }
+        <section id="case-upload" class="card details-panel upload-panel mb-4">
+            <div class="card-header"><h2>@(IsFormalReport ? "رفع دليل إلكتروني" : "رفع مرفق للطلب المحفوظ")</h2><span class="section-subtitle">صور PNG وJPG أو مستند PDF، حتى 10 ميجابايت</span></div>
+            <div class="card-body">
+                @if (!string.IsNullOrWhiteSpace(uploadSuccessMessage))
+                {
+                    <div class="alert alert-success">@uploadSuccessMessage</div>
+                }
+                @if (!string.IsNullOrWhiteSpace(uploadErrorMessage))
+                {
+                    <div class="alert alert-danger">@uploadErrorMessage</div>
+                }
+                <div class="mb-3">
+                    <label class="form-label" for="case-evidence-file">اختر الملف</label>
+                    <InputFile id="case-evidence-file" disabled="@isUploading" @key="inputFileKey"
+                               class="form-control"
+                               accept=".png,.jpg,.jpeg,.pdf"
+                               OnChange="OnFileSelected" />
+                    <div class="form-text">
+                        الأنواع المسموحة: صور أو ملف PDF. الحد الأعلى: 10 ميجابايت.
+                    </div>
+                </div>
+                @if (selectedFile is not null)
+                {
+                    <div class="alert alert-info">
+                        <div><strong>اسم الملف:</strong> @selectedFile.Name</div>
+                        <div><strong>الحجم:</strong> @FormatFileSize(selectedFile.Size)</div>
+                    </div>
+                }
+                @if (IsFormalReport)
+                {
+                <div class="form-check mb-3">
+                    <input id="restrictedEvidence"
+                           type="checkbox"
+                           class="form-check-input"
+                           disabled="@isUploading" @bind="isRestricted" />
+                    <label for="restrictedEvidence" class="form-check-label">
+                        هذا الدليل حساس ومقيد
+                    </label>
+                </div>
+                }
+                <button type="button"
+                        class="btn btn-primary"
+                        disabled="@(selectedFile is null || isUploading)"
+                        @onclick="UploadEvidence">
+                    @(isUploading ? "جارٍ الرفع..." : IsFormalReport ? "رفع الدليل" : "رفع المرفق")
+                </button>
+            </div>
+        </section>
+<section id="case-attachments" class="card details-panel evidence-panel">
+    <div class="card-header bg-white py-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="mb-1">@(IsFormalReport ? "الأدلة الإلكترونية" : "مرفقات الطلب المحفوظ")</h2>
+                <small class="text-muted">
+                    عرض وإدارة المرفقات المرتبطة بهذا الطلب.
+                </small>
+            </div>
+            <span class="badge bg-primary">
+                @cyberCase.EvidenceItems.Count @(IsFormalReport ? "دليل" : "مرفق")
+            </span>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (cyberCase.EvidenceItems.Count == 0)
+        {
+            <div class="alert alert-light border mb-0 text-center">
+                لا توجد مرفقات مرفوعة لهذا الطلب حاليًا.
+            </div>
+        }
+        else
+        {
+            <div class="row g-4">
+                @foreach (Evidence evidence in cyberCase.EvidenceItems)
+                {
+                    EvidenceRevision? currentRevision =
+                        evidence.Revisions
+                            .OrderByDescending(revision =>
+                                revision.VersionNumber)
+                            .FirstOrDefault();
+                    string currentFileName =
+                        currentRevision?.OriginalFileName
+                        ?? evidence.OriginalFileName;
+                    long currentFileSize =
+                        currentRevision?.FileSizeBytes
+                        ?? evidence.FileSizeBytes;
+                    EvidenceType currentFileType =
+                        currentRevision?.Type
+                        ?? evidence.Type;
+                    string currentHash =
+                        currentRevision?.Sha256Hash
+                        ?? evidence.Sha256Hash;
+                    DateTime currentDateUtc =
+                        currentRevision?.CreatedAtUtc
+                        ?? evidence.UploadedAtUtc;
+                    int currentVersionNumber =
+                        currentRevision?.VersionNumber
+                        ?? 1;
+                    string currentViewUrl =
+                        currentRevision is null
+                            ? $"/evidence/{evidence.Id}/view"
+                            : $"/evidence-revisions/{currentRevision.Id}/view";
+                    <div class="col-12">
+                        <article class="card evidence-item">
+                            <div class="card-header bg-light">
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                    <div class="text-break">
+                                        <strong>@currentFileName</strong>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <span class="badge bg-secondary">
+                                            النسخة الحالية:
+                                            @currentVersionNumber
+                                        </span>
+                                        @if (!IsFormalReport)
+                                        {
+                                            <span class="badge bg-secondary">مرفق طلب محفوظ</span>
+                                        }
+                                        else if (evidence.IsRestricted)
+                                        {
+                                            <span class="badge bg-danger">
+                                                دليل مقيّد
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">
+                                                دليل عادي
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-3 col-sm-6">
+                                        <div class="text-muted small">
+                                            نوع الملف
+                                        </div>
+                                        <div class="fw-semibold">
+                                            @GetEvidenceTypeText(currentFileType)
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-sm-6">
+                                        <div class="text-muted small">
+                                            حجم الملف
+                                        </div>
+                                        <div class="fw-semibold">
+                                            @FormatFileSize(currentFileSize)
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-sm-6">
+                                        <div class="text-muted small">
+                                            @(currentRevision is null
+                                                ? "تاريخ الرفع"
+                                                : "آخر تحديث")
+                                        </div>
+                                        <div class="fw-semibold">
+                                            @(currentDateUtc
+                                                .ToLocalTime()
+                                                .ToString("yyyy-MM-dd HH:mm"))
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-sm-6">
+                                        <div class="text-muted small">
+                                            البصمة الرقمية
+                                        </div>
+                                        <code title="@currentHash">
+                                            @GetShortHash(currentHash)
+                                        </code>
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    <a class="btn btn-primary"
+                                       href="@currentViewUrl"
+                                       target="_blank"
+                                       rel="noopener noreferrer">
+                                        عرض الملف الحالي
+                                    </a>
+                                    @if (revisionEvidenceId != evidence.Id &&
+                                         pendingRevisionEvidenceId != evidence.Id)
+                                    {
+                                        <button type="button"
+                                                class="btn btn-outline-warning"
+                                                disabled="@isUploadingRevision"
+                                                @onclick="@(() => BeginEvidenceRevision(evidence.Id))">
+                                            تعديل أو استبدال
+                                        </button>
+                                    }
+                                </div>
+                                <div class="border-top pt-3">
+                                    @if (!IsFormalReport)
+                                    {
+                                        <div class="alert alert-info mb-0">
+                                            هذا المرفق مرتبط بطلب محفوظ، ولا يُتاح للموظفين أو المدير.
+                                        </div>
+                                    }
+                                    else if (!evidence.IsRestricted)
+                                    {
+                                        <div class="alert alert-success mb-0">
+                                            هذا الدليل متاح للموظف المسؤول.
+                                        </div>
+                                    }
+                                    else if (evidence.IsDisclosedToOfficer)
+                                    {
+                                        <div class="alert alert-warning mb-0">
+                                            <strong>
+                                                تمت الموافقة على عرض الدليل للموظف.
+                                            </strong>
+                                            @if (evidence.DisclosedToOfficerAtUtc.HasValue)
+                                            {
+                                                <div class="small mt-1">
+                                                    وقت الموافقة:
+                                                    @(evidence
+                                                        .DisclosedToOfficerAtUtc
+                                                        .Value
+                                                        .ToLocalTime()
+                                                        .ToString("yyyy-MM-dd HH:mm"))
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else if (pendingEvidenceDisclosureId ==
+                                             evidence.Id)
+                                    {
+                                        <div class="alert alert-danger">
+                                            <strong>تحذير مهم:</strong>
+                                            <div class="mt-2">
+                                                عند الموافقة سيصبح الدليل الحالي
+                                                متاحًا للموظف المسؤول عن القضية.
+                                            </div>
+                                            <div class="mt-2">
+                                                لا توافق إذا كان الملف يحتوي
+                                                معلومات لا ترغب بمشاركتها.
+                                            </div>
+                                        </div>
+                                        <div class="form-check mb-3">
+                                            <input id="@($"evidenceConsent-{evidence.Id}")"
+                                                   type="checkbox"
+                                                   class="form-check-input"
+                                                   @bind="evidenceDisclosureConsentConfirmed" />
+                                            <label class="form-check-label"
+                                                   for="@($"evidenceConsent-{evidence.Id}")">
+                                                قرأت التحذير وأوافق على
+                                                عرض هذا الدليل للموظف المسؤول.
+                                            </label>
+                                        </div>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <button type="button"
+                                                    class="btn btn-danger"
+                                                    disabled="@(!evidenceDisclosureConsentConfirmed || isDisclosingEvidence)"
+                                                    @onclick="@(() => ConfirmEvidenceDisclosure(evidence.Id))">
+                                                @(isDisclosingEvidence
+                                                    ? "جارٍ تنفيذ الموافقة..."
+                                                    : "تأكيد الموافقة")
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-outline-secondary"
+                                                    disabled="@isDisclosingEvidence"
+                                                    @onclick="CancelEvidenceDisclosure">
+                                                إلغاء
+                                            </button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                            <span class="text-muted">
+                                                هذا الدليل غير ظاهر للموظف حاليًا.
+                                            </span>
+                                            <button type="button"
+                                                    class="btn btn-outline-danger"
+                                                    disabled="@isDisclosingEvidence"
+                                                    @onclick="@(() => BeginEvidenceDisclosure(evidence.Id))">
+                                                السماح للموظف بالعرض
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                                @if (pendingRevisionEvidenceId == evidence.Id)
+                                {
+                                    <div class="alert alert-warning border-warning mt-4">
+                                        <h3 class="alert-heading">
+                                            تنبيه قبل تعديل الدليل
+                                        </h3>
+                                        @if (IsFormalReport)
+                                        {
+                                            <p class="mb-3">
+                                                الدليل الذي رفعته أول مرة والنسخ السابقة
+                                                سيبقى محفوظًا، وسيتمكن الموظف المخوّل
+                                                بالقضية ومدير النظام من الوصول إليه
+                                                ورؤيته لأغراض التحقيق والتدقيق.
+                                            </p>
+                                        }
+                                        else
+                                        {
+                                            <p class="mb-3">
+                                                ستبقى النسخة الأصلية والنسخ السابقة محفوظة.
+                                                رفع نسخة جديدة لا يشارك المرفق مع الموظفين أو المدير.
+                                            </p>
+                                        }
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <button type="button"
+                                                    class="btn btn-warning"
+                                                    disabled="@isUploadingRevision"
+                                                    @onclick="@(() => ConfirmEvidenceRevisionWarning(evidence.Id))">
+                                                فهمت، متابعة التعديل
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-outline-secondary"
+                                                    disabled="@isUploadingRevision"
+                                                    @onclick="CancelEvidenceRevisionWarning">
+                                                إلغاء
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                                @if (revisionEvidenceId == evidence.Id)
+                                {
+                                    <div class="border rounded bg-light p-3 mt-4">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h3 class="mb-0">
+                                                تعديل أو استبدال الدليل
+                                            </h3>
+                                            <button type="button"
+                                                    class="btn-close"
+                                                    disabled="@isUploadingRevision"
+                                                    aria-label="إغلاق"
+                                                    @onclick="CancelEvidenceRevision">
+                                            </button>
+                                        </div>
+                                        <div class="alert alert-info">
+                                            يجب كتابة سبب واضح للتغيير.
+                                            سيتم تسجيل سبب التغيير وتوقيته
+                                            ضمن سجل القضية.
+                                        </div>
+                                        @if (IsFormalReport)
+                                        {
+                                            <div class="alert alert-warning border-warning">
+                                                لقد أكدت اطلاعك على تنبيه الاحتفاظ
+                                                بالنسخة الأصلية وإمكانية وصول الموظف
+                                                المخوّل ومدير النظام إليها.
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="alert alert-info">
+                                                تُحفظ النسخ ضمن الطلب المحفوظ، ولا تُتاح للموظفين أو المدير.
+                                            </div>
+                                        }
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label" for="@($"revision-type-{evidence.Id}")">
+                                                    نوع التغيير
+                                                </label>
+                                                <select id="@($"revision-type-{evidence.Id}")" class="form-select" disabled="@isUploadingRevision"
+                                                        @bind="revisionChangeType">
+                                                    <option value="@EvidenceChangeType.ModifiedVersion">
+                                                        نسخة معدّلة
+                                                    </option>
+                                                    <option value="@EvidenceChangeType.Replacement">
+                                                        استبدال بملف آخر
+                                                    </option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label" for="@($"revision-file-{evidence.Id}")">
+                                                    اختر الملف الجديد
+                                                </label>
+                                                <InputFile id="@($"revision-file-{evidence.Id}")" disabled="@isUploadingRevision" @key="revisionInputFileKey"
+                                                           class="form-control"
+                                                           accept=".png,.jpg,.jpeg,.pdf"
+                                                           OnChange="OnRevisionFileSelected" />
+                                            </div>
+                                            @if (revisionFile is not null)
+                                            {
+                                                <div class="col-12">
+                                                    <div class="alert alert-light border mb-0">
+                                                        <strong>الملف المختار:</strong>
+                                                        @revisionFile.Name
+                                                        —
+                                                        @FormatFileSize(revisionFile.Size)
+                                                    </div>
+                                                </div>
+                                            }
+                                            <div class="col-12">
+                                                <label class="form-label" for="@($"revision-reason-{evidence.Id}")">
+                                                    سبب التغيير
+                                                </label>
+                                                <textarea id="@($"revision-reason-{evidence.Id}")" class="form-control" disabled="@isUploadingRevision"
+                                                          rows="4"
+                                                          maxlength="1000"
+                                                          placeholder="اكتب سبب تعديل أو استبدال الدليل..."
+                                                          @bind="revisionReason"
+                                                          @bind:event="oninput">
+                                                </textarea>
+                                                <div class="d-flex justify-content-between mt-1">
+                                                    <small class="text-muted">
+                                                        الحد الأدنى 10 أحرف.
+                                                    </small>
+                                                    <small class="text-muted">
+                                                        @revisionReason.Length / 1000
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <div class="col-12">
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    <button type="button"
+                                                            class="btn btn-primary"
+                                                            disabled="@(isUploadingRevision ||
+                                                                        revisionFile is null ||
+                                                                        revisionReason.Trim().Length < 10 ||
+                                                                        (IsFormalReport && !revisionAccessAcknowledged))"
+                                                            @onclick="UploadEvidenceRevision">
+                                                        @(isUploadingRevision
+                                                            ? "جارٍ حفظ التغيير..."
+                                                            : "حفظ التغيير")
+                                                    </button>
+                                                    <button type="button"
+                                                            class="btn btn-outline-secondary"
+                                                            disabled="@isUploadingRevision"
+                                                            @onclick="CancelEvidenceRevision">
+                                                        إلغاء
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </article>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</section>
+    }
+</main>
+@code {
+    private const long MaximumFileSize = 10 * 1024 * 1024;
+    [Parameter]
+    public Guid Id { get; set; }
+    private CyberCase? cyberCase;
+    private bool IsFormalReport => cyberCase?.Path == CasePath.FormalReport;
+    private string DetailsTitle => cyberCase?.Path switch
+    {
+        CasePath.Assistance => "تفاصيل طلب المساعدة",
+        CasePath.FormalReport => "تفاصيل البلاغ الرسمي",
+        _ => "تفاصيل الطلب"
+    };
+    private string PathText => cyberCase?.Path switch
+    {
+        CasePath.Assistance => "طلب مساعدة",
+        CasePath.FormalReport => "بلاغ رسمي",
+        _ => "غير محدد"
+    };
+    private IBrowserFile? selectedFile;
+    private Guid reporterId;
+    private string reporterEmail = string.Empty;
+    private string messageContent = string.Empty;
+    private bool identityConsentConfirmed;
+    private bool isRestricted;
+    private int inputFileKey;
+    private bool isLoading = true;
+    private bool isUploading;
+    private bool isSendingMessage;
+    private bool isDisclosingIdentity;
+    private Guid? pendingEvidenceDisclosureId;
+private bool evidenceDisclosureConsentConfirmed;
+private bool isDisclosingEvidence;
+private Guid? pendingRevisionEvidenceId;
+private Guid? revisionEvidenceId;
+private IBrowserFile? revisionFile;
+private EvidenceChangeType revisionChangeType =
+    EvidenceChangeType.ModifiedVersion;
+private string revisionReason =
+    string.Empty;
+private bool revisionAccessAcknowledged;
+private int revisionInputFileKey;
+private bool isUploadingRevision;
+    private string pageErrorMessage = string.Empty;
+    private string uploadSuccessMessage = string.Empty;
+    private string uploadErrorMessage = string.Empty;
+    private string actionSuccessMessage = string.Empty;
+    private string actionErrorMessage = string.Empty;
+    protected override async Task OnParametersSetAsync()
+    {
+        if (cyberCase?.Id != Id)
+        {
+            CancelEvidenceDisclosure();
+            CancelEvidenceRevision();
+            identityConsentConfirmed = false;
+            messageContent = string.Empty;
+            selectedFile = null;
+            isRestricted = false;
+            inputFileKey++;
+            actionSuccessMessage = string.Empty;
+            actionErrorMessage = string.Empty;
+            uploadSuccessMessage = string.Empty;
+            uploadErrorMessage = string.Empty;
+        }
+        await LoadCurrentUser();
+        await LoadCase();
+    }
+    private async Task LoadCurrentUser()
+    {
+        AuthenticationState authenticationState =
+            await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        ClaimsPrincipal user = authenticationState.User;
+        string? userIdValue =
+            user.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdValue, out reporterId))
+        {
+            reporterId = Guid.Empty;
+            pageErrorMessage =
+                "تعذر التعرف على حساب المستخدم. يرجى تسجيل الدخول مجددًا.";
+            return;
+        }
+        reporterEmail =
+            user.FindFirstValue(ClaimTypes.Email)
+            ?? user.Identity?.Name
+            ?? "anonymous@local";
+    }
+    private async Task LoadCase()
+    {
+        isLoading = true;
+        try
+        {
+            if (reporterId == Guid.Empty)
+            {
+                cyberCase = null;
+                return;
+            }
+            cyberCase = await CaseService.GetByIdForReporterAsync(
+                Id,
+                reporterId);
+        }
+        catch
+        {
+            cyberCase = null;
+            pageErrorMessage = "حدث خطأ أثناء تحميل القضية.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+    private async Task SendReporterMessage()
+    {
+        if (!IsFormalReport ||
+            cyberCase is null ||
+            string.IsNullOrWhiteSpace(messageContent))
+        {
+            return;
+        }
+        try
+        {
+            isSendingMessage = true;
+            actionSuccessMessage = string.Empty;
+            actionErrorMessage = string.Empty;
+            CaseMessage? message =
+                await CaseService.SendMessageByReporterAsync(
+                    cyberCase.Id,
+                    messageContent,
+                    reporterId,
+                    reporterEmail);
+            if (message is null)
+            {
+                actionErrorMessage = "تعذر إرسال الرسالة.";
+                return;
+            }
+            messageContent = string.Empty;
+            await LoadCase();
+            actionSuccessMessage = "تم إرسال الرسالة بنجاح.";
+        }
+        catch
+        {
+            actionErrorMessage = "حدث خطأ أثناء إرسال الرسالة.";
+        }
+        finally
+        {
+            isSendingMessage = false;
+        }
+    }
+    private async Task DiscloseIdentity()
+    {
+        if (!IsFormalReport || !identityConsentConfirmed || cyberCase is null)
+        {
+            return;
+        }
+        try
+        {
+            isDisclosingIdentity = true;
+            actionSuccessMessage = string.Empty;
+            actionErrorMessage = string.Empty;
+            bool disclosed =
+                await CaseService.DiscloseReporterIdentityAsync(
+                    cyberCase.Id,
+                    reporterId);
+            if (!disclosed)
+            {
+                actionErrorMessage = "تعذر تنفيذ الإفصاح عن الهوية.";
+                return;
+            }
+            identityConsentConfirmed = false;
+            await LoadCase();
+            actionSuccessMessage =
+                "تمت مشاركة اسمك وبريدك مع الموظف المسؤول بعد موافقتك.";
+        }
+        catch
+        {
+            actionErrorMessage = "حدث خطأ أثناء تنفيذ الإفصاح.";
+        }
+        finally
+        {
+            isDisclosingIdentity = false;
+        }
+    }
+private void BeginEvidenceDisclosure(
+    Guid evidenceId)
+{
+    if (!IsFormalReport)
+    {
+        return;
+    }
+    pendingEvidenceDisclosureId =
+        evidenceId;
+    evidenceDisclosureConsentConfirmed =
+        false;
+    actionSuccessMessage =
+        string.Empty;
+    actionErrorMessage =
+        string.Empty;
+}
+private void CancelEvidenceDisclosure()
+{
+    pendingEvidenceDisclosureId =
+        null;
+    evidenceDisclosureConsentConfirmed =
+        false;
+}
+private async Task ConfirmEvidenceDisclosure(
+    Guid evidenceId)
+{
+    if (!IsFormalReport ||
+        !evidenceDisclosureConsentConfirmed ||
+        pendingEvidenceDisclosureId != evidenceId ||
+        cyberCase is null ||
+        reporterId == Guid.Empty)
+    {
+        return;
+    }
+    try
+    {
+        isDisclosingEvidence = true;
+        actionSuccessMessage =
+            string.Empty;
+        actionErrorMessage =
+            string.Empty;
+        bool disclosed =
+            await EvidenceService
+                .DiscloseToOfficerAsync(
+                    evidenceId,
+                    reporterId);
+        if (!disclosed)
+        {
+            actionErrorMessage =
+                "تعذر تنفيذ الموافقة. تأكد أن الدليل يخص قضيتك.";
+            return;
+        }
+        pendingEvidenceDisclosureId =
+            null;
+        evidenceDisclosureConsentConfirmed =
+            false;
+        await LoadCase();
+        actionSuccessMessage =
+            "تمت الموافقة، وأصبح الدليل متاحًا للموظف المسؤول.";
+    }
+    catch
+    {
+        actionErrorMessage =
+            "حدث خطأ أثناء تنفيذ موافقة مشاركة الدليل.";
+    }
+    finally
+    {
+        isDisclosingEvidence = false;
+    }
+}
+private void BeginEvidenceRevision(
+    Guid evidenceId)
+{
+    pendingRevisionEvidenceId =
+        evidenceId;
+    revisionEvidenceId =
+        null;
+    revisionFile =
+        null;
+    revisionChangeType =
+        EvidenceChangeType.ModifiedVersion;
+    revisionReason =
+        string.Empty;
+    revisionAccessAcknowledged =
+        false;
+    revisionInputFileKey++;
+    actionSuccessMessage =
+        string.Empty;
+    actionErrorMessage =
+        string.Empty;
+}
+private void ConfirmEvidenceRevisionWarning(
+    Guid evidenceId)
+{
+    if (pendingRevisionEvidenceId != evidenceId)
+    {
+        return;
+    }
+    pendingRevisionEvidenceId =
+        null;
+    revisionEvidenceId =
+        evidenceId;
+    revisionFile =
+        null;
+    revisionChangeType =
+        EvidenceChangeType.ModifiedVersion;
+    revisionReason =
+        string.Empty;
+    revisionAccessAcknowledged =
+        IsFormalReport;
+    revisionInputFileKey++;
+    actionSuccessMessage =
+        string.Empty;
+    actionErrorMessage =
+        string.Empty;
+}
+private void CancelEvidenceRevisionWarning()
+{
+    pendingRevisionEvidenceId =
+        null;
+    revisionAccessAcknowledged =
+        false;
+}
+private void CancelEvidenceRevision()
+{
+    pendingRevisionEvidenceId =
+        null;
+    revisionEvidenceId =
+        null;
+    revisionFile =
+        null;
+    revisionReason =
+        string.Empty;
+    revisionAccessAcknowledged =
+        false;
+    revisionChangeType =
+        EvidenceChangeType.ModifiedVersion;
+    revisionInputFileKey++;
+}
+private void OnRevisionFileSelected(
+    InputFileChangeEventArgs eventArgs)
+{
+    revisionFile =
+        eventArgs.File;
+    actionSuccessMessage =
+        string.Empty;
+    actionErrorMessage =
+        string.Empty;
+}
+private async Task UploadEvidenceRevision()
+{
+    if (!revisionEvidenceId.HasValue ||
+        revisionFile is null ||
+        cyberCase is null ||
+        reporterId == Guid.Empty)
+    {
+        return;
+    }
+    string cleanReason =
+        revisionReason.Trim();
+    if (IsFormalReport && !revisionAccessAcknowledged)
+    {
+        actionErrorMessage =
+            "يجب قراءة تنبيه الخصوصية والموافقة عليه قبل تعديل الدليل.";
+        return;
+    }
+    if (cleanReason.Length < 10)
+    {
+        actionErrorMessage =
+            "يجب كتابة سبب واضح للتغيير لا يقل عن 10 أحرف.";
+        return;
+    }
+    bool evidenceBelongsToCase =
+        cyberCase.EvidenceItems.Any(evidence =>
+            evidence.Id ==
+                revisionEvidenceId.Value);
+    if (!evidenceBelongsToCase)
+    {
+        actionErrorMessage =
+            "الدليل المحدد لا يخص هذه القضية.";
+        return;
+    }
+    try
+    {
+        isUploadingRevision = true;
+        actionSuccessMessage =
+            string.Empty;
+        actionErrorMessage =
+            string.Empty;
+        await using Stream fileStream =
+            revisionFile.OpenReadStream(
+                MaximumFileSize);
+        var request =
+            new EvidenceRevisionUploadRequest
+            {
+                EvidenceId =
+                    revisionEvidenceId.Value,
+                OriginalFileName =
+                    revisionFile.Name,
+                FileSizeBytes =
+                    revisionFile.Size,
+                Content =
+                    fileStream,
+                ChangeType =
+                    revisionChangeType,
+                ChangeReason =
+                    cleanReason,
+                IsOriginalEvidenceAccessAcknowledged =
+                    IsFormalReport && revisionAccessAcknowledged
+            };
+        EvidenceRevision savedRevision =
+            await EvidenceService
+                .UploadRevisionAsync(
+                    request,
+                    reporterId);
+        CancelEvidenceRevision();
+        await LoadCase();
+        actionSuccessMessage =
+            $"تم حفظ النسخة رقم {savedRevision.VersionNumber} " +
+            "بنجاح مع تسجيل سبب التغيير وتوقيته.";
+    }
+    catch (InvalidOperationException exception)
+    {
+        actionErrorMessage =
+            exception.Message;
+    }
+    catch (UnauthorizedAccessException exception)
+    {
+        actionErrorMessage =
+            exception.Message;
+    }
+    catch (IOException)
+    {
+        actionErrorMessage =
+            "تعذر حفظ الملف الجديد. يرجى المحاولة مرة أخرى.";
+    }
+    catch
+    {
+        actionErrorMessage =
+            "حدث خطأ غير متوقع أثناء حفظ نسخة الدليل.";
+    }
+    finally
+    {
+        isUploadingRevision = false;
+    }
+}
+    private void OnFileSelected(InputFileChangeEventArgs eventArgs)
+    {
+        selectedFile = eventArgs.File;
+        uploadSuccessMessage = string.Empty;
+        uploadErrorMessage = string.Empty;
+    }
+    private async Task UploadEvidence()
+    {
+        if (selectedFile is null ||
+            cyberCase is null ||
+            reporterId == Guid.Empty)
+        {
+            return;
+        }
+        try
+        {
+            isUploading = true;
+            uploadSuccessMessage = string.Empty;
+            uploadErrorMessage = string.Empty;
+            CyberCase? authorizedCase =
+                await CaseService.GetByIdForReporterAsync(
+                    cyberCase.Id,
+                    reporterId);
+            if (authorizedCase is null)
+            {
+                uploadErrorMessage =
+                    "لا تمتلك صلاحية رفع دليل لهذه القضية.";
+                return;
+            }
+            await using Stream fileStream =
+                selectedFile.OpenReadStream(MaximumFileSize);
+            var request = new EvidenceUploadRequest
+            {
+                CyberCaseId = authorizedCase.Id,
+                OriginalFileName = selectedFile.Name,
+                ContentType = selectedFile.ContentType,
+                FileSizeBytes = selectedFile.Size,
+                Content = fileStream,
+                IsRestricted = IsFormalReport ? isRestricted : true
+            };
+            await EvidenceService.UploadAsync(request, reporterId);
+            uploadSuccessMessage =
+                IsFormalReport
+                    ? "تم رفع الدليل وحساب بصمته الرقمية بنجاح."
+                    : "تم رفع المرفق إلى طلب المساعدة بنجاح.";
+            selectedFile = null;
+            isRestricted = false;
+            inputFileKey++;
+            await LoadCase();
+        }
+        catch (InvalidOperationException exception)
+        {
+            uploadErrorMessage = exception.Message;
+        }
+        catch (IOException)
+        {
+            uploadErrorMessage = "تعذر حفظ الملف. يرجى المحاولة مرة أخرى.";
+        }
+        catch
+        {
+            uploadErrorMessage = "حدث خطأ غير متوقع أثناء رفع الدليل.";
+        }
+        finally
+        {
+            isUploading = false;
+        }
+    }
+    private static string FormatFileSize(long fileSizeBytes)
+    {
+        if (fileSizeBytes < 1024)
+        {
+            return $"{fileSizeBytes} بايت";
+        }
+        if (fileSizeBytes < 1024 * 1024)
+        {
+            return $"{fileSizeBytes / 1024.0:F1} كيلوبايت";
+        }
+        return $"{fileSizeBytes / 1024.0 / 1024.0:F1} ميجابايت";
+    }
+    private static string GetShortHash(string hash)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            return "غير متوفر";
+        }
+        return hash.Length <= 16 ? hash : $"{hash[..16]}...";
+    }
+        private static string GetEvidenceChangeTypeText(
+        EvidenceChangeType changeType)
+    {
+        return changeType switch
+        {
+            EvidenceChangeType.ModifiedVersion =>
+                "نسخة معدّلة",
+            EvidenceChangeType.Replacement =>
+                "استبدال الدليل",
+            _ =>
+                "تغيير غير محدد"
+        };
+    }
+private static string GetEvidenceTypeText(EvidenceType evidenceType)
+    {
+        return evidenceType switch
+        {
+            EvidenceType.Image => "صورة",
+            EvidenceType.Video => "فيديو",
+            EvidenceType.Audio => "تسجيل صوتي",
+            EvidenceType.Document => "مستند",
+            EvidenceType.Screenshot => "لقطة شاشة",
+            _ => "أخرى"
+        };
+    }
+    private static string GetIncidentTypeText(string incidentType)
+    {
+        return incidentType switch
+        {
+            "Blackmail" => "ابتزاز إلكتروني",
+            "Fraud" => "احتيال مالي",
+            "AccountHacking" => "اختراق حساب",
+            "IdentityTheft" => "انتحال شخصية",
+            "Threat" => "تهديد إلكتروني",
+            _ => "أخرى"
+        };
+    }
+    private static string GetSeverityText(SeverityLevel severityLevel)
+    {
+        return severityLevel switch
+        {
+            SeverityLevel.Low => "منخفضة",
+            SeverityLevel.Medium => "متوسطة",
+            SeverityLevel.High => "مرتفعة",
+            SeverityLevel.Critical => "حرجة",
+            _ => "غير محددة"
+        };
+    }
+    private static string GetStatusText(CaseStatus status)
+    {
+        return status switch
+        {
+            CaseStatus.New => "جديدة",
+            CaseStatus.UnderReview => "قيد المراجعة",
+            CaseStatus.Assigned => "تم تعيين موظف",
+            CaseStatus.InProgress => "قيد المعالجة",
+            CaseStatus.Resolved => "تم حلها",
+            CaseStatus.Closed => "مغلقة",
+            _ => "غير محددة"
+        };
+    }
+}

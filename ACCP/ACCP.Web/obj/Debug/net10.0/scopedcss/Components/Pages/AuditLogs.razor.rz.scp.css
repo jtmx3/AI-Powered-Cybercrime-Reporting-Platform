@@ -1,0 +1,385 @@
+/* صفحة سجل التدقيق */
+.container-fluid[b-rcj3l55jzy] {
+    max-width: 1500px;
+    margin: 0 auto !important;
+    padding: 32px 12px 48px !important;
+    color: #19324d;
+}
+
+/* رأس الصفحة */
+.container-fluid > .d-flex:first-child[b-rcj3l55jzy] {
+    gap: 20px !important;
+    margin-bottom: 26px !important;
+}
+
+.container-fluid h1[b-rcj3l55jzy] {
+    margin: 0 0 12px !important;
+    font-size: clamp(1.6rem, 3vw, 2rem);
+    font-weight: 750;
+    line-height: 1.5;
+}
+
+.container-fluid > .d-flex:first-child p[b-rcj3l55jzy] {
+    color: #687e95 !important;
+    font-size: .87rem;
+    line-height: 1.9;
+}
+
+/* البطاقات */
+.container-fluid .card[b-rcj3l55jzy] {
+    min-width: 0;
+    border: 1px solid #dce6ef !important;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: none !important;
+}
+
+.container-fluid .card-body[b-rcj3l55jzy] {
+    min-width: 0;
+    padding: 24px;
+}
+
+/* نموذج البحث */
+.container-fluid .form-label[b-rcj3l55jzy] {
+    display: block;
+    margin-bottom: 9px;
+    color: #29455f;
+    font-size: .81rem;
+    font-weight: 650;
+}
+
+.container-fluid .form-control[b-rcj3l55jzy],
+.container-fluid .form-select[b-rcj3l55jzy] {
+    min-height: 45px;
+    padding: 11px 12px;
+    border: 1px solid #cbd9e6;
+    border-radius: 9px;
+    background-color: #fff;
+    color: #19324d;
+    font: inherit;
+    font-size: .84rem;
+}
+
+.container-fluid .form-control[b-rcj3l55jzy]::placeholder {
+    color: #8293a5;
+    font-size: .78rem;
+}
+
+.container-fluid .form-control:focus[b-rcj3l55jzy],
+.container-fluid .form-select:focus[b-rcj3l55jzy] {
+    border-color: #176d65;
+    outline: 0;
+    box-shadow: 0 0 0 3px #e2f1ed;
+}
+
+/* إحصائيات نتائج البحث */
+.container-fluid > .row[b-rcj3l55jzy] {
+    margin-bottom: 24px !important;
+}
+
+.container-fluid > .row .card-body[b-rcj3l55jzy] {
+    padding: 23px;
+}
+
+.container-fluid > .row .small[b-rcj3l55jzy] {
+    color: #60778e !important;
+    font-size: .82rem;
+    line-height: 1.8;
+}
+
+.container-fluid > .row .fs-3[b-rcj3l55jzy] {
+    margin-top: 13px;
+    color: #19324d;
+    font-size: 1.95rem !important;
+    line-height: 1.2;
+}
+
+.container-fluid .text-success[b-rcj3l55jzy] {
+    color: #176d65 !important;
+}
+
+.container-fluid .text-danger[b-rcj3l55jzy] {
+    color: #ad4652 !important;
+}
+
+.container-fluid .text-muted[b-rcj3l55jzy] {
+    color: #6b8095 !important;
+}
+
+/* جدول التدقيق */
+.container-fluid > .card:last-child[b-rcj3l55jzy] {
+    overflow: hidden;
+}
+
+.container-fluid .card-body.p-0[b-rcj3l55jzy] {
+    padding: 0 !important;
+}
+
+.container-fluid .table-responsive[b-rcj3l55jzy] {
+    border-radius: 13px;
+    scrollbar-width: thin;
+    scrollbar-color: #bdcddb #f5f8fb;
+}
+
+.container-fluid .table[b-rcj3l55jzy] {
+    min-width: 1120px;
+    margin-bottom: 0;
+    border-color: #e6edf3;
+    color: #29455f;
+    font-size: .81rem;
+}
+
+.container-fluid .table th[b-rcj3l55jzy] {
+    padding: 17px 16px;
+    background-color: #f4f7fb;
+    color: #566e86;
+    font-size: .77rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.container-fluid .table td[b-rcj3l55jzy] {
+    padding: 18px 16px;
+    vertical-align: top;
+    line-height: 1.9;
+    overflow-wrap: anywhere;
+}
+
+.container-fluid .table tbody tr:last-child td[b-rcj3l55jzy] {
+    border-bottom: 0;
+}
+
+.container-fluid .table-hover tbody tr:hover > td[b-rcj3l55jzy] {
+    --bs-table-accent-bg: #f5f9fc;
+    --bs-table-hover-bg: #f5f9fc;
+    --bs-table-hover-color: #29455f;
+}
+
+.container-fluid .table td:first-child[b-rcj3l55jzy] {
+    min-width: 165px;
+    color: #657b91;
+    direction: ltr;
+    text-align: right;
+    unicode-bidi: isolate;
+    font-size: .76rem;
+}
+
+.container-fluid .table td:nth-child(3)[b-rcj3l55jzy] {
+    min-width: 140px;
+}
+
+.container-fluid .table td:nth-child(4)[b-rcj3l55jzy] {
+    min-width: 180px;
+    max-width: 260px;
+}
+
+.container-fluid .table td:nth-child(4) > div[b-rcj3l55jzy] {
+    overflow-wrap: anywhere;
+    unicode-bidi: plaintext;
+}
+
+.container-fluid .table td:nth-child(4) > small[b-rcj3l55jzy] {
+    display: block;
+    margin-top: 6px;
+    font-size: .72rem;
+}
+
+.container-fluid .table td:nth-child(5)[b-rcj3l55jzy] {
+    min-width: 135px;
+}
+
+.container-fluid .table td:nth-child(6)[b-rcj3l55jzy] {
+    max-width: 420px;
+}
+
+.container-fluid .table td:nth-child(7)[b-rcj3l55jzy] {
+    min-width: 120px;
+}
+
+.container-fluid .fw-semibold[b-rcj3l55jzy] {
+    color: #29455f;
+    font-weight: 650 !important;
+}
+
+.container-fluid .table .small[b-rcj3l55jzy] {
+    font-size: .73rem;
+    line-height: 1.9;
+}
+
+/* المعرّفات */
+.container-fluid code[b-rcj3l55jzy] {
+    display: inline-block;
+    max-width: 100%;
+    margin-top: 5px;
+    padding: 3px 8px;
+    border: 1px solid #e1e8f0;
+    border-radius: 6px;
+    background-color: #f3f6fa;
+    color: #5d7389;
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-size: .73rem;
+    overflow-wrap: anywhere;
+}
+
+/* نتيجة العملية */
+.container-fluid .badge[b-rcj3l55jzy] {
+    padding: 6px 11px;
+    border-radius: 7px;
+    font-size: .72rem;
+    font-weight: 700;
+    line-height: 1.6;
+}
+
+.container-fluid .badge.bg-success[b-rcj3l55jzy] {
+    color: #21694e !important;
+    background-color: #e9f6ee !important;
+}
+
+.container-fluid .badge.bg-danger[b-rcj3l55jzy] {
+    color: #a2424c !important;
+    background-color: #fcecef !important;
+}
+
+/* الأزرار */
+.container-fluid .btn[b-rcj3l55jzy] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 43px;
+    padding: 10px 15px;
+    border-radius: 9px;
+    font-size: .81rem;
+    font-weight: 650;
+    line-height: 1.6;
+    text-decoration: none;
+}
+
+.container-fluid .btn-primary[b-rcj3l55jzy] {
+    color: #fff;
+    background-color: #176d65;
+    border-color: #176d65;
+}
+
+.container-fluid .btn-primary:hover:not(:disabled)[b-rcj3l55jzy] {
+    color: #fff;
+    background-color: #11564f;
+    border-color: #11564f;
+}
+
+.container-fluid .btn-outline-primary[b-rcj3l55jzy] {
+    color: #176d65;
+    background-color: #fff;
+    border-color: #c5ddd5;
+}
+
+.container-fluid .btn-outline-primary:hover[b-rcj3l55jzy] {
+    color: #11564f;
+    background-color: #edf7f2;
+    border-color: #176d65;
+}
+
+.container-fluid .btn-outline-secondary[b-rcj3l55jzy] {
+    color: #516d85;
+    background-color: #fff;
+    border-color: #cfdae5;
+}
+
+.container-fluid .btn-outline-secondary:hover:not(:disabled)[b-rcj3l55jzy] {
+    color: #29455f;
+    background-color: #f2f6fa;
+    border-color: #aebfd0;
+}
+
+.container-fluid .btn-sm[b-rcj3l55jzy] {
+    min-height: 36px;
+    padding: 7px 11px;
+    font-size: .73rem;
+    white-space: nowrap;
+}
+
+.container-fluid .btn:disabled[b-rcj3l55jzy] {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.container-fluid .btn:focus-visible[b-rcj3l55jzy] {
+    outline: 3px solid #8cc9bc;
+    outline-offset: 3px;
+    box-shadow: none;
+}
+
+/* التنبيهات */
+.container-fluid .alert[b-rcj3l55jzy] {
+    padding: 16px 19px;
+    border: 1px solid;
+    border-radius: 10px;
+    font-size: .84rem;
+    line-height: 1.95;
+}
+
+.container-fluid .alert-danger[b-rcj3l55jzy] {
+    color: #993b46;
+    background-color: #fff0f2;
+    border-color: #edcbd1;
+}
+
+.container-fluid .alert-info[b-rcj3l55jzy] {
+    color: #315f7e;
+    background-color: #eef6fc;
+    border-color: #d5e5f1;
+}
+
+.container-fluid .alert-secondary[b-rcj3l55jzy] {
+    color: #596f85;
+    background-color: #f2f6fa;
+    border-color: #dce6ef;
+}
+
+/* الجوال */
+@media (max-width: 640px) {
+    .container-fluid[b-rcj3l55jzy] {
+        padding: 20px 0 32px !important;
+    }
+
+    .container-fluid > .d-flex:first-child[b-rcj3l55jzy] {
+        align-items: flex-start !important;
+        flex-direction: column;
+        gap: 16px !important;
+    }
+
+    .container-fluid > .d-flex:first-child > button[b-rcj3l55jzy] {
+        width: 100%;
+    }
+
+    .container-fluid .card-body[b-rcj3l55jzy] {
+        padding: 18px;
+    }
+
+    .container-fluid > .row .card-body[b-rcj3l55jzy] {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+        padding: 18px;
+    }
+
+    .container-fluid > .row .fs-3[b-rcj3l55jzy] {
+        margin-top: 0;
+        font-size: 1.65rem !important;
+    }
+
+    .container-fluid .table th[b-rcj3l55jzy],
+    .container-fluid .table td[b-rcj3l55jzy] {
+        padding: 14px 12px;
+    }
+
+    .container-fluid .btn[b-rcj3l55jzy] {
+        min-height: 44px;
+    }
+
+    .container-fluid .table .btn-sm[b-rcj3l55jzy] {
+        min-height: 38px;
+    }
+}

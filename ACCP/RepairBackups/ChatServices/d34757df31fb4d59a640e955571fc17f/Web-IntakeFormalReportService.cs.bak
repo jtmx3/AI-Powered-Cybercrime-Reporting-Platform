@@ -1,0 +1,367 @@
+using System;
+using System.Data;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using ACCP.Application.Chat;
+using ACCP.Domain.Entities;
+using ACCP.Domain.Enums;
+using ACCP.Infrastructure.Data;
+using ACCP.Infrastructure.Identity;
+using ACCP.Web.Security;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace ACCP.Web.Services.Chat;
+
+public sealed class IntakeFormalReportService : IIntakeFormalReportService
+{
+    private readonly IServiceScopeFactory _scopes;
+    private readonly CaseAuthorizationService _authorization;
+
+    public IntakeFormalReportService(
+        IServiceScopeFactory scopes,
+        CaseAuthorizationService authorization)
+    {
+        _scopes = scopes;
+        _authorization = authorization;
+    }
+
+    public async Task<IntakeFormalReportInfo> SubmitAsync(
+        Guid conversationId,
+        Guid assessmentId,
+        bool consent,
+        CancellationToken cancellationToken = default)
+    {
+        if (!consent)
+        {
+            throw new InvalidOperationException(
+                "يجب الموافقة صراحة على تقديم البلاغ.");
+        }
+
+        if (conversationId == Guid.Empty ||
+            assessmentId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "معرّف المحادثة أو التقييم غير صالح.");
+        }
+
+        var caseId = Guid.NewGuid();
+
+        var caseNumber =
+            $"ACCP-{DateTime.UtcNow:yyyyMMdd}-{caseId:N}";
+
+        for (var attempt = 0; ; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
+            {
+                await using var scope = _scopes.CreateAsyncScope();
+
+                var db = scope.ServiceProvider
+                    .GetRequiredService<AccpDbContext>();
+
+                return await db.Database
+                    .CreateExecutionStrategy()
+                    .ExecuteAsync(async () =>
+                    {
+                        await using var transaction =
+                            await db.Database.BeginTransactionAsync(
+                                IsolationLevel.Serializable,
+                                cancellationToken);
+
+                        db.ChangeTracker.Clear();
+
+                        var reporter = await RequireReporterAsync(
+                            db,
+                            cancellationToken);
+
+                        var conversation = await db.IntakeConversations
+                            .SingleOrDefaultAsync(
+                                x => x.Id == conversationId &&
+                                     x.ReporterId == reporter.Id,
+                                cancellationToken);
+
+                        if (conversation is null)
+                            throw NoAccess();
+
+                        var result = await SubmitCoreAsync(
+                            db,
+                            conversation,
+                            reporter,
+                            assessmentId,
+                            caseId,
+                            caseNumber,
+                            cancellationToken);
+
+                        await transaction.CommitAsync(
+                            cancellationToken);
+
+                        return result;
+                    });
+            }
+            catch (Exception exception) when (
+                attempt < 2 &&
+                IsRetryableConflict(exception))
+            {
+                await Task.Delay(
+                    TimeSpan.FromMilliseconds(
+                        40 * (attempt + 1)),
+                    cancellationToken);
+            }
+        }
+    }
+
+    private static async Task<IntakeFormalReportInfo> SubmitCoreAsync(
+        AccpDbContext db,
+        IntakeConversation conversation,
+        ApplicationUser reporter,
+        Guid assessmentId,
+        Guid caseId,
+        string caseNumber,
+        CancellationToken ct)
+    {
+        if (conversation.CyberCaseId is { } existingCaseId)
+        {
+            if (conversation.FormalReportAssessmentId != assessmentId ||
+                conversation.FormalReportConsentAtUtc is null)
+            {
+                throw new InvalidOperationException(
+                    "هذه المحادثة مرتبطة ببلاغ مقدم بتقييم آخر.");
+            }
+
+            var existing = await db.CyberCases
+                .AsNoTracking()
+                .SingleOrDefaultAsync(
+                    x => x.Id == existingCaseId &&
+                         x.ReporterId == reporter.Id &&
+                         x.Path == CasePath.FormalReport,
+                    ct);
+
+            if (existing is null)
+            {
+                throw new InvalidOperationException(
+                    "تعذر التحقق من البلاغ المرتبط بالمحادثة.");
+            }
+
+            return ToInfo(conversation, existing, true);
+        }
+
+        if (conversation.Status !=
+                IntakeConversationStatus.AwaitingReportDecision ||
+            conversation.FormalReportAssessmentId is not null ||
+            conversation.FormalReportConsentAtUtc is not null)
+        {
+            throw new InvalidOperationException(
+                "المحادثة غير جاهزة لتقديم بلاغ جديد.");
+        }
+
+        var assessment = await db.IntakeRiskAssessments
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                x => x.Id == assessmentId &&
+                     x.ConversationId == conversation.Id,
+                ct);
+
+        if (assessment is null)
+        {
+            throw new InvalidOperationException(
+                "التقييم المطلوب غير متاح لهذه المحادثة.");
+        }
+
+        var validated = new CaseRiskAssessment(
+            assessment.Title,
+            assessment.Summary,
+            assessment.IncidentType,
+            assessment.RiskPercentage,
+            assessment.RiskExplanation);
+
+        if (!validated.ShouldOfferFormalReport)
+        {
+            throw new InvalidOperationException(
+                "تقديم البلاغ يتطلب درجة خطورة أعلى من 80%.");
+        }
+
+        var lastMessage = await db.IntakeConversationMessages
+            .AsNoTracking()
+            .Where(x => x.ConversationId == conversation.Id)
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefaultAsync(ct);
+
+        var lastReporterMessage = await db.IntakeConversationMessages
+            .AsNoTracking()
+            .Where(x =>
+                x.ConversationId == conversation.Id &&
+                x.Role == IntakeMessageRole.Reporter)
+            .OrderByDescending(x => x.SequenceNumber)
+            .FirstOrDefaultAsync(ct);
+
+        if (lastMessage is null ||
+            lastReporterMessage is null ||
+            lastMessage.Id != assessment.AssistantMessageId ||
+            lastMessage.Role != IntakeMessageRole.Assistant ||
+            lastMessage.AuthorUserId is not null ||
+            lastReporterMessage.AuthorUserId != reporter.Id ||
+            lastReporterMessage.SequenceNumber !=
+                assessment.BasedOnSequenceNumber ||
+            lastMessage.SequenceNumber <=
+                lastReporterMessage.SequenceNumber ||
+            lastMessage.OperationId == Guid.Empty ||
+            lastMessage.OperationId !=
+                lastReporterMessage.OperationId)
+        {
+            throw new InvalidOperationException(
+                "تغيرت المحادثة أو التقييم. " +
+                "حدّث المحادثة وراجع التقييم الأخير قبل التقديم.");
+        }
+
+        var now = DateTime.UtcNow;
+
+        var report = new CyberCase
+        {
+            Id = caseId,
+            CaseNumber = caseNumber,
+            ReporterId = reporter.Id,
+            Title = validated.Title,
+            Description = validated.Summary,
+            IncidentType = validated.IncidentType,
+            SeverityLevel = SeverityLevel.High,
+            Status = CaseStatus.New,
+            Path = CasePath.FormalReport,
+            CreatedAtUtc = now,
+            IsReporterIdentityDisclosed = false
+        };
+
+        db.CyberCases.Add(report);
+
+        conversation.CyberCase = report;
+        conversation.CyberCaseId = report.Id;
+        conversation.FormalReportAssessmentId = assessment.Id;
+        conversation.FormalReportConsentAtUtc = now;
+        conversation.Status =
+            IntakeConversationStatus.AwaitingOfficer;
+        conversation.UpdatedAtUtc = now;
+
+        db.AuditLogs.Add(new AuditLog
+        {
+            Action = AuditAction.CaseCreated,
+            ActorUserId = reporter.Id,
+            ActorEmail = reporter.Email,
+            ActorRole = IdentityRoles.User,
+            CyberCaseId = report.Id,
+            EntityType = nameof(CyberCase),
+            EntityId = report.Id,
+            Description =
+                $"تم إنشاء البلاغ {report.CaseNumber} بموافقة المشتكي اعتمادًا على التقييم {assessment.Id:D}.",
+            CorrelationId = conversation.Id.ToString("D"),
+            IsSuccessful = true,
+            CreatedAtUtc = now
+        });
+
+        db.UserNotifications.Add(new UserNotification
+        {
+            RecipientUserId = reporter.Id,
+            CyberCase = report,
+            CyberCaseId = report.Id,
+            Type = NotificationType.General,
+            Title = "تم تقديم البلاغ",
+            Message =
+                $"تم تسجيل بلاغك رقم {report.CaseNumber} وهو بانتظار متابعة الموظف المختص.",
+            IsRead = false,
+            CreatedAtUtc = now
+        });
+
+        await db.SaveChangesAsync(ct);
+
+        return ToInfo(conversation, report, false);
+    }
+
+    private async Task<ApplicationUser> RequireReporterAsync(
+        AccpDbContext db,
+        CancellationToken ct)
+    {
+        var actor =
+            await _authorization.GetCurrentActorAsync(ct);
+
+        if (actor is null ||
+            !actor.HasRole(IdentityRoles.User))
+        {
+            throw NoAccess();
+        }
+
+        var account = await db.Users
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                x => x.Id == actor.UserId,
+                ct);
+
+        var roles = await db.UserRoles
+            .Where(x => x.UserId == actor.UserId)
+            .Join(
+                db.Roles,
+                x => x.RoleId,
+                x => x.Id,
+                (_, role) => role.Name)
+            .ToListAsync(ct);
+
+        if (account is null ||
+            !account.IsActive ||
+            (account.LockoutEnabled &&
+             account.LockoutEnd > DateTimeOffset.UtcNow) ||
+            roles.Count != 1 ||
+            roles[0] != IdentityRoles.User)
+        {
+            throw NoAccess();
+        }
+
+        var confirmed =
+            await _authorization.GetCurrentActorAsync(ct);
+
+        if (confirmed?.UserId != actor.UserId ||
+            !confirmed.HasRole(IdentityRoles.User))
+        {
+            throw NoAccess();
+        }
+
+        return account;
+    }
+
+    private static IntakeFormalReportInfo ToInfo(
+        IntakeConversation conversation,
+        CyberCase report,
+        bool alreadySubmitted)
+    {
+        return new IntakeFormalReportInfo(
+            conversation.Id,
+            report.Id,
+            report.CaseNumber,
+            conversation.FormalReportAssessmentId!.Value,
+            conversation.FormalReportConsentAtUtc!.Value,
+            alreadySubmitted);
+    }
+
+    private static bool IsRetryableConflict(
+        Exception exception)
+    {
+        return exception is DbUpdateConcurrencyException ||
+               exception is SqlException
+               {
+                   Number: 1205 or 2601 or 2627
+               } ||
+               exception is DbUpdateException
+               {
+                   InnerException: SqlException
+                   {
+                       Number: 1205 or 2601 or 2627
+                   }
+               };
+    }
+
+    private static UnauthorizedAccessException NoAccess()
+    {
+        return new UnauthorizedAccessException(
+            "تعذر الوصول إلى المحادثة.");
+    }
+}

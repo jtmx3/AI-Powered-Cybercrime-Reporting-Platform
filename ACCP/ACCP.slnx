@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="ACCP.Application/ACCP.Application.csproj" />
+  <Project Path="ACCP.Domain/ACCP.Domain.csproj" />
+  <Project Path="ACCP.Infrastructure/ACCP.Infrastructure.csproj" />
+  <Project Path="ACCP.Tests/ACCP.Tests.csproj" />
+  <Project Path="ACCP.Web/ACCP.Web.csproj" />
+</Solution>

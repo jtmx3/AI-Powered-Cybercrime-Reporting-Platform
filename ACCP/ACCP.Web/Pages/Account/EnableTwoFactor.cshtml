@@ -1,0 +1,255 @@
+@page "/account/two-factor"
+@model ACCP.Web.Pages.Account.EnableTwoFactorModel
+
+@{
+    Layout = null;
+    var currentStep = Model.TwoFactorEnabled ? 3 : Model.EnrollmentPending ? 2 : 1;
+}
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer" />
+    <title>حماية الحساب | ACCP</title>
+    <style>
+:root { color-scheme: light; --navy: #20324a; --teal: #146c60; --muted: #617087; --line: #e0e7ef; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: #f4f7fb; color: var(--navy); font-family: "Segoe UI", Tahoma, Arial, sans-serif; line-height: 1.8; }
+button, input { font: inherit; }
+a { color: var(--teal); text-underline-offset: .2em; }
+.page { width: 100%; max-width: 1100px; margin: auto; padding: 28px 24px 48px; }
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 28px; }
+.brand { font-size: 1.25rem; font-weight: 750; letter-spacing: .09em; color: #1b314b; text-decoration: none; }
+.back { display: inline-flex; align-items: center; min-height: 44px; color: #526279; font-size: .8rem; text-decoration: none; }
+.back:hover { color: var(--teal); text-decoration: underline; }
+.layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 0; align-items: stretch; border: 1px solid #dce5ed; border-radius: 1rem; overflow: hidden; background: #fff; box-shadow: 0 12px 40px #13243a06; }
+.intro { grid-column: 2; grid-row: 1; padding: 2.4rem; min-width: 0; background: #13243a; color: #fff; }
+.shield { display: grid; place-items: center; width: 3.4rem; height: 3.4rem; border: 1px solid #8ed4bd4d; border-radius: .9rem; background: #20433f; color: #a0e3c8; margin-bottom: 1.5rem; }
+.shield svg { display: block; width: 32px; height: 32px; max-width: 100%; }
+.eyebrow { font-size: .74rem; font-weight: 600; color: #bde5d5 !important; margin: 0 0 .5rem; }
+h1 { font-size: clamp(1.7rem, 3vw, 2.15rem); line-height: 1.7; margin: 0 0 1rem; color: #fff; }
+.intro p { color: #b9c9da; font-size: .85rem; line-height: 2; }
+.steps { padding: 0; margin: 1.8rem 0; list-style: none; display: grid; gap: 1.1rem; }
+.step { display: flex; align-items: center; gap: .75rem; color: #b9c9da; font-size: .83rem; }
+.step-number { width: 2rem; height: 2rem; flex-shrink: 0; display: grid; place-items: center; border: 1px solid #ffffff33; border-radius: .55rem; font: 600 .76rem/1 "Segoe UI", sans-serif; }
+.step.active { color: #fff; font-weight: 600; }
+.step.active .step-number { background: #d8eee5; color: #123f37; border-color: #d8eee5; }
+.card { grid-column: 1; grid-row: 1; background: #fff; padding: 2.4rem; min-width: 0; }
+.account { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; padding-bottom: 1.15rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--line); font-size: .82rem; }
+.account-email { unicode-bidi: isolate; overflow-wrap: anywhere; color: var(--muted); font-family: "Segoe UI", sans-serif; }
+.status { background: #eaf7f0; border: 1px solid #d0e9dc; color: #276240; border-radius: .5rem; padding: .15rem .6rem; font-size: .7rem; }
+h2 { font-size: 1.25rem; color: #1b314b; line-height: 1.6; margin: 0 0 .85rem; }
+.description { color: var(--muted); font-size: .87rem; line-height: 1.95; margin: 0 0 1.3rem; }
+label { display: block; font-weight: 600; margin-bottom: .5rem; font-size: .85rem; }
+.input { display: block; width: 100%; min-height: 3rem; border: 1px solid #c9d4e0; border-radius: .6rem; padding: .65rem .8rem; background: #fff; color: var(--navy); }
+.input:focus { border-color: #368c7e; outline: 0; box-shadow: 0 0 0 .2rem #146c601c; }
+.code-input { text-align: center; font-size: 1.65rem; letter-spacing: .25em; font-variant-numeric: tabular-nums; }
+.help { color: var(--muted); font-size: .76rem; line-height: 1.9; margin: .65rem 0 1.3rem; }
+.button { display: inline-flex; justify-content: center; align-items: center; gap: .5rem; min-height: 2.8rem; padding: .65rem 1rem; border: 1px solid transparent; border-radius: .6rem; cursor: pointer; text-decoration: none; font-weight: 600; font-size: .86rem; line-height: 1.6; }
+.primary { background: var(--teal); border-color: var(--teal); color: #fff; }
+.primary:hover { background: #10584e; border-color: #10584e; color: #fff; }
+.secondary { background: #fff; color: #526279; border-color: #c9d4e0; }
+.secondary:hover { background: #f4f7fb; }
+.wide { width: 100%; }
+.button:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid #247f73; outline-offset: 3px; }
+.intro a:focus-visible { outline-color: #a0e3c8; }
+.alert { padding: .85rem 1rem; border: 1px solid #f0cbd1; border-radius: .65rem; background: #fff0f1; color: #8e2030; margin-bottom: 1.4rem; font-size: .83rem; }
+.validation-summary-valid { display: none; }
+.alert ul { margin: 0; padding-inline-start: 1.2rem; }
+.instructions { color: var(--muted); padding-inline-start: 1.2rem; margin: 0 0 1.25rem; font-size: .84rem; line-height: 1.95; }
+.instructions li { margin-bottom: .65rem; }
+.key-box { padding: 1.1rem; background: #f5f8fb; border: 1px solid var(--line); border-radius: .7rem; margin-bottom: 1.4rem; }
+.key-box label { font-size: .78rem; }
+.setup-key { text-align: center; font-family: ui-monospace, monospace; font-size: .88rem; letter-spacing: .04em; }
+.key-actions { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; margin-top: .7rem; }
+.key-actions .button { min-height: 2.5rem; font-size: .75rem; padding: .4rem .7rem; }
+.copy-status { color: var(--teal); font-size: .76rem; }
+.cancel-form { text-align: center; margin-top: .9rem; }
+.cancel { border: 0; background: none; color: #617087; text-decoration: underline; font-size: .8rem; }
+.notice { background: #fff8e9; border: 1px solid #eed9a4; color: #77571c; border-radius: .7rem; padding: .9rem; font-size: .82rem; line-height: 1.9; margin: 1.1rem 0; }
+.success-icon { width: 3rem; height: 3rem; display: grid; place-items: center; border-radius: 50%; background: #e6f4ee; color: var(--teal); font-size: 1.5rem; margin-bottom: 1.1rem; }
+.recovery-codes { list-style: none; margin: 1.2rem 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; }
+.recovery-codes li { border: 1px solid var(--line); border-radius: .55rem; background: #f7f9fc; padding: .75rem .5rem; text-align: center; overflow-wrap: anywhere; }
+.recovery-codes code { color: var(--navy); font-family: ui-monospace, monospace; font-size: .92rem; }
+.actions { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: 1.3rem; }
+.privacy { font-size: .75rem; border-top: 1px solid #ffffff26; margin-top: 1.5rem; padding-top: 1.1rem; }
+.privacy p { margin: 0; font-size: .75rem; }
+.no-script { font-size: .76rem; color: var(--muted); }
+@@media (max-width: 800px) {
+    .layout { grid-template-columns: minmax(0, 1fr); }
+    .card { grid-column: 1; grid-row: 1; padding: 1.5rem; }
+    .intro { grid-column: 1; grid-row: 2; padding: 1.5rem; }
+    .shield { width: 3rem; height: 3rem; margin-bottom: 1rem; }
+    h1 { font-size: 1.65rem; }
+    .steps { display: flex; flex-wrap: wrap; gap: .85rem 1.1rem; margin-bottom: 1rem; }
+}
+@@media (max-width: 480px) {
+    .page { padding: 18px 14px 32px; }
+    .topbar { margin-bottom: 1rem; }
+    .card, .intro { padding: 1.25rem; }
+    .actions .button { width: 100%; }
+    .setup-key { font-size: .8rem; letter-spacing: 0; padding-inline: .4rem; }
+    .key-box { padding: .8rem; }
+    .recovery-codes { grid-template-columns: minmax(0, 1fr); }
+}
+    </style>
+</head>
+<body>
+    <main class="page">
+        <nav class="topbar" aria-label="التنقل">
+            <a class="brand" href="/" dir="ltr">ACCP</a>
+            <a class="back" href="@(Model.EnrollmentCompleted ? "/login" : "/")">@(Model.EnrollmentCompleted ? "تسجيل الدخول" : "العودة إلى المنصة")</a>
+        </nav>
+
+        <div class="layout">
+            <aside class="intro" aria-labelledby="page-title">
+                <div class="shield" aria-hidden="true">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3 20 6v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z" />
+                        <path d="m8 12 3 3 5-6" />
+                    </svg>
+                </div>
+                <p class="eyebrow">إعدادات الأمان</p>
+                <h1 id="page-title">خطوة إضافية<br />لحماية حسابك</h1>
+                <p>اربط حسابك بتطبيق مصادقة لتأكيد تسجيل الدخول برمز يتغيّر باستمرار، إلى جانب كلمة المرور.</p>
+                <ol class="steps" aria-label="خطوات التفعيل">
+                    <li class="step @(currentStep >= 1 ? "active" : "")"><span class="step-number">1</span><span>تأكيد الحساب</span></li>
+                    <li class="step @(currentStep >= 2 ? "active" : "")"><span class="step-number">2</span><span>ربط التطبيق</span></li>
+                    <li class="step @(currentStep >= 3 ? "active" : "")"><span class="step-number">3</span><span>إكمال التفعيل</span></li>
+                </ol>
+                <div class="privacy"><p>مفتاح الربط ورمز تطبيق المصادقة خاصان بحسابك. لا تشاركهما مع أي شخص.</p></div>
+            </aside>
+
+            <section class="card" aria-labelledby="section-title">
+                <div class="account">
+                    <strong>حسابك</strong>
+                    <span class="account-email" dir="ltr">@Model.AccountEmail</span>
+                    @if (Model.TwoFactorEnabled) { <span class="status">الحماية مفعّلة</span> }
+                </div>
+                <div asp-validation-summary="All" class="alert" role="alert"></div>
+
+                @if (Model.EnrollmentCompleted)
+                {
+                    <div class="success-icon" aria-hidden="true">✓</div>
+                    <h2 id="section-title">تم تفعيل المصادقة الثنائية</h2>
+                    @if (Model.RecoveryCodes.Count > 0)
+                    {
+                        <p class="description">احفظ رموز الاسترداد التالية في مكان آمن. يمكنك استخدامها للدخول إذا فقدت الوصول إلى تطبيق المصادقة؛ كل رمز يُستخدم مرة واحدة.</p>
+                        <div class="notice"><strong>هذه الرموز تظهر مرة واحدة.</strong> احفظها قبل مغادرة الصفحة أو تحديثها. لا ترسلها في المحادثات أو البلاغات.</div>
+                        <ul class="recovery-codes" id="recovery-codes" dir="ltr" aria-label="رموز الاسترداد">
+                            @foreach (var code in Model.RecoveryCodes) { <li><code>@code</code></li> }
+                        </ul>
+                        <p class="help">تم تسجيل خروجك بعد التفعيل. عند الدخول مجددًا، ستحتاج كلمة المرور ورمز تطبيق المصادقة.</p>
+                        <div class="actions">
+                            <button type="button" class="button secondary" id="download-recovery" hidden>حفظ الرموز في ملف</button>
+                            <a href="/login" class="button primary">حفظت الرموز، تسجيل الدخول</a>
+                        </div>
+                        <p id="download-status" class="copy-status" role="status" aria-live="polite"></p>
+                        <noscript><p class="no-script">انسخ رموز الاسترداد يدويًا واحفظها قبل تسجيل الدخول.</p></noscript>
+                    }
+                    else
+                    {
+                        <p class="description">تم ربط حساب الموظف بتطبيق المصادقة بنجاح. عند كل تسجيل دخول، أدخل كلمة المرور ثم الرمز الحالي من التطبيق.</p>
+                        <p class="help">تم تسجيل خروجك بعد التفعيل. سجّل الدخول مجددًا لإكمال الدخول إلى حسابك.</p>
+                        <a href="/login" class="button primary">تسجيل الدخول</a>
+                    }
+                }
+                else if (Model.TwoFactorEnabled)
+                {
+                    <div class="success-icon" aria-hidden="true">✓</div>
+                    <h2 id="section-title">حسابك محمي بالمصادقة الثنائية</h2>
+                    <p class="description">المصادقة الثنائية مفعّلة بالفعل. استخدم تطبيق المصادقة المرتبط بحسابك عند تسجيل الدخول.</p>
+                    <a href="/" class="button primary">العودة إلى المنصة</a>
+                }
+                else if (Model.EnrollmentPending)
+                {
+                    <h2 id="section-title">اربط تطبيق المصادقة</h2>
+                    <ol class="instructions">
+                        <li>افتح تطبيق مصادقة يدعم الرموز المستندة إلى الوقت، واختر إضافة حساب بإدخال مفتاح الإعداد يدويًا.</li>
+                        <li>اكتب اسمًا للحساب مثل <strong dir="ltr">ACCP</strong>، وأدخل المفتاح أدناه. اختر نوع المفتاح <strong>مستندًا إلى الوقت</strong>.</li>
+                        <li>أدخل الرمز المكوّن من 6 أرقام الذي يظهر في التطبيق لتأكيد الربط.</li>
+                    </ol>
+                    <div class="key-box">
+                        <label for="setup-key">مفتاح الإعداد اليدوي</label>
+                        <input id="setup-key" type="text" class="input setup-key" dir="ltr" readonly
+                               value="@Model.SharedKey" autocomplete="off" spellcheck="false" aria-describedby="key-help" />
+                        <div class="key-actions">
+                            <button type="button" class="button secondary" id="copy-key" hidden>نسخ المفتاح</button>
+                            <span id="copy-status" class="copy-status" role="status" aria-live="polite"></span>
+                        </div>
+                        <p id="key-help" class="help">يمكنك تحديد المفتاح ونسخه يدويًا. لا تشاركه مع أي شخص.</p>
+                    </div>
+                    <form method="post" asp-page="/Account/EnableTwoFactor" asp-page-handler="Confirm" asp-antiforgery="true">
+                        <label for="confirm-code">رمز تطبيق المصادقة</label>
+                        <input id="confirm-code" name="Input.Code" type="text" dir="ltr" class="input code-input"
+                               inputmode="numeric" autocomplete="one-time-code" minlength="6" maxlength="12"
+                               pattern="[0-9 -]{6,12}" required aria-describedby="code-help" />
+                        <p id="code-help" class="help">جلسة الربط صالحة لمدة 5 دقائق من تأكيد كلمة المرور. إذا انتهت، ابدأ التفعيل مجددًا.</p>
+                        <button type="submit" class="button primary wide">تأكيد الرمز وتفعيل الحماية</button>
+                    </form>
+                    <form method="post" asp-page="/Account/EnableTwoFactor" asp-page-handler="Cancel" asp-antiforgery="true" class="cancel-form">
+                        <button type="submit" class="button cancel">إلغاء الربط والبدء مجددًا</button>
+                    </form>
+                }
+                else
+                {
+                    <h2 id="section-title">أكد كلمة مرور حسابك</h2>
+                    <p class="description">قبل إظهار مفتاح ربط التطبيق، أدخل كلمة مرور حسابك الحالية. تكتمل الحماية بعد التحقق من رمز التطبيق.</p>
+                    <form method="post" asp-page="/Account/EnableTwoFactor" asp-page-handler="Begin" asp-antiforgery="true">
+                        <label for="current-password">كلمة المرور الحالية</label>
+                        <input id="current-password" name="Input.Password" type="password" dir="ltr" class="input"
+                               autocomplete="current-password" maxlength="128" required aria-describedby="password-help" />
+                        <p id="password-help" class="help">جهّز تطبيق المصادقة على جهازك، ثم تابع لربط الحساب.</p>
+                        <button type="submit" class="button primary wide">متابعة لربط التطبيق</button>
+                    </form>
+                }
+            </section>
+        </div>
+    </main>
+    <script>
+        (() => {
+            const keyButton = document.getElementById('copy-key');
+            if (keyButton) {
+                keyButton.hidden = false;
+                keyButton.addEventListener('click', async () => {
+                    const field = document.getElementById('setup-key');
+                    const status = document.getElementById('copy-status');
+                    try {
+                        await navigator.clipboard.writeText(field.value);
+                        status.textContent = 'تم نسخ المفتاح.';
+                    } catch {
+                        field.focus();
+                        field.select();
+                        status.textContent = 'المفتاح محدد؛ انسخه يدويًا.';
+                    }
+                });
+            }
+            @if (Model.EnrollmentCompleted && Model.RecoveryCodes.Count > 0)
+            {
+            <text>
+            const downloadButton = document.getElementById('download-recovery');
+            if (downloadButton) {
+                downloadButton.hidden = false;
+                downloadButton.addEventListener('click', () => {
+                    const codes = Array.from(document.querySelectorAll('#recovery-codes code'), item => item.textContent.trim());
+                    const text = 'ACCP - Two-factor recovery codes\nKeep private. Each code can be used once.\n\n' + codes.join('\n') + '\n';
+                    const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'ACCP-recovery-codes.txt';
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    document.getElementById('download-status').textContent = 'بدأ تنزيل الملف. تأكد من حفظه في مكان آمن قبل المغادرة.';
+                });
+            }
+            </text>
+            }
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,227 @@
+@namespace ACCP.Web.Components.Pages
+@using System
+@using System.Threading
+@using System.Threading.Tasks
+@using Microsoft.AspNetCore.Components
+@using Microsoft.Extensions.Logging
+@using ACCP.Application.Chat
+@implements IDisposable
+
+@inject IStaffIntakeHistoryService IntakeHistoryService
+@inject ILogger<OfficerIntakeHistory> Logger
+
+<section class="card shadow-sm mb-4"
+         dir="rtl"
+         aria-label="سجل المساعد قبل تقديم البلاغ">
+
+    <div class="card-header d-flex justify-content-between align-items-center gap-2">
+        <span>محادثة المساعد والتقييم المعتمد</span>
+
+        <button type="button"
+                class="btn btn-sm btn-outline-secondary"
+                disabled="@loading"
+                @onclick="Reload">
+            تحديث السجل
+        </button>
+    </div>
+
+    <div class="card-body">
+        @if (loading)
+        {
+            <p class="text-muted mb-0" role="status">
+                جارٍ تحميل سجل المحادثة…
+            </p>
+        }
+        else if (!string.IsNullOrWhiteSpace(error))
+        {
+            <div class="alert alert-warning mb-0" role="alert">
+                @error
+            </div>
+        }
+        else if (history is null)
+        {
+            <p class="text-muted mb-0">
+                لا توجد محادثة استقبال مرتبطة بهذا البلاغ.
+            </p>
+        }
+        else
+        {
+            <div class="alert alert-info">
+                هذا سجل المحادثة حتى رد المساعد الذي وافق عليه
+                المشتكي لتقديم البلاغ.
+                تابع التواصل معه من قسم رسائل القضية الموجود
+                في هذه الصفحة.
+            </div>
+
+            <div class="border rounded p-3 mb-3 bg-light">
+                <h2 class="h6">
+                    التقييم المعتمد عند تقديم البلاغ
+                </h2>
+
+                <p class="mb-2">
+                    <strong>
+                        درجة الخطورة المقدّرة:
+                        @history.Assessment.RiskPercentage.ToString("0.##")%
+                    </strong>
+                </p>
+
+                <p style="white-space: pre-wrap; overflow-wrap: anywhere;">@history.Assessment.RiskExplanation</p>
+
+                <h3 class="h6">
+                    @history.Assessment.Title
+                </h3>
+
+                <p style="white-space: pre-wrap; overflow-wrap: anywhere;">@history.Assessment.Summary</p>
+
+                <small class="text-muted">
+                    وقت الموافقة بالتوقيت العالمي UTC:
+                    @history.ConsentAtUtc.ToString("yyyy-MM-dd HH:mm")
+                </small>
+            </div>
+
+            <div class="intake-transcript"
+                 tabindex="0"
+                 aria-label="رسائل الاستقبال المحفوظة">
+
+                @foreach (var message in history.Messages)
+                {
+                    <article @key="message.SequenceNumber"
+                             class="border rounded p-3 mb-3 @(message.Role == IntakeChatRole.User ? "reporter-entry" : "assistant-entry")">
+
+                        <div class="d-flex justify-content-between gap-2 mb-2">
+                            <strong>
+                                @(message.Role == IntakeChatRole.User
+                                    ? "المشتكي"
+                                    : "المساعد")
+                            </strong>
+
+                            <small class="text-muted">
+                                @message.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC
+                            </small>
+                        </div>
+
+                        <div style="white-space: pre-wrap; overflow-wrap: anywhere;">@message.Content</div>
+                    </article>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+<style>
+    .intake-transcript {
+        max-height: 560px;
+        overflow-y: auto;
+        padding: 4px;
+    }
+
+    .intake-transcript .reporter-entry {
+        background: #f0f7fa;
+    }
+
+    .intake-transcript .assistant-entry {
+        background: #f6f8f6;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public Guid CaseId { get; set; }
+
+    private readonly CancellationTokenSource lifetime = new();
+
+    private CancellationTokenSource? request;
+    private StaffIntakeHistory? history;
+    private Guid? loadedCaseId;
+
+    private bool loading;
+    private bool disposed;
+    private int generation;
+    private string error = string.Empty;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (disposed || loadedCaseId == CaseId)
+            return;
+
+        loadedCaseId = CaseId;
+
+        await LoadHistory();
+    }
+
+    private async Task Reload()
+    {
+        if (!disposed && !loading)
+            await LoadHistory();
+    }
+
+    private async Task LoadHistory()
+    {
+        var version = ++generation;
+        var caseId = CaseId;
+
+        request?.Cancel();
+        request?.Dispose();
+
+        request = CancellationTokenSource.CreateLinkedTokenSource(
+            lifetime.Token);
+
+        var token = request.Token;
+
+        history = null;
+        error = string.Empty;
+        loading = true;
+
+        try
+        {
+            var result =
+                await IntakeHistoryService.GetForCaseAsync(
+                    caseId,
+                    token);
+
+            if (!disposed &&
+                version == generation &&
+                CaseId == caseId)
+            {
+                history = result;
+            }
+        }
+        catch (OperationCanceledException)
+            when (token.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            if (!disposed &&
+                version == generation &&
+                CaseId == caseId)
+            {
+                Logger.LogWarning(
+                    "Staff intake history unavailable. Failure category: {Category}",
+                    exception.GetType().Name);
+
+                error =
+                    "تعذر عرض سجل الاستقبال. تأكد من صلاحيتك الحالية " +
+                    "للقضية ثم أعد المحاولة.";
+            }
+        }
+        finally
+        {
+            if (!disposed && version == generation)
+                loading = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        if (disposed)
+            return;
+
+        disposed = true;
+
+        lifetime.Cancel();
+        request?.Cancel();
+        request?.Dispose();
+        lifetime.Dispose();
+    }
+}

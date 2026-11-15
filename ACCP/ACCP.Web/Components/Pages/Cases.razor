@@ -1,0 +1,327 @@
+﻿@page "/cases"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "USER")]
+@rendermode InteractiveServer
+@implements IDisposable
+
+@using System.Security.Claims
+@using ACCP.Application.Cases
+@using ACCP.Domain.Entities
+@using ACCP.Domain.Enums
+@using Microsoft.AspNetCore.Components.Authorization
+
+@inject ICaseService CaseService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>طلباتي وبلاغاتي | ACCP</PageTitle>
+
+<main class="cases-page" dir="rtl">
+    <header class="cases-header">
+        <div>
+            <span class="section-caption">مساحة المشتكي</span>
+            <h1>طلباتي وبلاغاتي</h1>
+            <p>تابع الحالة الحالية للطلبات والبلاغات المرتبطة بحسابك.</p>
+        </div>
+        <div class="header-actions">
+            <button type="button" class="btn btn-outline-secondary" disabled="@isLoading" @onclick="LoadCasesAsync">تحديث القائمة</button>
+            <a href="/cases/new" class="btn btn-primary">محادثة جديدة <span aria-hidden="true">＋</span></a>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert alert-danger" role="alert">@errorMessage</div>
+    }
+    else if (isLoading)
+    {
+        <section class="loading-state" role="status" aria-live="polite">
+            <span class="spinner-border text-primary" aria-hidden="true"></span>
+            <h2>جارٍ تحميل طلباتك وبلاغاتك</h2>
+            <p>نجهّز آخر البيانات المتاحة لحسابك.</p>
+        </section>
+    }
+    else if (cases is not null)
+    {
+        <section class="case-summary" aria-label="ملخص الطلبات والبلاغات المرتبطة بحسابك">
+            <div class="summary-card"><span class="summary-label">إجمالي الطلبات والبلاغات</span><strong>@cases.Count</strong><span class="summary-description">جميع السجلات المرتبطة بحسابك</span></div>
+            <div class="summary-card"><span class="summary-label">قيد المتابعة</span><strong class="summary-active">@cases.Count(IsFollowing)</strong><span class="summary-description">بلاغات رسمية لم تُحل أو تُغلق بعد</span></div>
+            <div class="summary-card"><span class="summary-label">محلولة أو مغلقة</span><strong class="summary-done">@cases.Count(IsFinished)</strong><span class="summary-description">حسب الحالة الحالية للبلاغ</span></div>
+            <div class="summary-card"><span class="summary-label">طلبات خاصة محفوظة</span><strong>@cases.Count(item => item.Path != CasePath.FormalReport)</strong><span class="summary-description">سجلات محفوظة خارج مسار البلاغ الرسمي</span></div>
+        </section>
+
+        @if (cases.Count == 0)
+        {
+            <section class="empty-state" aria-labelledby="empty-heading">
+                <span class="empty-symbol" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8l4 4v14H4V3h4ZM15 3v5h5M8 12h8M8 16h5" /></svg>
+                </span>
+                <h2 id="empty-heading">لا توجد طلبات أو بلاغات بعد</h2>
+                <p>ابدأ محادثة لتوثيق تفاصيل المشكلة. ستظهر هنا الطلبات والبلاغات المرتبطة بحسابك عند إنشائها.</p>
+                <a href="/cases/new" class="btn btn-primary">بدء محادثة جديدة</a>
+                <span class="empty-note">حفظ رسائل المحادثة وحده لا يعني إنشاء بلاغ رسمي.</span>
+            </section>
+        }
+        else
+        {
+            <section class="cases-filters" aria-labelledby="filters-heading">
+                <div class="filters-heading"><h2 id="filters-heading">ابحث في طلباتك وبلاغاتك</h2><button type="button" class="clear-filters" disabled="@(!HasFilters)" @onclick="ClearFilters">مسح التصفية</button></div>
+                <div class="filters-grid">
+                    <div class="search-field">
+                        <label for="case-search" class="form-label">رقم البلاغ أو العنوان</label>
+                        <input id="case-search" type="search" class="form-control" placeholder="اكتب رقم البلاغ أو كلمة من العنوان" maxlength="200" value="@searchText" @oninput="SearchChanged" />
+                    </div>
+                    <div>
+                        <label for="case-status-filter" class="form-label">الحالة</label>
+                        <select id="case-status-filter" class="form-select" value="@statusFilter" @onchange="StatusChanged">
+                            <option value="all">جميع الحالات</option>
+                            <option value="following">قيد المتابعة — جميع المراحل</option>
+                            <option value="new">جديدة</option>
+                            <option value="review">قيد المراجعة</option>
+                            <option value="assigned">تم تعيين موظف</option>
+                            <option value="progress">قيد المعالجة</option>
+                            <option value="resolved">تم حلها</option>
+                            <option value="closed">مغلقة</option>
+                            <option value="saved">طلب خاص محفوظ</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="case-sort" class="form-label">ترتيب النتائج</label>
+                        <select id="case-sort" class="form-select" value="@sortOrder" @onchange="SortChanged">
+                            <option value="newest">الأحدث إنشاءً</option>
+                            <option value="oldest">الأقدم إنشاءً</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <div class="results-heading" role="status" aria-live="polite" aria-atomic="true">
+                <h2>السجلات المرتبطة بحسابك</h2>
+                <span>@filteredCases.Count نتيجة من أصل @cases.Count</span>
+            </div>
+
+            @if (filteredCases.Count == 0)
+            {
+                <section class="empty-state compact-empty">
+                    <h2>لا توجد نتائج مطابقة</h2>
+                    <p>جرّب عنوانًا أو رقمًا مختلفًا، أو أزل تصفية الحالة.</p>
+                    <button type="button" class="btn btn-outline-primary" @onclick="ClearFilters">عرض جميع الطلبات والبلاغات</button>
+                </section>
+            }
+            else
+            {
+                <div class="desktop-case-list table-responsive">
+                    <table class="table align-middle">
+                        <caption class="visually-hidden">طلباتك وبلاغاتك: العنوان والرقم والمسار والحالة وتاريخ الإنشاء ورابط التفاصيل.</caption>
+                        <thead><tr><th scope="col">الطلب / البلاغ</th><th scope="col">المسار</th><th scope="col">الحالة</th><th scope="col">تاريخ الإنشاء</th><th scope="col">الإجراء</th></tr></thead>
+                        <tbody>
+                            @foreach (var item in PageItems)
+                            {
+                                <tr @key="item.Id">
+                                    <td><strong class="case-title">@item.Title</strong><bdi class="case-number">@item.CaseNumber</bdi></td>
+                                    <td><span class="path-label">@PathText(item)</span></td>
+                                    <td><span class="case-status @StatusClass(item)">@StatusText(item)</span></td>
+                                    <td><time class="case-date" datetime="@UtcDate(item.CreatedAtUtc)">@DisplayDate(item.CreatedAtUtc)</time></td>
+                                    <td><a href="@($"/cases/{item.Id:D}")" class="btn btn-sm btn-outline-primary" aria-label="@($"عرض تفاصيل {item.CaseNumber}")">عرض التفاصيل</a></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mobile-case-list">
+                    @foreach (var item in PageItems)
+                    {
+                        <article class="mobile-case" @key="item.Id">
+                            <div class="mobile-case-top"><span class="path-label">@PathText(item)</span><span class="case-status @StatusClass(item)">@StatusText(item)</span></div>
+                            <h3>@item.Title</h3>
+                            <bdi class="case-number">@item.CaseNumber</bdi>
+                            <div class="mobile-case-bottom"><span class="mobile-date"><span>تاريخ الإنشاء</span><time datetime="@UtcDate(item.CreatedAtUtc)">@DisplayDate(item.CreatedAtUtc)</time></span><a href="@($"/cases/{item.Id:D}")" class="btn btn-sm btn-outline-primary" aria-label="@($"عرض تفاصيل {item.CaseNumber}")">عرض التفاصيل</a></div>
+                        </article>
+                    }
+                </div>
+
+                <nav class="cases-pagination" aria-label="التنقل بين صفحات الطلبات والبلاغات">
+                    <span>عرض @FirstItemNumber–@LastItemNumber من @filteredCases.Count</span>
+                    <div class="pagination-controls">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(currentPage <= 1)" @onclick="PreviousPage">السابق</button>
+                        <span class="page-indicator" aria-current="page">@currentPage / @TotalPages</span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(currentPage >= TotalPages)" @onclick="NextPage">التالي</button>
+                    </div>
+                </nav>
+            }
+        }
+    }
+</main>
+
+@code {
+    private const int PageSize = 10;
+    private List<CyberCase>? cases;
+    private List<CyberCase> filteredCases = [];
+    private string errorMessage = string.Empty;
+    private string searchText = string.Empty;
+    private string statusFilter = "all";
+    private string sortOrder = "newest";
+    private int currentPage = 1;
+    private bool isLoading;
+    private bool disposed;
+    private int loadVersion;
+
+    private bool HasFilters => !string.IsNullOrWhiteSpace(searchText) || statusFilter != "all" || sortOrder != "newest";
+    private int TotalPages => Math.Max(1, (filteredCases.Count + PageSize - 1) / PageSize);
+    private int FirstItemNumber => filteredCases.Count == 0 ? 0 : (currentPage - 1) * PageSize + 1;
+    private int LastItemNumber => Math.Min(currentPage * PageSize, filteredCases.Count);
+    private IEnumerable<CyberCase> PageItems => filteredCases.Skip((currentPage - 1) * PageSize).Take(PageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        AuthenticationStateProvider.AuthenticationStateChanged += AuthenticationChanged;
+        await LoadCasesAsync();
+    }
+
+    private async Task LoadCasesAsync()
+    {
+        if (isLoading || disposed) return;
+        int version = ++loadVersion;
+        isLoading = true;
+        errorMessage = string.Empty;
+        cases = null;
+        filteredCases = [];
+        try
+        {
+            var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authenticationState.User;
+            if (disposed || version != loadVersion) return;
+            if (user.Identity?.IsAuthenticated != true || !user.IsInRole("USER") ||
+                !Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var reporterId) ||
+                reporterId == Guid.Empty)
+            {
+                errorMessage = "تعذر التحقق من حسابك. يرجى تسجيل الدخول مجددًا.";
+                return;
+            }
+
+            var loaded = await CaseService.GetAllForReporterAsync(reporterId);
+            if (disposed || version != loadVersion) return;
+            // Fail closed if a service ever returns a record owned by another account.
+            if (loaded.Any(item => item.ReporterId != reporterId))
+                throw new InvalidOperationException("Unexpected reporter scope.");
+            cases = loaded;
+            ApplyFilters();
+        }
+        catch
+        {
+            if (!disposed && version == loadVersion)
+            {
+                cases = null;
+                filteredCases = [];
+                errorMessage = "تعذر تحميل الطلبات والبلاغات. حاول تحديث القائمة.";
+            }
+        }
+        finally
+        {
+            if (!disposed && version == loadVersion) isLoading = false;
+        }
+    }
+
+    private void SearchChanged(ChangeEventArgs args)
+    {
+        searchText = args.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+    }
+    private void StatusChanged(ChangeEventArgs args)
+    {
+        statusFilter = args.Value?.ToString() ?? "all";
+        ApplyFilters();
+    }
+    private void SortChanged(ChangeEventArgs args)
+    {
+        sortOrder = args.Value?.ToString() ?? "newest";
+        ApplyFilters();
+    }
+    private void ClearFilters()
+    {
+        searchText = string.Empty;
+        statusFilter = "all";
+        sortOrder = "newest";
+        ApplyFilters();
+    }
+    private void ApplyFilters()
+    {
+        string term = searchText.Trim();
+        IEnumerable<CyberCase> query = cases ?? [];
+        if (term.Length > 0)
+            query = query.Where(item =>
+                (item.CaseNumber ?? string.Empty).Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                (item.Title ?? string.Empty).Contains(term, StringComparison.OrdinalIgnoreCase));
+        query = query.Where(MatchesStatus);
+        filteredCases = (sortOrder == "oldest"
+            ? query.OrderBy(item => item.CreatedAtUtc).ThenBy(item => item.Id)
+            : query.OrderByDescending(item => item.CreatedAtUtc).ThenBy(item => item.Id))
+            .ToList();
+        currentPage = 1;
+    }
+    private bool MatchesStatus(CyberCase item) => statusFilter switch
+    {
+        "all" => true,
+        "saved" => item.Path != CasePath.FormalReport,
+        "following" => IsFollowing(item),
+        "new" => item.Path == CasePath.FormalReport && item.Status == CaseStatus.New,
+        "review" => item.Path == CasePath.FormalReport && item.Status == CaseStatus.UnderReview,
+        "assigned" => item.Path == CasePath.FormalReport && item.Status == CaseStatus.Assigned,
+        "progress" => item.Path == CasePath.FormalReport && item.Status == CaseStatus.InProgress,
+        "resolved" => item.Path == CasePath.FormalReport && item.Status == CaseStatus.Resolved,
+        "closed" => item.Path == CasePath.FormalReport && item.Status == CaseStatus.Closed,
+        _ => false
+    };
+    private static bool IsFollowing(CyberCase item) => item.Path == CasePath.FormalReport &&
+        item.Status is CaseStatus.New or CaseStatus.UnderReview or CaseStatus.Assigned or CaseStatus.InProgress;
+    private static bool IsFinished(CyberCase item) => item.Path == CasePath.FormalReport &&
+        item.Status is CaseStatus.Resolved or CaseStatus.Closed;
+    private static string PathText(CyberCase item) => item.Path == CasePath.FormalReport ? "بلاغ رسمي" : "طلب خاص محفوظ";
+    private static string StatusText(CyberCase item) => item.Path != CasePath.FormalReport ? "محفوظ" : item.Status switch
+    {
+        CaseStatus.New => "جديدة",
+        CaseStatus.UnderReview => "قيد المراجعة",
+        CaseStatus.Assigned => "تم تعيين موظف",
+        CaseStatus.InProgress => "قيد المعالجة",
+        CaseStatus.Resolved => "تم حلها",
+        CaseStatus.Closed => "مغلقة",
+        _ => "غير محددة"
+    };
+    private static string StatusClass(CyberCase item) => item.Path != CasePath.FormalReport ? "status-saved" : item.Status switch
+    {
+        CaseStatus.New => "status-new",
+        CaseStatus.UnderReview => "status-review",
+        CaseStatus.Assigned or CaseStatus.InProgress => "status-active",
+        CaseStatus.Resolved => "status-resolved",
+        CaseStatus.Closed => "status-closed",
+        _ => "status-saved"
+    };
+    private static string DisplayDate(DateTime value) => value.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
+    private static string UtcDate(DateTime value) => DateTime.SpecifyKind(value, DateTimeKind.Utc).ToString("O");
+    private void PreviousPage() { if (currentPage > 1) currentPage--; }
+    private void NextPage() { if (currentPage < TotalPages) currentPage++; }
+
+    private async void AuthenticationChanged(Task<AuthenticationState> state)
+    {
+        if (disposed) return;
+        try
+        {
+            await InvokeAsync(() =>
+            {
+                if (disposed) return;
+                loadVersion++;
+                cases = null;
+                filteredCases = [];
+                isLoading = false;
+                errorMessage = "تغيّرت جلسة الحساب. حدّث القائمة للتحقق من بيانات حسابك الحالية.";
+                StateHasChanged();
+            });
+        }
+        catch { /* The circuit can close while authentication changes. */ }
+    }
+    public void Dispose()
+    {
+        disposed = true;
+        loadVersion++;
+        AuthenticationStateProvider.AuthenticationStateChanged -= AuthenticationChanged;
+    }
+}

@@ -1,0 +1,352 @@
+﻿@rendermode InteractiveServer
+@using System.Security.Claims
+@using ACCP.Application.Notifications
+@using ACCP.Web.Security
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Routing
+@implements IDisposable
+
+@inject INotificationService NotificationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+<div class="navigation-shell">
+    <div class="navigation-brand">
+        <a href="/"
+           class="brand-link"
+           aria-label="ACCP — الصفحة الرئيسية">
+            <span class="brand-emblem" aria-hidden="true">
+                <svg width="24"
+                     height="24"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="1.7">
+                    <path d="M12 3 4 6v6c0 4 4 7 8 9 4-2 8-5 8-9V6l-8-3Z" />
+                    <path d="m8.5 12 2.3 2.3 4.7-5" />
+                </svg>
+            </span>
+
+            <span class="brand-copy">
+                <strong dir="ltr">ACCP</strong>
+                <span>منصة متابعة البلاغات</span>
+            </span>
+        </a>
+    </div>
+
+    <input type="checkbox"
+           id="accp-menu-toggle"
+           class="menu-toggle"
+           aria-label="فتح قائمة التنقل أو إغلاقها"
+           aria-controls="accp-navigation"
+           @bind="menuOpen" />
+
+    <label for="accp-menu-toggle" class="menu-trigger">
+        <span class="menu-icon icon-menu" aria-hidden="true"></span>
+        <span>القائمة</span>
+    </label>
+
+    <div id="accp-navigation" class="navigation-panel">
+        <nav class="navigation-links"
+             aria-label="التنقل بين صفحات المنصة"
+             @onclick="CloseMenu">
+
+            <span class="navigation-section">التنقل الرئيسي</span>
+
+            <NavLink class="menu-link"
+                     href="/"
+                     Match="NavLinkMatch.All">
+                <span class="menu-icon icon-home" aria-hidden="true"></span>
+                <span>الصفحة الرئيسية</span>
+            </NavLink>
+
+            <AuthorizeView>
+                <Authorized Context="signedInState">
+                    <AuthorizeView Roles="USER" Context="userRoleState">
+                        <Authorized>
+                            <span class="navigation-section">
+                                مساحة المشتكي
+                            </span>
+
+                            <NavLink class="menu-link"
+                                     href="/cases"
+                                     Match="NavLinkMatch.All">
+                                <span class="menu-icon icon-cases"
+                                      aria-hidden="true"></span>
+                                <span>طلباتي وبلاغاتي</span>
+                            </NavLink>
+
+                            <NavLink class="menu-link"
+                                     href="/cases/new"
+                                     Match="NavLinkMatch.All">
+                                <span class="menu-icon icon-plus"
+                                      aria-hidden="true"></span>
+                                <span>محادثة جديدة</span>
+                            </NavLink>
+                        </Authorized>
+                    </AuthorizeView>
+
+                    <AuthorizeView Roles="OFFICER" Context="officerRoleState">
+                        <Authorized>
+                            <span class="navigation-section">
+                                مساحة الموظف
+                            </span>
+
+                            <NavLink class="menu-link"
+                                     href="/officer/dashboard"
+                                     Match="NavLinkMatch.Prefix">
+                                <span class="menu-icon icon-dashboard"
+                                      aria-hidden="true"></span>
+                                <span>لوحة الموظف</span>
+                            </NavLink>
+                        </Authorized>
+                    </AuthorizeView>
+
+                    <AuthorizeView Roles="ADMIN" Context="adminRoleState">
+                        <Authorized>
+                            <span class="navigation-section">
+                                إدارة المنصة
+                            </span>
+
+                            <NavLink class="menu-link"
+                                     href="/admin/employees"
+                                     Match="NavLinkMatch.Prefix">
+                                <span class="menu-icon icon-people"
+                                      aria-hidden="true"></span>
+                                <span>إدارة الموظفين</span>
+                            </NavLink>
+
+                            <NavLink class="menu-link"
+                                     href="/admin/workload"
+                                     Match="NavLinkMatch.Prefix">
+                                <span class="menu-icon icon-dashboard"
+                                      aria-hidden="true"></span>
+                                <span>توزيع القضايا</span>
+                            </NavLink>
+
+                            <NavLink class="menu-link"
+                                     href="/admin/case-reopening"
+                                     Match="NavLinkMatch.Prefix">
+                                <span class="menu-icon icon-reopen"
+                                      aria-hidden="true"></span>
+                                <span>إعادة فتح القضايا</span>
+                            </NavLink>
+
+                            <NavLink class="menu-link"
+                                     href="/admin/staff-requests"
+                                     Match="NavLinkMatch.Prefix">
+                                <span class="menu-icon icon-request"
+                                      aria-hidden="true"></span>
+                                <span>طلبات الموظفين</span>
+                            </NavLink>
+
+                            <NavLink class="menu-link"
+                                     href="/admin/audit-logs"
+                                     Match="NavLinkMatch.Prefix">
+                                <span class="menu-icon icon-shield"
+                                      aria-hidden="true"></span>
+                                <span>سجل التدقيق</span>
+                            </NavLink>
+                        </Authorized>
+                    </AuthorizeView>
+
+                    <span class="navigation-section">حسابي</span>
+
+                    <NavLink class="menu-link" href="/notifications">
+                        <span class="menu-icon icon-bell"
+                              aria-hidden="true"></span>
+                        <span>الإشعارات</span>
+
+                        @if (unreadCount > 0)
+                        {
+                            <span class="notification-count"
+                                  aria-live="polite"
+                                  aria-label="@($"{unreadCount} إشعار غير مقروء")">
+                                @GetUnreadCountText()
+                            </span>
+                        }
+                    </NavLink>
+                </Authorized>
+
+                <NotAuthorized>
+                    <span class="navigation-section">ابدأ من هنا</span>
+
+                    <a class="menu-link"
+                       href="/login"
+                       data-enhance-nav="false">
+                        <span class="menu-icon icon-login"
+                              aria-hidden="true"></span>
+                        <span>تسجيل الدخول</span>
+                    </a>
+
+                    <a class="menu-link"
+                       href="/register"
+                       data-enhance-nav="false">
+                        <span class="menu-icon icon-people"
+                              aria-hidden="true"></span>
+                        <span>إنشاء حساب</span>
+                    </a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </nav>
+
+        <div class="navigation-account">
+            <AuthorizeView>
+                <Authorized Context="accountState">
+                    <span class="account-caption">الحساب الحالي</span>
+
+                    <bdi class="account-name">
+                        @accountState.User.Identity?.Name
+                    </bdi>
+
+                    <a class="logout-link"
+                       href="/logout"
+                       data-enhance-nav="false">
+                        <span class="menu-icon icon-logout"
+                              aria-hidden="true"></span>
+                        <span>تسجيل الخروج</span>
+                    </a>
+                </Authorized>
+
+                <NotAuthorized>
+                    <span class="account-caption">مرحبًا بك في ACCP</span>
+                    <p class="guest-note">
+                        سجّل الدخول للوصول إلى مساحة حسابك ومتابعة طلباتك.
+                    </p>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int unreadCount;
+    private bool menuOpen;
+    private bool componentDisposed;
+    private int refreshVersion;
+
+    private AuthorizedNotificationService? notificationEvents;
+
+    protected override async Task OnInitializedAsync()
+    {
+        NavigationManager.LocationChanged += HandleLocationChanged;
+
+        AuthenticationStateProvider.AuthenticationStateChanged +=
+            HandleAuthenticationStateChanged;
+
+        notificationEvents =
+            NotificationService as AuthorizedNotificationService;
+
+        if (notificationEvents is not null)
+        {
+            notificationEvents.ReadStateChanged +=
+                HandleNotificationReadChanged;
+        }
+
+        await RefreshUnreadCountAsync();
+    }
+
+    private void CloseMenu() => menuOpen = false;
+
+    private async Task RefreshUnreadCountAsync()
+    {
+        var requestVersion = ++refreshVersion;
+        var count = 0;
+
+        try
+        {
+            var state = await AuthenticationStateProvider
+                .GetAuthenticationStateAsync();
+
+            var user = state.User;
+
+            if (user.Identity?.IsAuthenticated == true &&
+                Guid.TryParse(
+                    user.FindFirstValue(ClaimTypes.NameIdentifier),
+                    out var userId) &&
+                userId != Guid.Empty)
+            {
+                count = await NotificationService
+                    .GetUnreadCountAsync(userId);
+            }
+        }
+        catch
+        {
+            // لا نعرض عددًا قديمًا عند فشل التحقق أو القراءة.
+            count = 0;
+        }
+
+        if (!componentDisposed && requestVersion == refreshVersion)
+            unreadCount = Math.Max(0, count);
+    }
+
+    private async void HandleLocationChanged(
+        object? sender,
+        LocationChangedEventArgs args)
+    {
+        await RefreshAfterEventAsync(resetDisplay: true);
+    }
+
+    private async void HandleAuthenticationStateChanged(
+        Task<AuthenticationState> state)
+    {
+        await RefreshAfterEventAsync(resetDisplay: true);
+    }
+
+    private async void HandleNotificationReadChanged()
+    {
+        await RefreshAfterEventAsync(resetDisplay: false);
+    }
+
+    private async Task RefreshAfterEventAsync(bool resetDisplay)
+    {
+        if (componentDisposed)
+            return;
+
+        try
+        {
+            await InvokeAsync(async () =>
+            {
+                if (componentDisposed)
+                    return;
+
+                if (resetDisplay)
+                {
+                    menuOpen = false;
+                    unreadCount = 0;
+                }
+
+                await RefreshUnreadCountAsync();
+
+                if (!componentDisposed)
+                    StateHasChanged();
+            });
+        }
+        catch
+        {
+            // قد يُزال المكوّن أو تنتهي الجلسة أثناء التحديث.
+        }
+    }
+
+    private string GetUnreadCountText() =>
+        unreadCount > 99 ? "99+" : unreadCount.ToString();
+
+    public void Dispose()
+    {
+        componentDisposed = true;
+        refreshVersion++;
+
+        NavigationManager.LocationChanged -= HandleLocationChanged;
+
+        AuthenticationStateProvider.AuthenticationStateChanged -=
+            HandleAuthenticationStateChanged;
+
+        if (notificationEvents is not null)
+        {
+            notificationEvents.ReadStateChanged -=
+                HandleNotificationReadChanged;
+
+            notificationEvents = null;
+        }
+    }
+}

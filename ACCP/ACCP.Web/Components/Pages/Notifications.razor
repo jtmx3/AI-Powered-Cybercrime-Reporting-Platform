@@ -1,0 +1,451 @@
+@page "/notifications"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+@using ACCP.Application.Notifications
+@using ACCP.Domain.Entities
+@using ACCP.Domain.Enums
+@using Microsoft.AspNetCore.Components.Authorization
+
+@inject INotificationService NotificationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>الإشعارات | ACCP</PageTitle>
+
+<main class="notifications-page" dir="rtl" aria-busy="@busy">
+    <header class="page-header">
+        <div>
+            <span class="eyebrow">مستجدات حسابك</span>
+            <h1>الإشعارات</h1>
+            <p>تابع تحديثات القضايا والرسائل والإجراءات المرتبطة بحسابك.</p>
+        </div>
+
+        <div class="header-actions">
+            <button type="button"
+                    class="notification-button secondary"
+                    disabled="@busy"
+                    @onclick="RefreshAsync">
+                تحديث القائمة
+            </button>
+
+            <button type="button"
+                    class="notification-button primary"
+                    disabled="@(busy || unreadCount == 0)"
+                    @onclick="MarkAllAsync">
+                تحديد جميع إشعارات الحساب كمقروءة
+            </button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="message error" role="alert">
+            @errorMessage
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(successMessage))
+    {
+        <div class="message success" role="status">
+            @successMessage
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <section class="empty-panel" role="status">
+            <h2>جارٍ تحميل الإشعارات...</h2>
+        </section>
+    }
+    else
+    {
+        <section class="statistics" aria-label="إحصائيات الإشعارات">
+            <article>
+                <span>الإشعارات المحمّلة</span>
+                <strong>@notifications.Count</strong>
+                <small>تعرض القائمة أحدث 100 إشعار كحد أقصى</small>
+            </article>
+
+            <article>
+                <span>إجمالي غير المقروء في حسابك</span>
+                <strong class="teal">@unreadCount</strong>
+                <small>يشمل الإشعارات الأقدم خارج القائمة المعروضة</small>
+            </article>
+        </section>
+
+        <section class="filter-panel" aria-label="تصفية الإشعارات">
+            <div>
+                <label for="notification-read-filter">حالة القراءة</label>
+                <select id="notification-read-filter"
+                        @bind="readFilter"
+                        disabled="@busy">
+                    <option value="all">جميع الإشعارات المحمّلة</option>
+                    <option value="unread">غير المقروءة</option>
+                    <option value="read">المقروءة</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="notification-type-filter">نوع الإشعار</label>
+                <select id="notification-type-filter"
+                        @bind="typeFilter"
+                        disabled="@busy">
+                    <option value="">جميع الأنواع</option>
+                    @foreach (var type in Enum.GetValues<NotificationType>())
+                    {
+                        <option value="@type.ToString()">
+                            @GetTypeText(type)
+                        </option>
+                    }
+                </select>
+            </div>
+        </section>
+
+        var filtered = GetFilteredNotifications();
+
+        <div class="results-heading">
+            <h2>آخر المستجدات</h2>
+            <span>النتائج المطابقة: @filtered.Count</span>
+        </div>
+
+        @if (notifications.Count == 0)
+        {
+            <section class="empty-panel">
+                <h2>لا توجد إشعارات لعرضها</h2>
+                <p>ستظهر هنا التحديثات المرتبطة بحسابك عند وصولها.</p>
+            </section>
+        }
+        else if (filtered.Count == 0)
+        {
+            <section class="empty-panel">
+                <h2>لا توجد إشعارات مطابقة</h2>
+                <p>غيّر عوامل التصفية لعرض إشعارات أخرى من القائمة المحمّلة.</p>
+                <button type="button"
+                        class="notification-button secondary"
+                        @onclick="ResetFilters">
+                    مسح التصفية
+                </button>
+            </section>
+        }
+        else
+        {
+            <section class="notification-list" aria-label="قائمة الإشعارات">
+                @foreach (var item in filtered)
+                {
+                    <article class="notification-card @(item.IsRead ? "read" : "unread")"
+                             @key="item.Id">
+                        <div class="notification-content">
+                            <div class="notification-labels">
+                                <span class="type-badge">
+                                    @GetTypeText(item.Type)
+                                </span>
+                                <span class="read-label">
+                                    @(item.IsRead ? "مقروء" : "غير مقروء")
+                                </span>
+                            </div>
+
+                            <h3>@item.Title</h3>
+                            <p>@item.Message</p>
+
+                            <time datetime="@item.CreatedAtUtc.ToString("O")">
+                                @item.CreatedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                            </time>
+                        </div>
+
+                        <div class="notification-actions">
+                            @if (GetDestination(item) is not null)
+                            {
+                                <button type="button"
+                                        class="notification-button primary"
+                                        disabled="@busy"
+                                        @onclick="() => OpenAsync(item)">
+                                    @GetOpenText()
+                                </button>
+                            }
+
+                            @if (!item.IsRead)
+                            {
+                                <button type="button"
+                                        class="notification-button secondary"
+                                        disabled="@busy"
+                                        @onclick="() => MarkReadAsync(item)">
+                                    تحديد كمقروء
+                                </button>
+                            }
+                        </div>
+                    </article>
+                }
+            </section>
+        }
+    }
+</main>
+
+@code {
+    private readonly List<UserNotification> notifications = [];
+
+    private Guid currentUserId;
+    private bool isAdmin;
+    private bool isOfficer;
+    private bool isReporter;
+    private bool busy;
+    private bool isLoading = true;
+
+    private int unreadCount;
+    private string readFilter = "all";
+    private string typeFilter = string.Empty;
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
+
+    protected override Task OnInitializedAsync() => RefreshAsync();
+
+    private async Task RefreshAsync()
+    {
+        if (busy)
+            return;
+
+        busy = true;
+        isLoading = true;
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
+
+        try
+        {
+            await ReadSessionAsync();
+            await FetchAsync();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            ClearAccount();
+            errorMessage = "انتهت صلاحية الجلسة أو تغيّرت صلاحيات الحساب. سجّل الدخول مجددًا.";
+        }
+        catch
+        {
+            notifications.Clear();
+            unreadCount = 0;
+            errorMessage = "تعذر تحميل الإشعارات. حاول تحديث القائمة مجددًا.";
+        }
+        finally
+        {
+            isLoading = false;
+            busy = false;
+        }
+    }
+
+    private async Task ReadSessionAsync()
+    {
+        var state = await AuthenticationStateProvider
+            .GetAuthenticationStateAsync();
+
+        var user = state.User;
+
+        if (user.Identity?.IsAuthenticated != true ||
+            !Guid.TryParse(
+                user.FindFirstValue(ClaimTypes.NameIdentifier),
+                out var userId) ||
+            userId == Guid.Empty)
+        {
+            throw new UnauthorizedAccessException();
+        }
+
+        if (currentUserId != Guid.Empty && currentUserId != userId)
+        {
+            ClearAccount();
+            throw new UnauthorizedAccessException();
+        }
+
+        currentUserId = userId;
+        isAdmin = user.IsInRole("ADMIN");
+        isOfficer = user.IsInRole("OFFICER");
+        isReporter = user.IsInRole("USER");
+    }
+
+    private async Task FetchAsync()
+    {
+        var loaded = await NotificationService.GetForUserAsync(currentUserId);
+        var count = await NotificationService.GetUnreadCountAsync(currentUserId);
+
+        if (loaded.Any(item => item.RecipientUserId != currentUserId))
+            throw new UnauthorizedAccessException();
+
+        notifications.Clear();
+        notifications.AddRange(
+            loaded.OrderByDescending(item => item.CreatedAtUtc)
+                .ThenBy(item => item.Id));
+
+        unreadCount = count;
+    }
+
+    private List<UserNotification> GetFilteredNotifications()
+    {
+        IEnumerable<UserNotification> result = notifications;
+
+        result = readFilter switch
+        {
+            "unread" => result.Where(item => !item.IsRead),
+            "read" => result.Where(item => item.IsRead),
+            _ => result
+        };
+
+        if (Enum.TryParse<NotificationType>(typeFilter, out var selectedType))
+            result = result.Where(item => item.Type == selectedType);
+
+        return result.ToList();
+    }
+
+    private Task MarkReadAsync(UserNotification item) =>
+        ProcessAsync(item, markAll: false, open: false);
+
+    private Task OpenAsync(UserNotification item) =>
+        ProcessAsync(item, markAll: false, open: true);
+
+    private Task MarkAllAsync() =>
+        ProcessAsync(null, markAll: true, open: false);
+
+    private async Task ProcessAsync(
+        UserNotification? item,
+        bool markAll,
+        bool open)
+    {
+        if (busy)
+            return;
+
+        if (!markAll &&
+            (item is null ||
+             !notifications.Any(notification => notification.Id == item.Id) ||
+             item.RecipientUserId != currentUserId))
+        {
+            return;
+        }
+
+        busy = true;
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
+
+        try
+        {
+            await ReadSessionAsync();
+
+            var destination = open && item is not null
+                ? GetDestination(item)
+                : null;
+
+            if (open && destination is null)
+                return;
+
+            if (markAll)
+            {
+                await NotificationService.MarkAllAsReadAsync(currentUserId);
+                successMessage = "تم تحديد جميع إشعارات حسابك كمقروءة.";
+            }
+            else if (item is not null && !item.IsRead)
+            {
+                var marked = await NotificationService.MarkAsReadAsync(
+                    item.Id,
+                    currentUserId);
+
+                if (!marked)
+                {
+                    errorMessage = "تعذر تحديث الإشعار. حدّث القائمة ثم حاول مجددًا.";
+                    return;
+                }
+
+                successMessage = "تم تحديد الإشعار كمقروء.";
+            }
+
+            await FetchAsync();
+
+            if (destination is not null)
+                NavigationManager.NavigateTo(destination);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            ClearAccount();
+            successMessage = string.Empty;
+            errorMessage = "انتهت صلاحية الجلسة. سجّل الدخول مجددًا.";
+        }
+        catch
+        {
+            successMessage = string.Empty;
+            errorMessage = "تعذر إكمال العملية. حدّث القائمة للتحقق من حالة الإشعارات.";
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private string? GetDestination(UserNotification item)
+    {
+        if (isAdmin)
+        {
+            return item.Type switch
+            {
+                NotificationType.CaseStaffRequestCreated or
+                NotificationType.CaseStaffRequestApproved or
+                NotificationType.CaseStaffRequestRejected or
+                NotificationType.CaseStaffRequestCancelled
+                    => "/admin/staff-requests",
+
+                _ => item.CyberCaseId.HasValue
+                    ? "/admin/workload"
+                    : null
+            };
+        }
+
+        if (isOfficer)
+        {
+            if (!item.CyberCaseId.HasValue)
+                return null;
+
+            if (item.Type is NotificationType.CaseAssignmentTransferred or
+                NotificationType.CaseStaffRequestCancelled)
+            {
+                return "/officer/dashboard";
+            }
+
+            return $"/officer/cases/{item.CyberCaseId.Value:D}";
+        }
+
+        if (isReporter && item.CyberCaseId.HasValue)
+            return $"/cases/{item.CyberCaseId.Value:D}";
+
+        return null;
+    }
+
+    private string GetOpenText() =>
+        isAdmin ? "فتح صفحة المتابعة" : "متابعة الإشعار";
+
+    private void ResetFilters()
+    {
+        readFilter = "all";
+        typeFilter = string.Empty;
+    }
+
+    private void ClearAccount()
+    {
+        notifications.Clear();
+        currentUserId = Guid.Empty;
+        unreadCount = 0;
+        isAdmin = false;
+        isOfficer = false;
+        isReporter = false;
+    }
+
+    private static string GetTypeText(NotificationType type) =>
+        type switch
+        {
+            NotificationType.NewMessage => "رسالة جديدة",
+            NotificationType.CaseStatusChanged => "تحديث حالة",
+            NotificationType.CaseAssigned => "إسناد قضية",
+            NotificationType.General => "إشعار عام",
+            NotificationType.CaseStaffRequestCreated => "طلب موظف جديد",
+            NotificationType.CaseStaffRequestApproved => "موافقة على طلب",
+            NotificationType.CaseStaffRequestRejected => "رفض طلب",
+            NotificationType.CaseCollaborationAdded => "إضافة مشاركة",
+            NotificationType.CaseAssignmentTransferred => "نقل مسؤولية",
+            NotificationType.CaseStaffRequestCancelled => "إلغاء طلب",
+            _ => "إشعار"
+        };
+}

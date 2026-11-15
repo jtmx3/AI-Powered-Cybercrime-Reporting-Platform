@@ -1,0 +1,364 @@
+@page "/cases/new"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "USER")]
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+@using ACCP.Application.Cases
+@using ACCP.Domain.Entities
+@using ACCP.Domain.Enums
+@using Microsoft.AspNetCore.Components.Authorization
+
+@inject ICaseService CaseService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>المساعد — طلب جديد</PageTitle>
+
+<main class="intake-chat container py-4" dir="rtl">
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <span class="chat-eyebrow">ACCP · مساعد استقبال الطلبات</span>
+            <h1 class="h3 mt-2">احكِ لنا شو صار معك</h1>
+            <p class="text-muted mb-0">أسئلة قصيرة تساعدك على ترتيب المعلومات، ثم تراجع الملخص وتختار طريقة الحفظ.</p>
+        </div>
+        <a href="/cases" class="btn btn-outline-secondary text-nowrap">طلباتي</a>
+    </div>
+
+    <section class="chat-card" aria-label="محادثة استقبال الطلب">
+        <header class="chat-header d-flex align-items-center gap-3">
+            <span class="chat-avatar" aria-hidden="true">م</span>
+            <div>
+                <strong>المساعد</strong>
+                <div class="small text-muted">محادثة موجّهة · راجع المعلومات قبل الحفظ</div>
+            </div>
+            <span class="badge rounded-pill bg-light text-dark me-auto">@(stage == ChatStage.Saved ? "تم الحفظ" : $"الخطوة {Math.Min((int)stage + 1, 7)} من 7")</span>
+        </header>
+
+        <div class="chat-history" role="log" aria-label="رسائل المحادثة" aria-live="polite" aria-relevant="additions text" tabindex="0">
+            <div class="chat-messages">
+                @foreach (var message in Conversation)
+                {
+                    <div class="chat-message @(message.IsUser ? "chat-message-user" : "chat-message-assistant")">
+                        <span class="chat-speaker">@(message.IsUser ? "أنت" : "المساعد")</span>
+                        <div class="chat-bubble">@message.Text</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="chat-controls" @key="stage">
+            @if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                <div class="alert alert-danger" role="alert">@errorMessage</div>
+            }
+
+            @if (stage is ChatStage.Story or ChatStage.Timing or ChatStage.Additional)
+            {
+                <form @onsubmit="SendAnswer" @onsubmit:preventDefault>
+                    <label for="chatAnswer" class="form-label fw-semibold">@ComposerLabel</label>
+                    <textarea id="chatAnswer" class="form-control chat-input" rows="3"
+                              placeholder="@ComposerPlaceholder" maxlength="@AnswerLimit"
+                              @bind="answerDraft" @bind:event="oninput" disabled="@isSaving"></textarea>
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2">
+                        <small class="text-muted">@answerDraft.Length / @AnswerLimit · لا تكتب كلمات المرور أو رموز الدخول.</small>
+                        <div>
+                            @if (stage == ChatStage.Additional)
+                            {
+                                <button type="button" class="btn btn-outline-secondary ms-2" @onclick="SkipAdditional">لا يوجد شيء آخر</button>
+                            }
+                            <button type="submit" class="btn btn-primary">إرسال</button>
+                        </div>
+                    </div>
+                </form>
+            }
+            else if (stage == ChatStage.Incident)
+            {
+                <div class="chat-options">
+                    @foreach (var option in IncidentOptions)
+                    {
+                        <button type="button" class="btn btn-outline-primary" @onclick="() => ChooseIncident(option.Code)">@option.Label</button>
+                    }
+                </div>
+            }
+            else if (stage == ChatStage.Urgency)
+            {
+                <div class="chat-options">
+                    @foreach (var option in UrgencyOptions)
+                    {
+                        <button type="button" class="btn btn-outline-primary" @onclick="() => ChooseUrgency(option.Level)">@option.Label</button>
+                    }
+                </div>
+                <p class="small text-muted mt-3 mb-0">هذا اختيارك المبدئي للاستعجال؛ يمكن للموظف مراجعة مستوى الخطورة في البلاغ الرسمي.</p>
+            }
+            else if (stage == ChatStage.Path)
+            {
+                <div class="chat-path-options">
+                    <button type="button" class="chat-path-choice" @onclick="() => ChoosePath(CasePath.Assistance)">
+                        <strong>طلب مساعدة</strong>
+                        <span>يُحفظ في حسابك ولا يظهر في قائمة البلاغات لدى الموظفين.</span>
+                    </button>
+                    <button type="button" class="chat-path-choice" @onclick="() => ChoosePath(CasePath.FormalReport)">
+                        <strong>بلاغ رسمي</strong>
+                        <span>يُرسل للموظفين المختصين للمراجعة والاستلام بعد موافقتك.</span>
+                    </button>
+                </div>
+            }
+            else if (stage == ChatStage.Review)
+            {
+                <div class="chat-review">
+                    <h2 class="h5">راجع ملخص الطلب</h2>
+                    <dl class="row mb-2">
+                        <dt class="col-sm-3">العنوان</dt><dd class="col-sm-9">@RequestTitle</dd>
+                        <dt class="col-sm-3">نوع المشكلة</dt><dd class="col-sm-9">@IncidentLabel</dd>
+                        <dt class="col-sm-3">الاستعجال</dt><dd class="col-sm-9">@UrgencyLabel</dd>
+                        <dt class="col-sm-3">المسار</dt><dd class="col-sm-9">@PathLabel</dd>
+                    </dl>
+                    <div class="chat-description">@RequestDescription</div>
+                </div>
+                @if (selectedPath == CasePath.FormalReport)
+                {
+                    <div class="alert alert-warning mt-3">
+                        سيظهر البلاغ للموظفين المختصين. لا تُعرض لهم بيانات هويتك إلا إذا وافقت على كشفها من صفحة التفاصيل.
+                        <div class="form-check mt-2">
+                            <input id="formalReportConsent" type="checkbox" class="form-check-input" @bind="formalReportConsentConfirmed" disabled="@isSaving" />
+                            <label for="formalReportConsent" class="form-check-label">أفهم أن هذا بلاغ رسمي، وأوافق على تقديمه للموظفين المختصين.</label>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <p class="small text-muted mt-3">سيُحفظ الطلب في حسابك فقط. يمكنك إضافة المرفقات من صفحة التفاصيل بعد الحفظ.</p>
+                }
+                <button type="button" class="btn btn-primary mt-2" @onclick="SaveCase"
+                        disabled="@(isSaving || (selectedPath == CasePath.FormalReport && !formalReportConsentConfirmed))">
+                    @(isSaving ? "جارٍ الحفظ..." : selectedPath == CasePath.FormalReport ? "تقديم البلاغ الرسمي" : "حفظ طلب المساعدة")
+                </button>
+            }
+            else if (stage == ChatStage.Saved)
+            {
+                <div class="alert alert-success mb-3" role="status">@successMessage</div>
+                <a href="@savedDetailsUrl" class="btn btn-primary">فتح التفاصيل وإضافة المرفقات</a>
+                <button type="button" class="btn btn-outline-secondary me-2" @onclick="StartNewConversation">طلب جديد</button>
+            }
+
+            @if (stage > ChatStage.Story && stage < ChatStage.Saved)
+            {
+                <button type="button" class="btn btn-link text-secondary px-0 mt-3" @onclick="GoBack" disabled="@isSaving">رجوع لتعديل الإجابة السابقة</button>
+            }
+            @if (stage != ChatStage.Saved)
+            {
+                <p class="chat-unsaved-note mb-0 mt-3">لن يُحفظ الطلب حتى تضغط زر الحفظ في الملخص. الإجابات الحالية لا تُستعاد إذا حدّثت الصفحة.</p>
+            }
+        </div>
+    </section>
+</main>
+
+<style>
+    .intake-chat { max-width: 900px; }
+    .chat-eyebrow { color: #376a82; font-size: .83rem; font-weight: 700; }
+    .chat-card { border: 1px solid #dce5eb; border-radius: 20px; overflow: hidden; background: #fff; box-shadow: 0 12px 35px #183a5510; }
+    .chat-header { padding: 18px 24px; border-bottom: 1px solid #e3eaf0; }
+    .chat-avatar { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: #163f59; color: white; font-weight: 700; }
+    .chat-history { background: #f4f7fa; max-height: 440px; min-height: 150px; overflow-y: auto; display: flex; flex-direction: column-reverse; padding: 24px; }
+    .chat-messages { display: flex; flex-direction: column; gap: 20px; }
+    .chat-message { max-width: 85%; }
+    .chat-message-user { align-self: flex-end; }
+    .chat-speaker { display: block; font-size: .75rem; color: #5d7180; margin-bottom: 5px; }
+    .chat-bubble { padding: 13px 17px; background: #fff; border: 1px solid #e0e8ee; border-radius: 15px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; }
+    .chat-message-user .chat-bubble { background: #163f59; border-color: #163f59; color: #fff; }
+    .chat-controls { padding: 24px; }
+    .chat-input { border-radius: 12px; resize: vertical; }
+    .chat-options { display: flex; flex-wrap: wrap; gap: 10px; }
+    .chat-options .btn { border-radius: 12px; padding: 10px 16px; }
+    .chat-path-options { display: flex; flex-wrap: wrap; gap: 12px; }
+    .chat-path-choice { flex: 1 1 230px; text-align: right; border: 1px solid #b9cedd; border-radius: 14px; padding: 18px; background: #f9fcff; color: #163f59; }
+    .chat-path-choice:hover, .chat-path-choice:focus-visible { background: #eaf3fa; border-color: #376a82; }
+    .chat-path-choice span { display: block; font-size: .9rem; margin-top: 7px; line-height: 1.7; }
+    .chat-review { padding: 20px; border: 1px solid #dce5eb; border-radius: 14px; }
+    .chat-review dd, .chat-description { overflow-wrap: anywhere; }
+    .chat-description { white-space: pre-wrap; line-height: 1.8; border-top: 1px solid #e3eaf0; padding-top: 12px; }
+    .chat-unsaved-note { font-size: .78rem; color: #667782; }
+    @@media (max-width: 575px) { .chat-header, .chat-controls, .chat-history { padding: 16px; } .chat-message { max-width: 95%; } }
+</style>
+
+@code {
+    private enum ChatStage { Story, Incident, Timing, Urgency, Additional, Path, Review, Saved }
+    private sealed record ChatMessage(bool IsUser, string Text);
+    private static readonly (string Code, string Label)[] IncidentOptions =
+    [
+        ("Blackmail", "ابتزاز إلكتروني"), ("Fraud", "احتيال مالي"),
+        ("AccountHacking", "اختراق حساب"), ("IdentityTheft", "انتحال شخصية"),
+        ("Threat", "تهديد إلكتروني"), ("Other", "أخرى / غير متأكد")
+    ];
+    private static readonly (SeverityLevel Level, string Label)[] UrgencyOptions =
+    [
+        (SeverityLevel.Low, "منخفض — استفسار أو مشكلة غير مستعجلة"),
+        (SeverityLevel.Medium, "متوسط — المشكلة قائمة وتحتاج متابعة"),
+        (SeverityLevel.High, "مرتفع — ضرر أو تهديد مستمر"),
+        (SeverityLevel.Critical, "حرج — خطر فوري يحتاج تدخلاً عاجلاً")
+    ];
+    private ChatStage stage = ChatStage.Story;
+    private string story = string.Empty;
+    private string incidentType = string.Empty;
+    private string timing = string.Empty;
+    private string additional = string.Empty;
+    private string answerDraft = string.Empty;
+    private SeverityLevel urgency = SeverityLevel.Medium;
+    private CasePath selectedPath = CasePath.Assistance;
+    private bool formalReportConsentConfirmed;
+    private bool isSaving;
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
+    private string savedDetailsUrl = string.Empty;
+
+    private string IncidentLabel => IncidentOptions.FirstOrDefault(x => x.Code == incidentType).Label ?? "غير محدد";
+    private string UrgencyLabel => UrgencyOptions.FirstOrDefault(x => x.Level == urgency).Label ?? "غير محدد";
+    private string PathLabel => selectedPath == CasePath.FormalReport ? "بلاغ رسمي" : "طلب مساعدة";
+    private string RequestTitle
+    {
+        get
+        {
+            var title = $"{IncidentLabel}: {story}".Replace('\r', ' ').Replace('\n', ' ');
+            return title[..Math.Min(title.Length, 150)];
+        }
+    }
+    private string BaseDescription => $"{story}\n\nوقت الحادثة بحسب المستخدم: {timing}";
+    private string RequestDescription => BaseDescription + (string.IsNullOrWhiteSpace(additional) ? string.Empty : $"\n\nتفاصيل إضافية بحسب المستخدم: {additional}");
+    private int AdditionalLimit => Math.Max(0, 4000 - BaseDescription.Length - "\n\nتفاصيل إضافية بحسب المستخدم: ".Length);
+    private int AnswerLimit => stage == ChatStage.Story ? 3000 : stage == ChatStage.Timing ? 300 : AdditionalLimit;
+    private string ComposerLabel => stage == ChatStage.Story ? "اكتب ما حدث معك" : stage == ChatStage.Timing ? "متى بدأت المشكلة؟" : "هل تريد إضافة شيء؟";
+    private string ComposerPlaceholder => stage == ChatStage.Story ? "احكِ بطريقتك: ماذا حدث؟ وعلى أي تطبيق أو موقع؟" : stage == ChatStage.Timing ? "مثلاً: أمس مساءً، أو منذ أسبوع، أو لا أتذكر" : "أي تفاصيل أخرى تريد تضمينها في الطلب";
+
+    private List<ChatMessage> Conversation
+    {
+        get
+        {
+            var items = new List<ChatMessage> { new(false, "أهلاً بك. احكِ لي شو صار معك وعلى أي تطبيق أو موقع. سنرتّب المعلومات معاً، ولن يُرسل أي بلاغ قبل مراجعتك وموافقتك.") };
+            if (stage > ChatStage.Story) { items.Add(new(true, story)); items.Add(new(false, "أي نوع من المشكلات هو الأقرب لما وصفته؟ يمكنك اختيار «أخرى / غير متأكد».")); }
+            if (stage > ChatStage.Incident) { items.Add(new(true, IncidentLabel)); items.Add(new(false, "متى بدأت المشكلة؟ اذكر الوقت التقريبي، أو اكتب أنك لا تتذكر.")); }
+            if (stage > ChatStage.Timing) { items.Add(new(true, timing)); items.Add(new(false, "كيف تصف استعجال المشكلة الآن؟ اختر الأقرب لوضعك.")); }
+            if (stage > ChatStage.Urgency) { items.Add(new(true, UrgencyLabel)); items.Add(new(false, "هل هناك تفاصيل أخرى تريد إضافتها؟ مثل ما طلبه الطرف الآخر أو الضرر الذي وقع. يمكنك تجاوز هذه الخطوة.")); }
+            if (stage > ChatStage.Additional) { items.Add(new(true, string.IsNullOrWhiteSpace(additional) ? "لا يوجد شيء آخر." : additional)); items.Add(new(false, "كيف تريد حفظ المعلومات؟ طلب المساعدة يبقى في حسابك، أما البلاغ الرسمي فيظهر للموظفين بعد موافقتك.")); }
+            if (stage > ChatStage.Path) { items.Add(new(true, PathLabel)); items.Add(new(false, "هذا ملخص المعلومات التي قدمتها. راجعه قبل الحفظ، ويمكنك الرجوع لتعديل الإجابات.")); }
+            if (stage == ChatStage.Saved) items.Add(new(false, successMessage));
+            return items;
+        }
+    }
+
+    private void SendAnswer()
+    {
+        if (isSaving || stage is not (ChatStage.Story or ChatStage.Timing or ChatStage.Additional)) return;
+        errorMessage = string.Empty;
+        var answer = answerDraft.Trim();
+        if (answer.Length > AnswerLimit) { errorMessage = $"اختصر الإجابة إلى {AnswerLimit} حرفًا أو أقل."; return; }
+        if (stage == ChatStage.Story && answer.Length < 10) { errorMessage = "احكِ لنا تفاصيل أكثر عن المشكلة (10 أحرف على الأقل)."; return; }
+        if (stage == ChatStage.Timing && answer.Length == 0) { errorMessage = "اكتب الوقت التقريبي، أو اكتب «لا أتذكر»."; return; }
+        if (stage == ChatStage.Story) story = answer;
+        else if (stage == ChatStage.Timing) timing = answer;
+        else additional = answer;
+        Advance();
+    }
+
+    private void ChooseIncident(string code)
+    {
+        if (isSaving || stage != ChatStage.Incident || !IncidentOptions.Any(x => x.Code == code)) return;
+        incidentType = code;
+        Advance();
+    }
+
+    private void ChooseUrgency(SeverityLevel level)
+    {
+        if (isSaving || stage != ChatStage.Urgency || !Enum.IsDefined(level)) return;
+        urgency = level;
+        Advance();
+    }
+
+    private void SkipAdditional()
+    {
+        if (isSaving || stage != ChatStage.Additional) return;
+        additional = string.Empty;
+        Advance();
+    }
+
+    private void ChoosePath(CasePath path)
+    {
+        if (isSaving || stage != ChatStage.Path || !Enum.IsDefined(path)) return;
+        selectedPath = path;
+        formalReportConsentConfirmed = false;
+        Advance();
+    }
+
+    private void Advance()
+    {
+        stage = (ChatStage)((int)stage + 1);
+        errorMessage = string.Empty;
+        LoadDraft();
+    }
+
+    private void GoBack()
+    {
+        if (isSaving || stage <= ChatStage.Story || stage >= ChatStage.Saved) return;
+        stage = (ChatStage)((int)stage - 1);
+        formalReportConsentConfirmed = false;
+        errorMessage = string.Empty;
+        LoadDraft();
+    }
+
+    private void LoadDraft() => answerDraft = stage == ChatStage.Story ? story : stage == ChatStage.Timing ? timing : stage == ChatStage.Additional ? additional : string.Empty;
+
+    private void StartNewConversation()
+    {
+        if (isSaving || stage != ChatStage.Saved) return;
+        stage = ChatStage.Story;
+        story = incidentType = timing = additional = answerDraft = errorMessage = successMessage = savedDetailsUrl = string.Empty;
+        selectedPath = CasePath.Assistance;
+        urgency = SeverityLevel.Medium;
+        formalReportConsentConfirmed = false;
+    }
+
+    private async Task SaveCase()
+    {
+        if (isSaving || stage != ChatStage.Review) return;
+        errorMessage = string.Empty;
+        if (!Enum.IsDefined(selectedPath) || !Enum.IsDefined(urgency) || !IncidentOptions.Any(x => x.Code == incidentType)
+            || story.Trim().Length < 10 || story.Length > 3000 || string.IsNullOrWhiteSpace(timing) || timing.Length > 300
+            || RequestDescription.Length > 4000)
+        {
+            errorMessage = "راجع إجاباتك: يجب اكتمال الوصف ونوع المشكلة والوقت، وألا يتجاوز الوصف الكامل 4000 حرف.";
+            return;
+        }
+        if (selectedPath == CasePath.FormalReport && !formalReportConsentConfirmed)
+        {
+            errorMessage = "يجب الموافقة على تقديم البلاغ الرسمي قبل حفظه.";
+            return;
+        }
+        var submission = new CyberCase
+        {
+            Title = RequestTitle, Description = RequestDescription, IncidentType = incidentType,
+            SeverityLevel = urgency, Path = selectedPath
+        };
+        isSaving = true;
+        try
+        {
+            var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authenticationState.User;
+            if (user.Identity?.IsAuthenticated != true || !user.IsInRole("USER")
+                || !Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var reporterId) || reporterId == Guid.Empty)
+            {
+                errorMessage = "تعذر التعرف على حسابك. يرجى تسجيل الدخول مجددًا.";
+                return;
+            }
+            var savedCase = await CaseService.CreateForReporterAsync(submission, reporterId);
+            successMessage = savedCase.Path == CasePath.Assistance
+                ? $"تم حفظ طلب المساعدة في حسابك. رقم الطلب: {savedCase.CaseNumber}"
+                : $"تم تقديم البلاغ الرسمي للموظفين المختصين. رقم البلاغ: {savedCase.CaseNumber}";
+            savedDetailsUrl = $"/cases/{savedCase.Id}";
+            stage = ChatStage.Saved;
+            formalReportConsentConfirmed = false;
+        }
+        catch
+        {
+            errorMessage = "تعذر حفظ الطلب. إجاباتك ما زالت هنا؛ حاول الحفظ مرة أخرى.";
+        }
+        finally { isSaving = false; }
+    }
+}

@@ -1,0 +1,36 @@
+﻿@page "/Error"
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@using System.Diagnostics
+
+<PageTitle>تعذر إكمال الطلب | ACCP</PageTitle>
+
+<ACCP.Web.Components.Shared.StatusPanel
+    Code="خطأ"
+    Title="تعذر إكمال الطلب"
+    Description="حدث خطأ أثناء معالجة الطلب. إذا كنت تحفظ تغييرًا، تحقق من حالته قبل إعادة المحاولة.">
+
+    @if (!string.IsNullOrWhiteSpace(requestId))
+    {
+        <p>معرّف المتابعة:</p>
+        <code>@requestId</code>
+    }
+
+    <div class="status-actions">
+        <a class="status-link" href="/">
+            العودة إلى الرئيسية
+        </a>
+    </div>
+</ACCP.Web.Components.Shared.StatusPanel>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private string? requestId;
+
+    protected override void OnInitialized()
+    {
+        requestId = Activity.Current?.Id
+            ?? HttpContext?.TraceIdentifier;
+    }
+}

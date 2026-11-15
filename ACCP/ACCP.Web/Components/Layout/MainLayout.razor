@@ -1,0 +1,34 @@
+﻿@inherits LayoutComponentBase
+
+<a class="skip-link" href="#accp-main-content">الانتقال إلى محتوى الصفحة</a>
+
+<div class="app-shell">
+    <aside class="app-sidebar" aria-label="القائمة الرئيسية">
+        <NavMenu />
+    </aside>
+
+    <div class="app-frame">
+        <header class="workspace-header">
+            <div class="workspace-title">
+                <span class="workspace-kicker">منصة ACCP</span>
+                <span class="workspace-heading">إدارة البلاغات ومتابعة القضايا</span>
+            </div>
+            <span class="workspace-mark" aria-hidden="true">ACCP</span>
+        </header>
+
+        <div id="accp-main-content" class="content-region" tabindex="-1">
+            @Body
+        </div>
+
+        <footer class="workspace-footer">
+            <span>ACCP · منصة متابعة البلاغات</span>
+            <span>© @DateTime.UtcNow.Year</span>
+        </footer>
+    </div>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet dir="rtl" role="alert">
+    <span>حدث خطأ أثناء عرض الصفحة. أعد تحميلها للمتابعة.</span>
+    <a href="" class="reload">إعادة التحميل</a>
+    <button type="button" class="dismiss" aria-label="إغلاق التنبيه">×</button>
+</div>

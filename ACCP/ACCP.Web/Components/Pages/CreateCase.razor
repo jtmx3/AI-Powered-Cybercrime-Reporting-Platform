@@ -1,0 +1,936 @@
+﻿@page "/cases/new"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "USER")]
+@rendermode InteractiveServer
+@implements IDisposable
+
+@using ACCP.Application.Chat
+@using ACCP.Domain.Entities
+
+@inject IIntakeConversationService ConversationService
+@inject NavigationManager Navigation
+@inject IIntakeAssistantWorkflow AssistantWorkflow
+@inject IIntakeFormalReportService FormalReportService
+@inject ILogger<CreateCase> Logger
+
+<PageTitle>محادثة جديدة | ACCP</PageTitle>
+
+<main class="intake container py-4" dir="rtl">
+    <div class="heading">
+        <div>
+            <span class="eyebrow">ACCP · مساحة المحادثة</span>
+            <h1>احكِ لنا شو صار معك</h1>
+            <p>
+                صف الموقف بطريقتك. المساعد يسأل عن التفاصيل
+                ويقيّمها عند توفر المعلومات الكافية.
+            </p>
+        </div>
+
+        <a href="/cases" class="btn btn-outline-secondary">
+            طلباتي
+        </a>
+    </div>
+
+    <section class="conversation" aria-label="المحادثة">
+        <header class="chat-header">
+            <span class="avatar" aria-hidden="true">م</span>
+
+            <div>
+                <strong>مساعد ACCP</strong>
+                <div class="muted small">
+                    لا يُقدّم بلاغ رسمي دون موافقتك
+                </div>
+            </div>
+
+            <span class="status">
+                @(savedCaseId.HasValue
+                    ? "تم تقديم البلاغ"
+                    : busy
+                        ? "جارٍ المعالجة…"
+                        : pendingSaved
+                            ? "رسالتك محفوظة"
+                            : "محادثة جديدة")
+            </span>
+        </header>
+
+        <div class="history"
+             role="log"
+             aria-label="رسائل المحادثة"
+             aria-live="polite"
+             aria-relevant="additions"
+             tabindex="0">
+            <div class="messages">
+                <div class="message assistant">
+                    <span class="speaker">المساعد</span>
+                    <div class="bubble">أهلاً بك. احكِ لي ماذا حدث وعلى أي تطبيق أو موقع. لا تكتب كلمات المرور أو رموز الدخول. لن يُرسل بلاغ قبل موافقتك الصريحة.</div>
+                </div>
+
+                @foreach (var message in messages)
+                {
+                    <div class="message @(message.Role == IntakeChatRole.User ? "user" : "assistant")">
+                        <span class="speaker">
+                            @(message.Role == IntakeChatRole.User
+                                ? "أنت"
+                                : "المساعد")
+                        </span>
+                        <div class="bubble">@message.Content</div>
+                    </div>
+                }
+
+                @if (busy)
+                {
+                    <p class="muted" role="status">
+                        جارٍ المعالجة…
+                    </p>
+                }
+            </div>
+        </div>
+
+        <div class="controls">
+            @if (loading)
+            {
+                <p role="status" class="muted">
+                    جارٍ استرجاع المحادثة…
+                </p>
+            }
+
+            @if (activeConversationId.HasValue && !loading && !blocked)
+            {
+                <p class="small muted">
+                    رابط هذه المحادثة:
+                    <a href="@ConversationUrl"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        فتح المحادثة المحفوظة
+                        <span class="visually-hidden">
+                            في تبويب جديد
+                        </span>
+                    </a>
+                </p>
+            }
+
+            @if (!string.IsNullOrEmpty(error))
+            {
+                <div class="alert alert-danger" role="alert">
+                    @error
+                </div>
+            }
+
+            @if (savedCaseId.HasValue)
+            {
+                <div class="alert alert-success" role="status">
+                    تم تقديم البلاغ رقم @savedCaseNumber للموظفين المختصين.
+                    يمكنك متابعة الردود من التفاصيل.
+                </div>
+
+                <a href="@($"/cases/{savedCaseId.Value}")"
+                   class="btn btn-primary">
+                    متابعة البلاغ
+                </a>
+            }
+            else if (!loading && !blocked)
+            {
+                @if (assessment is not null)
+                {
+                    <section class="assessment"
+                             aria-labelledby="assessment-title">
+                        <h2 id="assessment-title">تقييم المساعد</h2>
+
+                        <p>
+                            <strong>
+                                درجة الخطورة المقدّرة:
+                                @assessment.RiskPercentage.ToString("0.##")%
+                            </strong>
+                        </p>
+
+                        <p>@assessment.RiskExplanation</p>
+
+                        <small class="muted">
+                            تقدير آلي للموقف، وليس احتمالًا مؤكدًا لوقوع جريمة.
+                        </small>
+                    </section>
+                }
+
+                @if (reviewing && assessment?.ShouldOfferFormalReport == true)
+                {
+                    <section class="review" aria-labelledby="review-title">
+                        <h2 id="review-title">
+                            راجع البلاغ قبل تقديمه
+                        </h2>
+
+                        <h3>@assessment.Title</h3>
+                        <p class="summary">@assessment.Summary</p>
+
+                        <p class="muted">
+                            سيُشارك هذا الملخص مع الموظفين المختصين.
+                            هذه الخطوة لا تمنح موافقة على كشف هويتك
+                            أو مشاركة المرفقات.
+                        </p>
+
+                        <div class="form-check mb-3">
+                            <input id="formal-consent"
+                                   type="checkbox"
+                                   class="form-check-input"
+                                   @bind="consent"
+                                   disabled="@busy" />
+
+                            <label for="formal-consent"
+                                   class="form-check-label">
+                                راجعت الملخص وأوافق على تقديمه كبلاغ رسمي.
+                            </label>
+                        </div>
+
+                        <div class="actions">
+                            <button class="btn btn-primary"
+                                    type="button"
+                                    disabled="@(busy || !consent)"
+                                    @onclick="SubmitReport">
+                                @(busy
+                                    ? "جارٍ التقديم…"
+                                    : "تأكيد تقديم البلاغ")
+                            </button>
+
+                            <button class="btn btn-outline-secondary"
+                                    type="button"
+                                    disabled="@busy"
+                                    @onclick="CancelReview">
+                                العودة للمحادثة
+                            </button>
+                        </div>
+                    </section>
+                }
+                else
+                {
+                    @if (assessment?.ShouldOfferFormalReport == true && !offerDeclined)
+                    {
+                        <section class="offer" aria-labelledby="offer-title">
+                            <h2 id="offer-title">
+                                هل تريد تقديم بلاغ رسمي؟
+                            </h2>
+
+                            <p>
+                                درجة الخطورة المقدّرة أعلى من 80%.
+                                إذا وافقت، تراجع الملخص أولًا قبل إرساله
+                                للموظفين المختصين.
+                            </p>
+
+                            <div class="actions">
+                                <button type="button"
+                                        class="btn btn-primary"
+                                        @onclick="ReviewReport"
+                                        disabled="@busy">
+                                    نعم، مراجعة البلاغ
+                                </button>
+
+                                <button type="button"
+                                        class="btn btn-outline-secondary"
+                                        @onclick="DeclineOffer"
+                                        disabled="@busy">
+                                    لا، متابعة المحادثة
+                                </button>
+                            </div>
+                        </section>
+                    }
+
+                    @if (offerDeclined)
+                    {
+                        <p class="muted" role="status">
+                            لم يتم تقديم بلاغ. يمكنك متابعة المحادثة.
+                        </p>
+                    }
+
+                    @if (pendingReply)
+                    {
+                        <div class="actions">
+                            <button type="button"
+                                    class="btn btn-primary"
+                                    disabled="@busy"
+                                    @onclick="RequestReply">
+                                إعادة المحاولة
+                            </button>
+
+                            @if (pendingSaved)
+                            {
+                                <button type="button"
+                                        class="btn btn-outline-secondary"
+                                        disabled="@busy"
+                                        @onclick="ContinueConversation">
+                                    كتابة رسالة أخرى
+                                </button>
+                            }
+
+                            <p class="small muted mb-0">
+                                @(pendingSaved
+                                    ? "رسالتك محفوظة. إعادة المحاولة تطلب الرد ولا تكرر الرسالة."
+                                    : "لم يتأكد حفظ رسالتك بعد. أعد المحاولة بنفس الرسالة.")
+                            </p>
+                        </div>
+                    }
+                    else
+                    {
+                        <form @onsubmit="SendMessage"
+                              @onsubmit:preventDefault>
+                            <label for="chat-message"
+                                   class="form-label fw-semibold">
+                                رسالتك
+                            </label>
+
+                            <textarea id="chat-message"
+                                      class="form-control"
+                                      rows="4"
+                                      maxlength="3000"
+                                      placeholder="اكتب ما حدث معك…"
+                                      @bind="draft"
+                                      @bind:event="oninput"
+                                      disabled="@busy"
+                                      aria-describedby="message-help"></textarea>
+
+                            <div class="composer-footer">
+                                <small id="message-help" class="muted">
+                                    @draft.Length / 3000
+                                </small>
+
+                                <button type="submit"
+                                        class="btn btn-primary"
+                                        disabled="@(busy || string.IsNullOrWhiteSpace(draft))">
+                                    إرسال
+                                </button>
+                            </div>
+                        </form>
+                    }
+                }
+
+                <p class="session-note">
+                    تُحفظ رسائلك وردود المساعد وتقييماته بعد تأكيد الحفظ.
+                    احتفظ برابط المحادثة للعودة إليها.
+                    لا تغلق الصفحة قبل تأكيد حفظ الرسالة.
+                </p>
+            }
+        </div>
+    </section>
+</main>
+
+<style>
+    .intake { max-width: 960px; color: #163f59; }
+    .heading { display: flex; justify-content: space-between; align-items: start; gap: 20px; margin-bottom: 28px; }
+    .heading .btn { flex-shrink: 0; }
+    .heading h1 { font-size: clamp(1.65rem, 4vw, 2.15rem); margin: 10px 0; }
+    .heading p, .muted { color: #5d7180; }
+    .eyebrow { font-size: .85rem; color: #0f766e; font-weight: 700; }
+    .conversation { background: white; border: 1px solid #dce5eb; border-radius: 22px; overflow: hidden; box-shadow: 0 16px 48px #163f590a; }
+    .chat-header { display: flex; align-items: center; gap: 14px; padding: 20px 24px; border-bottom: 1px solid #dce5eb; }
+    .avatar { display: grid; place-items: center; background: #163f59; color: white; border-radius: 14px; width: 46px; height: 46px; flex-shrink: 0; }
+    .status { margin-inline-start: auto; font-size: .8rem; background: #edf4f2; border-radius: 20px; padding: 5px 12px; }
+    .history { background: #f4f7fa; padding: 24px; min-height: 180px; max-height: 480px; overflow-y: auto; display: flex; flex-direction: column-reverse; }
+    .messages { display: flex; flex-direction: column; gap: 20px; }
+    .message { max-width: 88%; }
+    .message.user { align-self: flex-end; }
+    .speaker { display: block; font-size: .76rem; color: #5d7180; margin-bottom: 6px; }
+    .bubble { padding: 14px 18px; border-radius: 16px; background: white; border: 1px solid #dce5eb; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.85; }
+    .user .bubble { background: #163f59; border-color: #163f59; color: white; }
+    .controls { padding: 24px; }
+    .assessment, .offer, .review { padding: 20px; border: 1px solid #dce5eb; border-radius: 14px; margin-bottom: 20px; overflow-wrap: anywhere; }
+    .assessment { background: #f3f8f6; }
+    .offer { background: #fffaf0; }
+    .controls h2 { font-size: 1.12rem; margin-bottom: 12px; }
+    .controls h3 { font-size: 1.02rem; }
+    .summary { white-space: pre-wrap; line-height: 1.85; }
+    .actions, .composer-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+    .composer-footer { justify-content: space-between; margin-top: 12px; }
+    .controls textarea { resize: vertical; border-radius: 12px; line-height: 1.85; }
+    .session-note { color: #637684; font-size: .8rem; margin: 20px 0 0; }
+    .intake .btn-primary { background: #0f766e; border-color: #0f766e; }
+    .intake .btn-primary:hover { background: #0b5e58; border-color: #0b5e58; }
+
+    @@media (max-width: 575px) {
+        .heading { flex-wrap: wrap; }
+        .chat-header, .controls, .history { padding: 16px; }
+        .message { max-width: 96%; }
+        .status { font-size: .7rem; }
+    }
+</style>
+
+@code {
+    [SupplyParameterFromQuery(Name = "conversation")]
+    public string? ConversationKey { get; set; }
+
+    private readonly List<IntakeChatMessage> messages = [];
+    private readonly CancellationTokenSource lifetime = new();
+    private CancellationTokenSource context = new();
+
+    private string? loadedKey;
+    private bool initialized;
+    private int generation;
+    private Guid? activeConversationId;
+    private Guid pendingOperationId;
+    private bool pendingSaved;
+    private bool loading;
+    private bool blocked;
+
+    private string draft = string.Empty;
+    private string error = string.Empty;
+    private CaseRiskAssessment? assessment;
+    private Guid? assessmentId;
+    private bool busy;
+    private bool pendingReply;
+    private bool reviewing;
+    private bool consent;
+    private bool offerDeclined;
+    private bool disposed;
+
+    private Guid? savedCaseId;
+    private string savedCaseNumber = string.Empty;
+
+    private string ConversationUrl => activeConversationId is { } id
+        ? $"/cases/new?conversation={id:D}"
+        : "/cases/new";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var key = ConversationKey?.Trim() ?? string.Empty;
+
+        if (disposed || (initialized && string.Equals(
+            key, loadedKey, StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
+        initialized = true;
+        loadedKey = key;
+        var version = ++generation;
+
+        context.Cancel();
+        context.Dispose();
+        context = CancellationTokenSource.CreateLinkedTokenSource(
+            lifetime.Token);
+
+        var token = context.Token;
+
+        messages.Clear();
+        draft = string.Empty;
+        error = string.Empty;
+        savedCaseNumber = string.Empty;
+        activeConversationId = null;
+        savedCaseId = null;
+        assessment = null;
+        assessmentId = null;
+        busy = false;
+        pendingReply = false;
+        pendingSaved = false;
+        reviewing = false;
+        consent = false;
+        offerDeclined = false;
+        blocked = false;
+        loading = false;
+        pendingOperationId = Guid.Empty;
+
+        if (key.Length == 0)
+            return;
+
+        if (!Guid.TryParse(key, out var id) || id == Guid.Empty)
+        {
+            blocked = true;
+            error = "رابط المحادثة غير صالح.";
+            return;
+        }
+
+        loading = true;
+
+        try
+        {
+            await RestoreConversationAsync(id, version, token);
+        }
+        catch (OperationCanceledException)
+            when (token.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+            when (IsCurrent(version))
+        {
+            Logger.LogWarning(
+                "Intake history unavailable. Failure category: {Category}",
+                exception.GetType().Name);
+
+            blocked = true;
+            messages.Clear();
+            assessment = null;
+            assessmentId = null;
+            error =
+                "تعذر تحميل المحادثة. حدّث الصفحة للمحاولة مجددًا.";
+        }
+        catch (Exception)
+            when (!IsCurrent(version))
+        {
+        }
+        finally
+        {
+            if (IsCurrent(version))
+                loading = false;
+        }
+    }
+
+    private async Task RestoreConversationAsync(
+        Guid id,
+        int version,
+        CancellationToken token)
+    {
+        var info = await ConversationService.GetAsync(id, token);
+
+        if (!IsCurrent(version))
+            return;
+
+        if (info is null)
+        {
+            throw new UnauthorizedAccessException(
+                "Conversation unavailable.");
+        }
+
+        var restored = new List<IntakeMessageInfo>();
+        long cursor = 0;
+
+        while (true)
+        {
+            var page = await ConversationService.GetMessagesAsync(
+                id,
+                cursor,
+                100,
+                token);
+
+            if (!IsCurrent(version))
+                return;
+
+            foreach (var item in page.Messages)
+            {
+                if (item.Role is not (
+                    IntakeMessageRole.Reporter or
+                    IntakeMessageRole.Assistant) ||
+                    item.SequenceNumber <= cursor ||
+                    restored.Count >= 400)
+                {
+                    throw new InvalidOperationException(
+                        "Invalid conversation history.");
+                }
+
+                restored.Add(item);
+                cursor = item.SequenceNumber;
+            }
+
+            if (!page.HasMore)
+                break;
+
+            if (page.Messages.Count == 0 ||
+                page.NextAfterSequenceNumber != cursor)
+            {
+                throw new InvalidOperationException(
+                    "Invalid conversation pagination.");
+            }
+        }
+
+        var currentAssessment =
+            await AssistantWorkflow.GetCurrentAssessmentAsync(
+                id,
+                token);
+
+        var latestInfo =
+            await ConversationService.GetAsync(id, token);
+
+        if (!IsCurrent(version))
+            return;
+
+        if (latestInfo is null)
+        {
+            throw new UnauthorizedAccessException(
+                "Conversation unavailable.");
+        }
+
+        info = latestInfo;
+
+        var last = restored.LastOrDefault();
+
+        var reporterSequence = restored
+            .Where(x => x.Role == IntakeMessageRole.Reporter)
+            .Select(x => (long?)x.SequenceNumber)
+            .LastOrDefault();
+
+        activeConversationId = id;
+
+        messages.Clear();
+        messages.AddRange(
+            restored.Select(item => new IntakeChatMessage(
+                item.Role == IntakeMessageRole.Reporter
+                    ? IntakeChatRole.User
+                    : IntakeChatRole.Assistant,
+                item.Content)));
+
+        savedCaseId = info.CyberCaseId;
+
+        savedCaseNumber = savedCaseId.HasValue
+            ? "المرتبط بهذه المحادثة"
+            : string.Empty;
+
+        blocked =
+            !savedCaseId.HasValue &&
+            info.Status is not (
+                IntakeConversationStatus.Assistant or
+                IntakeConversationStatus.AwaitingReportDecision);
+
+        pendingSaved = restored.Count > 0;
+
+        pendingReply =
+            !blocked &&
+            !savedCaseId.HasValue &&
+            last?.Role == IntakeMessageRole.Reporter;
+
+        pendingOperationId = pendingReply
+            ? last!.OperationId
+            : Guid.Empty;
+
+        assessment = null;
+        assessmentId = null;
+
+        // عرض التقييم المطابق لآخر دور مسترجع فقط.
+        if (!blocked &&
+            !savedCaseId.HasValue &&
+            last?.Role == IntakeMessageRole.Assistant &&
+            currentAssessment is not null &&
+            currentAssessment.AssistantMessageId == last.Id &&
+            currentAssessment.BasedOnSequenceNumber ==
+                reporterSequence &&
+            last.SequenceNumber >
+                currentAssessment.BasedOnSequenceNumber)
+        {
+            assessment = currentAssessment.Assessment;
+            assessmentId = currentAssessment.Id;
+        }
+
+        reviewing = false;
+        consent = false;
+
+        if (blocked)
+        {
+            error =
+                "هذه المحادثة غير متاحة لرسائل استقبال جديدة.";
+        }
+    }
+
+    private bool IsCurrent(int version) =>
+        !disposed && version == generation;
+
+    private async Task SendMessage()
+    {
+        if (busy ||
+            loading ||
+            blocked ||
+            pendingReply ||
+            reviewing ||
+            savedCaseId.HasValue ||
+            disposed)
+        {
+            return;
+        }
+
+        var content = draft.Trim();
+        error = string.Empty;
+
+        if (content.Length is < 2 or > 3000)
+        {
+            error = "اكتب رسالة بين حرفين و3000 حرف.";
+            return;
+        }
+
+        if (messages.Count >= 38 ||
+            messages.Sum(x => x.Content.Length) +
+                content.Length > 24000)
+        {
+            error =
+                "وصلت المحادثة لحد المعالجة المتاح في هذه النسخة. " +
+                "رسائلك المحفوظة ما زالت متاحة.";
+            return;
+        }
+
+        assessment = null;
+        assessmentId = null;
+        offerDeclined = false;
+        consent = false;
+
+        messages.Add(new IntakeChatMessage(
+            IntakeChatRole.User,
+            content));
+
+        draft = string.Empty;
+        pendingOperationId = Guid.NewGuid();
+        pendingSaved = false;
+        pendingReply = true;
+
+        await RequestReply();
+    }
+
+    private async Task RequestReply()
+    {
+        if (busy ||
+            loading ||
+            blocked ||
+            !pendingReply ||
+            savedCaseId.HasValue ||
+            disposed)
+        {
+            return;
+        }
+
+        var version = generation;
+        var token = context.Token;
+        var operationId = pendingOperationId;
+        var replyConfirmed = false;
+
+        busy = true;
+        error = string.Empty;
+        assessment = null;
+        assessmentId = null;
+
+        try
+        {
+            if (!pendingSaved)
+            {
+                activeConversationId ??= Guid.NewGuid();
+                var id = activeConversationId.Value;
+
+                await ConversationService.CreateAsync(id, token);
+
+                if (!IsCurrent(version))
+                    return;
+
+                await ConversationService.AppendReporterMessageAsync(
+                    id,
+                    operationId,
+                    messages[^1].Content,
+                    token);
+
+                if (!IsCurrent(version))
+                    return;
+
+                pendingSaved = true;
+                loadedKey = id.ToString("D");
+
+                Navigation.NavigateTo(
+                    ConversationUrl,
+                    replace: true);
+            }
+
+            if (activeConversationId is not { } conversationId ||
+                operationId == Guid.Empty)
+            {
+                throw new InvalidOperationException(
+                    "Invalid pending conversation turn.");
+            }
+
+            if (messages.Count > 38 ||
+                messages.Sum(x => x.Content.Length) > 24000)
+            {
+                error =
+                    "رسالتك محفوظة، لكن المحادثة تتجاوز " +
+                    "حد المعالجة المتاح حاليًا.";
+                return;
+            }
+
+            using var timeout =
+                CancellationTokenSource.CreateLinkedTokenSource(
+                    token);
+
+            timeout.CancelAfter(TimeSpan.FromSeconds(45));
+
+            // الخدمة تقرأ السجل وتولّد الرد وتحفظه على الخادم.
+            // الصفحة ترسل المعرّفات فقط.
+            await AssistantWorkflow
+                .ReplyAsync(
+                    conversationId,
+                    operationId,
+                    timeout.Token)
+                .WaitAsync(timeout.Token);
+
+            if (!IsCurrent(version))
+                return;
+
+            replyConfirmed = true;
+
+            // نسترجع السجل المحفوظ بدل إضافة نسخة محلية من الرد.
+            await RestoreConversationAsync(
+                conversationId,
+                version,
+                token);
+        }
+        catch (OperationCanceledException)
+            when (token.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+            when (IsCurrent(version))
+        {
+            Logger.LogWarning(
+                "Intake turn unavailable. Failure category: {Category}",
+                exception.GetType().Name);
+
+            assessment = null;
+            assessmentId = null;
+
+            error = replyConfirmed
+                ? "تم تأكيد حفظ رد المساعد، لكن تعذر استرجاع المحادثة. حدّث الصفحة أو أعد المحاولة؛ لن يتكرر الرد. لم يُرسل بلاغ."
+                : pendingSaved
+                    ? "رسالتك محفوظة، لكن تعذر إكمال رد المساعد أو تأكيد حفظه. يمكنك إعادة المحاولة؛ سيُسترجع الرد إن كان محفوظًا. لم يُرسل بلاغ."
+                    : "تعذر تأكيد حفظ الرسالة. أعد المحاولة بنفس الرسالة؛ لن تتكرر إذا كان الحفظ قد نجح.";
+        }
+        catch (Exception)
+            when (!IsCurrent(version))
+        {
+        }
+        finally
+        {
+            if (IsCurrent(version))
+                busy = false;
+        }
+    }
+
+    private void ContinueConversation()
+    {
+        if (busy ||
+            !pendingSaved ||
+            blocked ||
+            disposed)
+        {
+            return;
+        }
+
+        pendingReply = false;
+        assessment = null;
+        assessmentId = null;
+        error = string.Empty;
+    }
+
+    private void ReviewReport()
+    {
+        if (busy ||
+            pendingReply ||
+            assessment?.ShouldOfferFormalReport != true ||
+            assessmentId is null ||
+            activeConversationId is null ||
+            savedCaseId.HasValue ||
+            blocked ||
+            disposed)
+        {
+            return;
+        }
+
+        reviewing = true;
+        consent = false;
+        error = string.Empty;
+    }
+
+    private void DeclineOffer()
+    {
+        if (busy ||
+            reviewing ||
+            savedCaseId.HasValue ||
+            disposed)
+        {
+            return;
+        }
+
+        offerDeclined = true;
+        consent = false;
+    }
+
+    private void CancelReview()
+    {
+        if (busy || disposed)
+            return;
+
+        reviewing = false;
+        consent = false;
+        error = string.Empty;
+    }
+
+    private async Task SubmitReport()
+    {
+        if (busy || loading || disposed || blocked || pendingReply ||
+            savedCaseId.HasValue || !reviewing || !consent ||
+            assessment?.ShouldOfferFormalReport != true ||
+            activeConversationId is not { } conversationId ||
+            assessmentId is not { } approvedAssessmentId ||
+            approvedAssessmentId == Guid.Empty)
+        {
+            return;
+        }
+
+        var version = generation;
+        var token = context.Token;
+        busy = true;
+        error = string.Empty;
+
+        try
+        {
+            // نرسل المعرّفات والموافقة فقط. الخادم يتحقق من التقييم
+            // المحفوظ وملكية المحادثة ويمنع إنشاء بلاغ مكرر.
+            var result = await FormalReportService.SubmitAsync(
+                conversationId,
+                approvedAssessmentId,
+                consent: true,
+                cancellationToken: token);
+
+            if (!IsCurrent(version))
+                return;
+
+            if (result.ConversationId != conversationId ||
+                result.AssessmentId != approvedAssessmentId ||
+                result.CaseId == Guid.Empty ||
+                string.IsNullOrWhiteSpace(result.CaseNumber))
+            {
+                throw new InvalidOperationException(
+                    "Invalid formal report receipt.");
+            }
+
+            savedCaseId = result.CaseId;
+            savedCaseNumber = result.CaseNumber;
+            reviewing = false;
+            consent = false;
+            pendingReply = false;
+            pendingOperationId = Guid.Empty;
+            assessment = null;
+            assessmentId = null;
+        }
+        catch (OperationCanceledException)
+            when (token.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception) when (IsCurrent(version))
+        {
+            Logger.LogWarning(
+                "Formal report submission unconfirmed. Failure category: {Category}",
+                exception.GetType().Name);
+
+            // قد يكون الحفظ نجح قبل انقطاع الرد. نحتفظ بنفس التقييم
+            // والموافقة لإعادة الطلب؛ الخدمة تعيد البلاغ الموجود إن حُفظ.
+            error =
+                "تعذر تأكيد تقديم البلاغ. يمكنك إعادة المحاولة بنفس الموافقة؛ " +
+                "لن يُنشأ بلاغ مكرر إذا كان الحفظ قد نجح. " +
+                "إذا استمرت المشكلة، حدّث الصفحة لاسترجاع الحالة ومراجعة آخر تقييم.";
+        }
+        catch (Exception) when (!IsCurrent(version))
+        {
+        }
+        finally
+        {
+            if (IsCurrent(version))
+                busy = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        if (disposed)
+            return;
+
+        disposed = true;
+        lifetime.Cancel();
+        context.Cancel();
+        context.Dispose();
+        lifetime.Dispose();
+    }
+}

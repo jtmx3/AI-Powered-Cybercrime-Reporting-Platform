@@ -1,0 +1,233 @@
+@page "/login"
+
+@attribute [ExcludeFromInteractiveRouting]
+
+@using System.ComponentModel.DataAnnotations
+@using ACCP.Infrastructure.Identity
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Identity
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager NavigationManager
+
+<PageTitle>تسجيل الدخول</PageTitle>
+
+<div dir="rtl" class="container mt-5">
+
+    <div class="row justify-content-center">
+
+        <div class="col-md-6 col-lg-5">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body p-4">
+
+                    <h1 class="text-center mb-3">
+                        تسجيل الدخول
+                    </h1>
+
+                    <p class="text-center text-muted mb-4">
+                        أدخل بيانات حسابك للوصول إلى المنصة.
+                    </p>
+
+                    @if (!string.IsNullOrWhiteSpace(errorMessage))
+                    {
+                        <div class="alert alert-danger">
+                            @errorMessage
+                        </div>
+                    }
+
+                    <EditForm Model="loginModel"
+                     method="post"
+                     OnValidSubmit="SignInAsync"
+                     FormName="login-form">
+
+                    <AntiforgeryToken />
+
+                        <DataAnnotationsValidator />
+
+                        <ValidationSummary class="text-danger mb-3" />
+
+                        <div class="mb-3">
+
+                            <label class="form-label">
+                                البريد الإلكتروني
+                            </label>
+
+                            <InputText class="form-control"
+                                       type="email"
+                                       autocomplete="username"
+                                       @bind-Value="loginModel.Email" />
+
+                            <ValidationMessage For="@(() => loginModel.Email)"
+                                               class="text-danger" />
+
+                        </div>
+
+                        <div class="mb-3">
+
+                            <label class="form-label">
+                                كلمة المرور
+                            </label>
+
+                            <InputText class="form-control"
+                                       type="password"
+                                       autocomplete="current-password"
+                                       @bind-Value="loginModel.Password" />
+
+                            <ValidationMessage For="@(() => loginModel.Password)"
+                                               class="text-danger" />
+
+                        </div>
+
+                        <div class="form-check mb-3">
+
+                            <InputCheckbox class="form-check-input"
+                                           @bind-Value="loginModel.RememberMe" />
+
+                            <label class="form-check-label">
+                                تذكرني على هذا الجهاز
+                            </label>
+
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-primary w-100">
+
+                            تسجيل الدخول
+
+                        </button>
+
+                    </EditForm>
+
+                    <hr class="my-4" />
+
+                    <p class="text-center mb-0">
+
+                        لا تمتلك حسابًا؟
+
+                        <a href="/register">
+                            إنشاء حساب جديد
+                        </a>
+
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+@code {
+
+    [SupplyParameterFromForm]
+    private LoginInput? loginModel { get; set; }
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private string errorMessage = string.Empty;
+
+    protected override void OnInitialized()
+{
+    loginModel ??= new LoginInput();
+}
+    private async Task SignInAsync()
+    {
+        if (loginModel is null)
+{
+    errorMessage = "تعذر قراءة بيانات تسجيل الدخول.";
+    return;
+}
+        errorMessage = string.Empty;
+
+        ApplicationUser? user =
+            await SignInManager.UserManager.FindByEmailAsync(
+                loginModel.Email.Trim());
+
+        if (user is null)
+        {
+            errorMessage =
+                "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
+
+            return;
+        }
+
+        if (!user.IsActive)
+        {
+            errorMessage =
+                "هذا الحساب غير فعال. يرجى التواصل مع إدارة المنصة.";
+
+            return;
+        }
+
+        SignInResult result =
+            await SignInManager.PasswordSignInAsync(
+                user,
+                loginModel.Password,
+                loginModel.RememberMe,
+                lockoutOnFailure: true);
+
+        if (result.Succeeded)
+        {
+            string destination = GetSafeReturnUrl();
+
+            NavigationManager.NavigateTo(
+                destination,
+                forceLoad: true);
+
+            return;
+        }
+
+        if (result.IsLockedOut)
+        {
+            errorMessage =
+                "تم إيقاف تسجيل الدخول مؤقتًا بسبب تكرار المحاولات الخاطئة.";
+
+            return;
+        }
+
+        if (result.RequiresTwoFactor)
+        {
+            errorMessage =
+                "هذا الحساب يحتاج إلى المصادقة الثنائية.";
+            
+            return;
+        }
+
+        errorMessage =
+            "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
+    }
+
+    private string GetSafeReturnUrl()
+    {
+        if (string.IsNullOrWhiteSpace(ReturnUrl))
+        {
+            return "/cases";
+        }
+
+        if (!ReturnUrl.StartsWith("/") ||
+            ReturnUrl.StartsWith("//") ||
+            ReturnUrl.StartsWith("/\\"))
+        {
+            return "/cases";
+        }
+
+        return ReturnUrl;
+    }
+
+    private sealed class LoginInput
+    {
+        [Required(ErrorMessage = "البريد الإلكتروني مطلوب.")]
+        [EmailAddress(ErrorMessage = "صيغة البريد الإلكتروني غير صحيحة.")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "كلمة المرور مطلوبة.")]
+        public string Password { get; set; } = string.Empty;
+
+        public bool RememberMe { get; set; }
+    }
+}

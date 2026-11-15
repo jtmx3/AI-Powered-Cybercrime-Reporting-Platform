@@ -1,0 +1,161 @@
+using ACCP.Domain.Entities;
+using ACCP.Domain.Enums;
+using ACCP.Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+
+namespace ACCP.Infrastructure.Data;
+
+public class AccpDbContext
+    : IdentityDbContext<
+        ApplicationUser,
+        IdentityRole<Guid>,
+        Guid>
+{
+    public AccpDbContext(
+        DbContextOptions<AccpDbContext> options)
+        : base(options)
+    {
+    }
+
+    public DbSet<PlatformUser> UserProfiles =>
+        Set<PlatformUser>();
+
+    public DbSet<CyberCase> CyberCases =>
+        Set<CyberCase>();
+
+    public DbSet<AuditLog> AuditLogs =>
+        Set<AuditLog>();
+
+    public DbSet<Evidence> EvidenceItems =>
+        Set<Evidence>();
+
+    public DbSet<EvidenceRevision> EvidenceRevisions =>
+        Set<EvidenceRevision>();
+
+    public DbSet<CaseStatusHistory> CaseStatusHistories =>
+        Set<CaseStatusHistory>();
+
+    public DbSet<CaseNote> CaseNotes =>
+        Set<CaseNote>();
+
+    public DbSet<CaseMessage> CaseMessages =>
+        Set<CaseMessage>();
+
+    public DbSet<UserNotification> UserNotifications =>
+        Set<UserNotification>();
+
+    public DbSet<CaseStaffRequest> CaseStaffRequests =>
+        Set<CaseStaffRequest>();
+
+    public DbSet<CaseCollaborator> CaseCollaborators =>
+        Set<CaseCollaborator>();
+
+    protected override void OnModelCreating(
+        ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);
+
+        // Existing cases belong to the formal reporting workflow.
+        builder.Entity<CyberCase>()
+            .Property(item => item.Path)
+            .HasDefaultValue(CasePath.FormalReport)
+            .HasSentinel(CasePath.FormalReport);
+
+        // Case numbers must be unique, including across simultaneous requests.
+        builder.Entity<CyberCase>()
+            .HasIndex(item => item.CaseNumber)
+            .IsUnique();
+
+        builder.Entity<CyberCase>()
+            .HasIndex(item => new { item.ReporterId, item.CreatedAtUtc });
+
+        builder.Entity<CyberCase>()
+            .HasIndex(item => new { item.AssignedOfficerId, item.Status });
+
+        builder.Entity<CaseMessage>()
+            .HasIndex(item => new { item.CyberCaseId, item.CreatedAtUtc });
+
+        builder.Entity<CaseNote>()
+            .HasIndex(item => new { item.CyberCaseId, item.CreatedAtUtc });
+
+        builder.Entity<AuditLog>()
+            .HasIndex(item => new { item.CyberCaseId, item.CreatedAtUtc });
+
+        builder.Entity<UserNotification>()
+            .HasIndex(item => new { item.RecipientUserId, item.CreatedAtUtc });
+
+        builder.Entity<UserNotification>()
+            .HasIndex(item => new { item.RecipientUserId, item.IsRead });
+
+        builder.Entity<EvidenceRevision>()
+            .HasOne(revision =>
+                revision.Evidence)
+            .WithMany(evidence =>
+                evidence.Revisions)
+            .HasForeignKey(revision =>
+                revision.EvidenceId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<EvidenceRevision>()
+            .HasIndex(revision => new
+            {
+                revision.EvidenceId,
+                revision.VersionNumber
+            })
+            .IsUnique();
+
+        builder.Entity<CaseStaffRequest>()
+            .HasOne(request =>
+                request.CyberCase)
+            .WithMany(cyberCase =>
+                cyberCase.StaffRequests)
+            .HasForeignKey(request =>
+                request.CyberCaseId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<CaseStaffRequest>()
+            .HasIndex(request => new
+            {
+                request.Status,
+                request.CreatedAtUtc
+            });
+
+        builder.Entity<CaseStaffRequest>()
+            .HasIndex(request => new
+            {
+                request.RequestedByOfficerId,
+                request.Status
+            });
+
+        builder.Entity<CaseCollaborator>()
+            .HasOne(collaborator =>
+                collaborator.CyberCase)
+            .WithMany(cyberCase =>
+                cyberCase.Collaborators)
+            .HasForeignKey(collaborator =>
+                collaborator.CyberCaseId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<CaseCollaborator>()
+            .HasIndex(collaborator => new
+            {
+                collaborator.CyberCaseId,
+                collaborator.OfficerId
+            })
+            .IsUnique();
+
+        builder.Entity<CaseCollaborator>()
+            .HasIndex(collaborator => new
+            {
+                collaborator.OfficerId,
+                collaborator.IsActive
+            });
+
+        builder.Entity<CaseCollaborator>()
+            .HasIndex(collaborator =>
+                collaborator.SourceRequestId)
+            .IsUnique();
+    }
+}

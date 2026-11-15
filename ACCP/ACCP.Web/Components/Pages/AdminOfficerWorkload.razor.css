@@ -1,0 +1,456 @@
+/* صفحة متابعة توزيع القضايا */
+.container {
+    max-width: 1280px;
+    margin-inline: auto;
+    padding: 32px 12px 48px !important;
+    color: #19324d;
+}
+
+/* رأس الصفحة */
+.container > header {
+    gap: 20px !important;
+    margin-bottom: 26px !important;
+}
+
+.container > header > div:first-child {
+    flex: 1 1 360px;
+}
+
+.container > header > div:last-child {
+    flex-wrap: wrap;
+    gap: 10px !important;
+}
+
+.container h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.6rem, 3vw, 2rem);
+    font-weight: 750;
+    line-height: 1.5;
+}
+
+.container > header p {
+    color: #687e95 !important;
+    font-size: .87rem;
+    line-height: 1.9;
+}
+
+/* بطاقات الإحصائيات */
+.container > .row {
+    margin-bottom: 24px !important;
+}
+
+.container > .row .card {
+    min-height: 140px;
+    padding: 23px;
+    border: 1px solid #dce6ef;
+    border-radius: 14px;
+    background: #fff;
+}
+
+.container > .row .card > span {
+    display: block;
+    color: #60778e;
+    font-size: .83rem;
+    line-height: 1.8;
+}
+
+.container > .row .card > strong {
+    display: block;
+    margin-top: 16px;
+    color: #19324d;
+    font-size: 1.95rem !important;
+    line-height: 1.2;
+}
+
+.container > .row > div:nth-child(2) strong {
+    color: #176d65;
+}
+
+.container > .row .card.border-warning {
+    border-color: #e5d8bd !important;
+    background: #fffdfa;
+}
+
+.container > .row .card.border-warning > strong {
+    color: #a77027;
+}
+
+/* أقسام الموظفين والقضايا */
+.container > section.card {
+    min-width: 0;
+    border: 1px solid #dce6ef;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: none !important;
+}
+
+.container > section.card > .card-body {
+    min-width: 0;
+    padding: 25px;
+}
+
+.container h2 {
+    margin: 0 0 20px;
+    color: #19324d;
+    font-size: 1.08rem;
+    font-weight: 750;
+    line-height: 1.8;
+}
+
+#officers-heading {
+    padding-bottom: 17px;
+    border-bottom: 1px solid #e5edf3;
+}
+
+#cases-heading {
+    padding-bottom: 17px;
+    border-bottom: 1px solid #e5edf3;
+    overflow-wrap: anywhere;
+}
+
+/* البحث والتصفية */
+.container .form-label {
+    display: block;
+    margin-bottom: 9px;
+    color: #29455f;
+    font-size: .81rem;
+    font-weight: 650;
+}
+
+.container .form-control,
+.container .form-select {
+    min-height: 45px;
+    padding: 11px 13px;
+    border: 1px solid #cbd9e6;
+    border-radius: 9px;
+    background-color: #fff;
+    color: #19324d;
+    font: inherit;
+    font-size: .85rem;
+}
+
+.container .form-control:focus,
+.container .form-select:focus {
+    border-color: #176d65;
+    outline: 0;
+    box-shadow: 0 0 0 3px #e2f1ed;
+}
+
+.container .form-control:disabled,
+.container .form-select:disabled {
+    color: #75879a;
+    background-color: #f2f5f8;
+    cursor: not-allowed;
+}
+
+.container .card-body > .row {
+    margin-bottom: 24px !important;
+}
+
+/* الجداول */
+.container .table-responsive {
+    margin-top: 10px;
+    border: 1px solid #e0e8f0;
+    border-radius: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: #c3d1df #f5f8fb;
+}
+
+.container .table {
+    min-width: 660px;
+    margin-bottom: 0;
+    border-color: #e6edf3;
+    color: #29455f;
+    font-size: .83rem;
+}
+
+.container .table th {
+    padding: 15px 17px;
+    background-color: #f4f7fb;
+    color: #566e86;
+    font-size: .77rem;
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+.container .table td {
+    padding: 18px 17px;
+    vertical-align: middle;
+    line-height: 1.9;
+    overflow-wrap: anywhere;
+}
+
+.container .table td:first-child {
+    min-width: 210px;
+}
+
+.container .table td > strong {
+    display: inline-block;
+    margin-bottom: 5px;
+    color: #19324d;
+    font-size: .87rem;
+}
+
+.container .table td > bdi {
+    color: #6c8095;
+    font-size: .77rem;
+    unicode-bidi: isolate;
+}
+
+.container .table caption {
+    padding: 14px 17px;
+    border-top: 1px solid #e6edf3;
+    color: #6d8297;
+    font-size: .75rem;
+    line-height: 1.9;
+}
+
+.container .table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.container .table tbody tr:hover > td {
+    background-color: #f7fafc;
+}
+
+.container .table-striped > tbody > tr:nth-of-type(odd) > * {
+    --bs-table-striped-bg: #f8fafc;
+    --bs-table-striped-color: #29455f;
+}
+
+/* الموظف المحدد */
+.container .table-primary {
+    --bs-table-bg: #eaf6f0;
+    --bs-table-color: #19324d;
+    --bs-table-border-color: #d5e8df;
+    --bs-table-striped-bg: #eaf6f0;
+    --bs-table-striped-color: #19324d;
+    --bs-table-accent-bg: transparent;
+}
+
+.container .table-primary > td:first-child {
+    border-inline-start: 3px solid #176d65;
+}
+
+.container .table-primary > td > strong {
+    color: #176d65;
+}
+
+/* حالة الحساب */
+.container .badge {
+    display: inline-block;
+    padding: 6px 11px;
+    border-radius: 7px;
+    font-size: .73rem;
+    font-weight: 700;
+    line-height: 1.6;
+}
+
+.container .badge.bg-success {
+    color: #21694e !important;
+    background-color: #e9f6ee !important;
+}
+
+.container .badge.bg-danger {
+    color: #a2424c !important;
+    background-color: #fcecef !important;
+}
+
+/* الأزرار */
+.container .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 42px;
+    padding: 10px 16px;
+    border-radius: 9px;
+    font-size: .81rem;
+    font-weight: 650;
+    line-height: 1.6;
+    text-decoration: none;
+}
+
+.container .btn-primary {
+    color: #fff;
+    background-color: #176d65;
+    border-color: #176d65;
+}
+
+.container .btn-primary:hover:not(:disabled) {
+    color: #fff;
+    background-color: #11564f;
+    border-color: #11564f;
+}
+
+.container .btn-outline-primary {
+    color: #176d65;
+    background-color: #fff;
+    border-color: #c5ddd5;
+}
+
+.container .btn-outline-primary:hover:not(:disabled) {
+    color: #11564f;
+    background-color: #edf7f2;
+    border-color: #176d65;
+}
+
+.container .btn-outline-secondary {
+    color: #516d85;
+    background-color: #fff;
+    border-color: #d1dde8;
+}
+
+.container .btn-outline-secondary:hover:not(:disabled) {
+    color: #29455f;
+    background-color: #f2f6fa;
+    border-color: #aebfd0;
+}
+
+.container .btn-outline-danger {
+    color: #a4434e;
+    background-color: #fff;
+    border-color: #e6c9ce;
+}
+
+.container .btn-outline-danger:hover {
+    color: #913540;
+    background-color: #fff0f2;
+    border-color: #cb7b87;
+}
+
+.container .btn-sm {
+    min-height: 37px;
+    padding: 8px 13px;
+    font-size: .76rem;
+    white-space: nowrap;
+}
+
+.container .btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.container .btn:focus-visible {
+    outline: 3px solid #8cc9bc;
+    outline-offset: 3px;
+    box-shadow: none;
+}
+
+/* التنبيهات وحالات التحميل */
+.container .alert {
+    padding: 15px 18px;
+    border: 1px solid;
+    border-radius: 10px;
+    font-size: .84rem;
+    line-height: 1.95;
+}
+
+.container .alert-danger {
+    color: #993b46;
+    background-color: #fff0f2;
+    border-color: #edcbd1;
+}
+
+.container .alert-warning {
+    color: #7c5d1c;
+    background-color: #fff8e8;
+    border-color: #eadbb7;
+}
+
+.container p[role="status"] {
+    padding: 24px;
+    border: 1px solid #dce6ef;
+    border-radius: 10px;
+    background: #f6f9fc;
+    color: #687e95;
+    font-size: .87rem;
+    line-height: 1.9;
+    text-align: center;
+}
+
+.container .text-muted {
+    color: #6c8095 !important;
+}
+
+/* التنقل بين صفحات قضايا الموظف */
+.container nav[aria-label="صفحات قضايا الموظف"] {
+    justify-content: space-between !important;
+    margin-top: 20px;
+    padding-top: 19px;
+    border-top: 1px solid #e5edf3;
+}
+
+.container nav[aria-label="صفحات قضايا الموظف"] > span {
+    color: #657c93;
+    font-size: .81rem;
+}
+
+/* الشاشات المتوسطة */
+@media (max-width: 1000px) {
+    .container > header {
+        align-items: flex-start !important;
+    }
+
+    .container > header > div:first-child {
+        flex-basis: 100%;
+    }
+}
+
+/* الجوال */
+@media (max-width: 640px) {
+    .container {
+        padding: 20px 0 32px !important;
+    }
+
+    .container > header > div:last-child {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        width: 100%;
+    }
+
+    .container > header .btn {
+        width: 100%;
+    }
+
+    .container > .row .card {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+        min-height: 88px;
+        padding: 18px;
+    }
+
+    .container > .row .card > span {
+        max-width: 75%;
+        font-size: .79rem;
+    }
+
+    .container > .row .card > strong {
+        margin-top: 0;
+        font-size: 1.7rem !important;
+    }
+
+    .container > section.card > .card-body {
+        padding: 18px;
+    }
+
+    .container .table th,
+    .container .table td {
+        padding: 14px 12px;
+    }
+
+    .container .btn {
+        min-height: 44px;
+    }
+
+    .container nav[aria-label="صفحات قضايا الموظف"] {
+        gap: 10px !important;
+    }
+
+    .container nav[aria-label="صفحات قضايا الموظف"] .btn {
+        padding: 9px 12px;
+    }
+}

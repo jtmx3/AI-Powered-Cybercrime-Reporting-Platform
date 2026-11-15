@@ -1,0 +1,514 @@
+@page "/admin/staff-requests"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "ADMIN")]
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+@using ACCP.Application.CaseStaffing
+@using ACCP.Domain.Entities
+@using ACCP.Domain.Enums
+@using ACCP.Web.Security
+@using Microsoft.AspNetCore.Components.Authorization
+
+@inject ICaseStaffRequestService StaffRequestService
+@inject EmployeeManagementService Employees
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>طلبات الموظفين | ACCP</PageTitle>
+
+<div dir="rtl" class="container mt-4 mb-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h2 mb-1">طلبات نقل القضايا والمشاركة</h1>
+            <p class="text-muted mb-0">
+                مراجعة الطلبات الإدارية واختيار الموظف البديل أو المشارك.
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button"
+                    class="btn btn-outline-primary"
+                    disabled="@Busy"
+                    @onclick="RefreshAsync">
+                تحديث الطلبات
+            </button>
+            <a class="btn btn-outline-secondary" href="/admin/workload">
+                متابعة توزيع القضايا
+            </a>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(successMessage))
+    {
+        <div class="alert alert-success" role="status">
+            @successMessage
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="alert alert-info" role="status">
+            جارٍ تحميل الطلبات...
+        </div>
+    }
+    else if (accessLost)
+    {
+        <a href="/login" data-enhance-nav="false" class="btn btn-primary">
+            تسجيل الدخول
+        </a>
+    }
+    else
+    {
+        <div class="row g-3 mb-4">
+            @foreach (var status in Enum.GetValues<CaseStaffRequestStatus>())
+            {
+                <div class="col-sm-6 col-lg-3" @key="status">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="text-muted">@StatusText(status)</div>
+                            <div class="display-6 fw-bold">
+                                @requests.Count(item => item.Status == status)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <p class="text-muted small">
+                    تعرض الصفحة بيانات الطلب ورقم القضية فقط.
+                    إدارة الطلب لا تمنح صلاحية قراءة محتوى القضية أو هوية المشتكي.
+                </p>
+
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button"
+                            class="btn @FilterClass(null)"
+                            disabled="@Busy"
+                            @onclick="() => SetFilter(null)">
+                        جميع الطلبات
+                    </button>
+
+                    @foreach (var status in Enum.GetValues<CaseStaffRequestStatus>())
+                    {
+                        <button type="button"
+                                class="btn @FilterClass(status)"
+                                disabled="@Busy"
+                                @onclick="() => SetFilter(status)">
+                            @StatusText(status)
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @if (FilteredRequests.Count == 0)
+        {
+            <div class="alert alert-secondary">
+                لا توجد طلبات ضمن التصنيف المحدد.
+            </div>
+        }
+
+        @foreach (var request in FilteredRequests)
+        {
+            var review = reviewForms[request.Id];
+
+            <div class="card shadow-sm mb-4" @key="request.Id">
+                <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <strong>@TypeText(request.RequestType)</strong>
+                        <span class="text-muted me-2">
+                            — القضية <bdi>@request.CyberCase.CaseNumber</bdi>
+                        </span>
+                    </div>
+
+                    <span class="badge @StatusClass(request.Status)">
+                        @StatusText(request.Status)
+                    </span>
+                </div>
+
+                <div class="card-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <div class="text-muted small">الموظف صاحب الطلب</div>
+                            <div class="fw-semibold text-break">
+                                <bdi>@request.RequestedByOfficerEmail</bdi>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="text-muted small">وقت إرسال الطلب</div>
+                            <div>
+                                @request.CreatedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="text-muted small">سبب الطلب الإداري</div>
+                            <div class="border rounded bg-light p-3 mt-1"
+                                 style="white-space: pre-wrap;">@request.Reason</div>
+                        </div>
+                    </div>
+
+                    @if (request.Status == CaseStaffRequestStatus.Pending)
+                    {
+                        <hr />
+
+                        <div class="alert alert-warning">
+                            الموافقة تنفّذ النقل أو إضافة المشاركة.
+                            راجع رقم القضية والموظف المحدد قبل التنفيذ.
+                        </div>
+
+                        <fieldset disabled="@Busy">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label"
+                                           for="@($"target-{request.Id:N}")">
+                                        الموظف البديل أو المشارك
+                                    </label>
+
+                                    <select id="@($"target-{request.Id:N}")"
+                                            class="form-select"
+                                            @bind="review.TargetOfficerId">
+                                        <option value="@Guid.Empty">اختر موظفًا</option>
+
+                                        @foreach (var officer in EligibleOfficers(request))
+                                        {
+                                            <option value="@officer.Id">
+                                                @officer.FullName — @officer.Email
+                                            </option>
+                                        }
+                                    </select>
+
+                                    @if (!EligibleOfficers(request).Any())
+                                    {
+                                        <p class="text-danger small mt-2">
+                                            لا يوجد موظف بديل متاح في القائمة الحالية.
+                                        </p>
+                                    }
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label"
+                                           for="@($"decision-{request.Id:N}")">
+                                        ملاحظة قرار المدير
+                                    </label>
+
+                                    <textarea id="@($"decision-{request.Id:N}")"
+                                              class="form-control"
+                                              rows="4"
+                                              maxlength="1000"
+                                              placeholder="اختيارية للموافقة، ومطلوبة للرفض: 5 أحرف على الأقل."
+                                              @bind="review.DecisionNote"
+                                              @bind:event="oninput"></textarea>
+
+                                    <div class="form-text">
+                                        @review.DecisionNote.Length / 1000
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2 mt-3">
+                                <button type="button"
+                                        class="btn btn-success"
+                                        disabled="@(Busy || review.TargetOfficerId == Guid.Empty)"
+                                        @onclick="() => DecideAsync(request, true)">
+                                    @(processingRequestId == request.Id
+                                        ? "جارٍ تنفيذ القرار..."
+                                        : "الموافقة وتنفيذ الطلب")
+                                </button>
+
+                                <button type="button"
+                                        class="btn btn-outline-danger"
+                                        disabled="@(Busy || review.DecisionNote.Trim().Length < 5)"
+                                        @onclick="() => DecideAsync(request, false)">
+                                    رفض الطلب
+                                </button>
+                            </div>
+                        </fieldset>
+                    }
+                    else
+                    {
+                        <hr />
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="text-muted small">الموظف المحدد</div>
+                                <div class="fw-semibold text-break">
+                                    @(request.TargetOfficerEmail ?? "—")
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="text-muted small">راجع الطلب</div>
+                                <div class="fw-semibold text-break">
+                                    @(request.ReviewedByAdminEmail ?? "—")
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="text-muted small">وقت القرار</div>
+                                <div>
+                                    @(request.ReviewedAtUtc?.ToLocalTime()
+                                        .ToString("yyyy-MM-dd HH:mm") ?? "—")
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="text-muted small">ملاحظة القرار</div>
+                                <div class="border rounded bg-light p-3 mt-1"
+                                     style="white-space: pre-wrap;">@(string.IsNullOrWhiteSpace(request.DecisionNote)
+                                        ? "لا توجد ملاحظة."
+                                        : request.DecisionNote)</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private readonly Dictionary<Guid, ReviewForm> reviewForms = [];
+
+    private List<CaseStaffRequest> requests = [];
+    private List<EmployeeAccountSummary> officers = [];
+
+    private Guid adminId;
+    private string adminEmail = string.Empty;
+    private Guid? processingRequestId;
+    private bool isLoading = true;
+    private bool accessLost;
+
+    private string successMessage = string.Empty;
+    private string errorMessage = string.Empty;
+
+    private CaseStaffRequestStatus? selectedStatus =
+        CaseStaffRequestStatus.Pending;
+
+    private bool Busy => isLoading || processingRequestId.HasValue;
+
+    private List<CaseStaffRequest> FilteredRequests =>
+        requests
+            .Where(item => !selectedStatus.HasValue ||
+                item.Status == selectedStatus.Value)
+            .OrderByDescending(item => item.CreatedAtUtc)
+            .ThenBy(item => item.Id)
+            .ToList();
+
+    protected override Task OnInitializedAsync() => LoadDataAsync();
+
+    private async Task RefreshAsync()
+    {
+        if (Busy)
+            return;
+
+        successMessage = string.Empty;
+        await LoadDataAsync();
+    }
+
+    private async Task ReadAdminAsync()
+    {
+        var state = await AuthenticationStateProvider
+            .GetAuthenticationStateAsync();
+
+        var user = state.User;
+
+        if (user.Identity?.IsAuthenticated != true ||
+            !user.IsInRole("ADMIN") ||
+            !Guid.TryParse(
+                user.FindFirstValue(ClaimTypes.NameIdentifier),
+                out var id) ||
+            id == Guid.Empty ||
+            (adminId != Guid.Empty && adminId != id))
+        {
+            throw new UnauthorizedAccessException();
+        }
+
+        adminId = id;
+        adminEmail = user.FindFirstValue(ClaimTypes.Email)
+            ?? user.Identity?.Name
+            ?? string.Empty;
+    }
+
+    private async Task LoadDataAsync()
+    {
+        isLoading = true;
+        errorMessage = string.Empty;
+
+        try
+        {
+            await ReadAdminAsync();
+
+            var loadedRequests = await StaffRequestService.GetForAdminAsync();
+            var directory = await Employees.GetOfficersAsync();
+
+            requests = loadedRequests;
+            officers = directory
+                .Where(item => item.IsActive && !item.HasAdminRole)
+                .OrderBy(item => item.FullName)
+                .ThenBy(item => item.Id)
+                .ToList();
+
+            reviewForms.Clear();
+
+            foreach (var request in requests)
+                reviewForms[request.Id] = new ReviewForm();
+
+            accessLost = false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            requests.Clear();
+            officers.Clear();
+            reviewForms.Clear();
+            accessLost = true;
+            successMessage = string.Empty;
+            errorMessage = "انتهت صلاحية الجلسة أو تغيّرت صلاحيات الحساب. سجّل الدخول مجددًا.";
+        }
+        catch
+        {
+            requests.Clear();
+            officers.Clear();
+            reviewForms.Clear();
+            errorMessage = "تعذر تحميل الطلبات. حدّث القائمة للمحاولة مجددًا.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private IEnumerable<EmployeeAccountSummary> EligibleOfficers(
+        CaseStaffRequest request) =>
+        officers.Where(item =>
+            item.Id != request.RequestedByOfficerId &&
+            item.Id != request.CyberCase.AssignedOfficerId);
+
+    private async Task DecideAsync(CaseStaffRequest request, bool approve)
+    {
+        if (Busy ||
+            accessLost ||
+            request.Status != CaseStaffRequestStatus.Pending ||
+            !reviewForms.TryGetValue(request.Id, out var review))
+        {
+            return;
+        }
+
+        var targetId = review.TargetOfficerId;
+        var note = review.DecisionNote.Trim();
+
+        if (note.Length > 1000 ||
+            (!approve && note.Length < 5))
+        {
+            errorMessage = "سبب الرفض يجب أن يكون من 5 إلى 1000 حرف، وملاحظة الموافقة لا تتجاوز 1000 حرف.";
+            return;
+        }
+
+        if (approve &&
+            !EligibleOfficers(request).Any(item => item.Id == targetId))
+        {
+            errorMessage = "اختر موظفًا متاحًا من القائمة.";
+            return;
+        }
+
+        processingRequestId = request.Id;
+        successMessage = string.Empty;
+        errorMessage = string.Empty;
+
+        try
+        {
+            await ReadAdminAsync();
+
+            var completed = approve
+                ? await StaffRequestService.ApproveForAdminAsync(
+                    request.Id, targetId, adminId, adminEmail, note)
+                : await StaffRequestService.RejectForAdminAsync(
+                    request.Id, adminId, adminEmail, note);
+
+            await LoadDataAsync();
+
+            if (accessLost || !string.IsNullOrWhiteSpace(errorMessage))
+                return;
+
+            if (completed)
+            {
+                successMessage = approve
+                    ? "تمت الموافقة وتنفيذ الطلب."
+                    : "تم رفض الطلب وحفظ السبب.";
+            }
+            else
+            {
+                errorMessage =
+                    "لم يُنفّذ القرار؛ ربما تغيّر الطلب أو الإسناد. تم تحديث القائمة.";
+            }
+        }
+        catch (UnauthorizedAccessException)
+        {
+            requests.Clear();
+            officers.Clear();
+            reviewForms.Clear();
+            accessLost = true;
+            errorMessage = "انتهت صلاحية الجلسة. سجّل الدخول مجددًا.";
+        }
+        catch
+        {
+            errorMessage =
+                "تعذر تأكيد نتيجة العملية. حدّث القائمة وتحقق من حالة الطلب قبل إعادة المحاولة.";
+        }
+        finally
+        {
+            processingRequestId = null;
+        }
+    }
+
+    private void SetFilter(CaseStaffRequestStatus? status)
+    {
+        if (!Busy)
+            selectedStatus = status;
+    }
+
+    private string FilterClass(CaseStaffRequestStatus? status) =>
+        selectedStatus == status ? "btn-primary" : "btn-outline-primary";
+
+    private static string TypeText(CaseStaffRequestType type) =>
+        type switch
+        {
+            CaseStaffRequestType.TransferAssignment => "نقل مسؤولية القضية",
+            CaseStaffRequestType.AddCollaborator => "إضافة موظف مشارك",
+            _ => "طلب غير معروف"
+        };
+
+    private static string StatusText(CaseStaffRequestStatus status) =>
+        status switch
+        {
+            CaseStaffRequestStatus.Pending => "قيد المراجعة",
+            CaseStaffRequestStatus.Approved => "تمت الموافقة",
+            CaseStaffRequestStatus.Rejected => "مرفوض",
+            CaseStaffRequestStatus.Cancelled => "ملغى",
+            _ => "غير محدد"
+        };
+
+    private static string StatusClass(CaseStaffRequestStatus status) =>
+        status switch
+        {
+            CaseStaffRequestStatus.Pending => "bg-warning text-dark",
+            CaseStaffRequestStatus.Approved => "bg-success",
+            CaseStaffRequestStatus.Rejected => "bg-danger",
+            _ => "bg-secondary"
+        };
+
+    private sealed class ReviewForm
+    {
+        public Guid TargetOfficerId { get; set; }
+        public string DecisionNote { get; set; } = string.Empty;
+    }
+}

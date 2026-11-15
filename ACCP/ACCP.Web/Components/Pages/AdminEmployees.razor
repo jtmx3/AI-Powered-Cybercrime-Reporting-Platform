@@ -1,0 +1,557 @@
+@page "/admin/employees"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "ADMIN")]
+@rendermode InteractiveServer
+@implements IDisposable
+
+@using System.ComponentModel.DataAnnotations
+@using ACCP.Web.Security
+@inject EmployeeManagementService Employees
+@inject CaseAuthorizationService Authorization
+
+<PageTitle>إدارة الموظفين | ACCP</PageTitle>
+
+<section class="employee-admin" dir="rtl" aria-busy="@isBusy.ToString().ToLowerInvariant()">
+    <header class="ea-header">
+        <div>
+            <span class="ea-eyebrow">إدارة النظام</span>
+            <h1>إدارة الموظفين</h1>
+            <p>إدارة حسابات الموظفين والبريد وكلمات المرور وحالة الوصول إلى المنصة.</p>
+        </div>
+        <a href="/admin/workload"
+   class="btn btn-outline-secondary">
+    متابعة توزيع القضايا
+</a>
+        <button type="button" class="btn btn-outline-primary" disabled="@isBusy" @onclick="RefreshAsync">
+            @(isBusy ? "جارٍ التنفيذ..." : "تحديث القائمة")
+        </button>
+    </header>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger" role="alert">@errorMessage</div>
+    }
+    @if (!string.IsNullOrEmpty(actionMessage))
+    {
+        <div class="alert @(actionSucceeded ? "alert-success" : "alert-warning")" role="status">@actionMessage</div>
+    }
+
+    @if (isLoading)
+    {
+        <p class="ea-empty" role="status">جارٍ تحميل حسابات الموظفين...</p>
+    }
+    else if (!canManage)
+    {
+        <div class="ea-panel ea-empty">
+            <p>إدارة الموظفين متاحة لمدير نظام فعّال فقط.</p>
+            <a href="/login" class="btn btn-outline-primary">تسجيل الدخول</a>
+        </div>
+    }
+    else
+    {
+        <div class="ea-stats">
+            <div class="ea-stat"><span>إجمالي الموظفين</span><strong>@officers.Count</strong></div>
+            <div class="ea-stat"><span>حسابات مفعّلة</span><strong>@officers.Count(item => item.IsActive)</strong></div>
+            <div class="ea-stat"><span>حسابات معطّلة</span><strong>@officers.Count(item => !item.IsActive)</strong></div>
+        </div>
+
+        <div class="ea-grid">
+            <aside class="ea-panel">
+                <h2>إضافة موظف</h2>
+                <p class="ea-muted">يُنشأ الحساب بدور موظف، ويكون مفعّلًا عند إنشائه.</p>
+                <EditForm EditContext="@createContext" OnValidSubmit="CreateAsync" FormName="admin-create-officer">
+                    <DataAnnotationsValidator />
+                    <fieldset disabled="@isBusy">
+                        <div class="mb-3">
+                            <label class="form-label" for="employee-name">الاسم الكامل</label>
+                            <InputText id="employee-name" class="form-control" maxlength="120"
+                                       autocomplete="off" @bind-Value="createModel.FullName" />
+                            <ValidationMessage For="@(() => createModel.FullName)" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="employee-email">البريد الإلكتروني</label>
+                            <InputText id="employee-email" type="email" dir="ltr" class="form-control"
+                                       maxlength="256" autocomplete="off" @bind-Value="createModel.Email" />
+                            <ValidationMessage For="@(() => createModel.Email)" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="employee-password">كلمة المرور</label>
+                            <InputText id="employee-password" type="password" dir="ltr" class="form-control"
+                                       maxlength="128" autocomplete="new-password" aria-describedby="password-help"
+                                       @bind-Value="createModel.Password" />
+                            <ValidationMessage For="@(() => createModel.Password)" />
+                            <p id="password-help" class="ea-help">من 12 إلى 128 حرفًا، تشمل حرفًا إنجليزيًا كبيرًا وصغيرًا ورقمًا ورمزًا خاصًا.</p>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">إنشاء حساب الموظف</button>
+                    </fieldset>
+                </EditForm>
+            </aside>
+
+            <div class="ea-panel ea-directory">
+                <h2>حسابات الموظفين</h2>
+                <div class="ea-filters">
+                    <div>
+                        <label class="form-label" for="employee-search">البحث بالاسم أو البريد</label>
+                        <input id="employee-search" type="search" class="form-control" maxlength="256"
+                               @bind="searchText" @bind:event="oninput" disabled="@isBusy" />
+                    </div>
+                    <div>
+                        <label class="form-label" for="employee-status">حالة الحساب</label>
+                        <select id="employee-status" class="form-select" @bind="statusFilter" disabled="@isBusy">
+                            <option value="all">جميع الحسابات</option>
+                            <option value="active">المفعّلة</option>
+                            <option value="inactive">المعطّلة</option>
+                        </select>
+                    </div>
+                </div>
+
+                @if (pendingChange is not null)
+                {
+                    <div class="ea-confirm" role="alert">
+                        <strong>@(pendingChange.IsActive ? "تأكيد تعطيل الحساب" : "تأكيد تفعيل الحساب")</strong>
+                        <p>الحساب: <b>@pendingChange.FullName</b> — <bdi>@pendingChange.Email</bdi></p>
+                        <p>@(pendingChange.IsActive
+                            ? "سيتوقف وصول الموظف إلى العمليات المحمية. القضايا المعيّنة له ستبقى معيّنة حتى يتم نقلها."
+                            : "سيحتاج الموظف إلى تسجيل دخول جديد بعد التفعيل.")</p>
+                        <div class="ea-confirm-actions">
+                            <button type="button" class="btn @(pendingChange.IsActive ? "btn-danger" : "btn-success")"
+                                    disabled="@isBusy" @onclick="ConfirmChangeAsync">تأكيد</button>
+                            <button type="button" class="btn btn-outline-secondary" disabled="@isBusy" @onclick="CancelChange">إلغاء</button>
+                        </div>
+                    </div>
+                }
+
+                @if (pendingEdit is not null)
+                {
+                    <section class="ea-edit" aria-labelledby="employee-edit-title" @key="pendingEdit.Id">
+                        <h3 id="employee-edit-title">@(isPasswordEdit ? "تعيين كلمة مرور جديدة" : "تغيير بريد الموظف")</h3>
+                        <p class="ea-edit-target">الموظف: <strong>@pendingEdit.FullName</strong> — <bdi>@pendingEdit.Email</bdi></p>
+                        <p class="ea-help">بعد الحفظ، تنتهي جلسات الموظف السابقة ويحتاج إلى تسجيل الدخول مجددًا وإكمال التحقق.</p>
+                        @if (isPasswordEdit)
+                        {
+                            <EditForm EditContext="@passwordContext" OnValidSubmit="SavePasswordAsync"
+                                      FormName="admin-reset-officer-password" @key="passwordContext">
+                                <DataAnnotationsValidator />
+                                <fieldset disabled="@isBusy">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="employee-new-password">كلمة المرور الجديدة</label>
+                                        <InputText id="employee-new-password" type="password" dir="ltr" class="form-control"
+                                                   maxlength="128" autocomplete="new-password" aria-describedby="reset-password-help"
+                                                   @bind-Value="passwordModel.Password" />
+                                        <ValidationMessage For="@(() => passwordModel.Password)" />
+                                        <p id="reset-password-help" class="ea-help">من 12 إلى 128 حرفًا، تشمل حرفًا إنجليزيًا كبيرًا وصغيرًا ورقمًا ورمزًا خاصًا.</p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label" for="employee-confirm-password">تأكيد كلمة المرور الجديدة</label>
+                                        <InputText id="employee-confirm-password" type="password" dir="ltr" class="form-control"
+                                                   maxlength="128" autocomplete="new-password" @bind-Value="passwordModel.ConfirmPassword" />
+                                        <ValidationMessage For="@(() => passwordModel.ConfirmPassword)" />
+                                    </div>
+                                    <div class="ea-confirm-actions">
+                                        <button type="submit" class="btn btn-primary">تأكيد تعيين كلمة المرور</button>
+                                        <button type="button" class="btn btn-outline-secondary" @onclick="CancelEdit">إلغاء</button>
+                                    </div>
+                                </fieldset>
+                            </EditForm>
+                        }
+                        else
+                        {
+                            <EditForm EditContext="@emailContext" OnValidSubmit="SaveEmailAsync"
+                                      FormName="admin-change-officer-email" @key="emailContext">
+                                <DataAnnotationsValidator />
+                                <fieldset disabled="@isBusy">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="employee-new-email">البريد الإلكتروني الجديد</label>
+                                        <InputText id="employee-new-email" type="email" dir="ltr" class="form-control"
+                                                   maxlength="256" autocomplete="off" @bind-Value="emailModel.Email" />
+                                        <ValidationMessage For="@(() => emailModel.Email)" />
+                                        <p class="ea-help">يسجّل الموظف دخوله بالبريد الجديد بعد الحفظ.</p>
+                                    </div>
+                                    <div class="ea-confirm-actions">
+                                        <button type="submit" class="btn btn-primary">تأكيد تغيير البريد</button>
+                                        <button type="button" class="btn btn-outline-secondary" @onclick="CancelEdit">إلغاء</button>
+                                    </div>
+                                </fieldset>
+                            </EditForm>
+                        }
+                    </section>
+                }
+
+                <div class="table-responsive">
+                    <table class="table align-middle ea-table">
+                        <caption>حسابات الموظفين وحالة الوصول إلى المنصة</caption>
+                        <thead><tr><th scope="col">الموظف</th><th scope="col">الحالة</th><th scope="col">المصادقة الثنائية</th><th scope="col">الإجراء</th></tr></thead>
+                        <tbody>
+                            @foreach (var employee in FilteredOfficers())
+                            {
+                                <tr @key="employee.Id">
+                                    <td>
+                                        <strong>@employee.FullName</strong>
+                                        <span class="ea-email"><bdi>@employee.Email</bdi></span>
+                                        @if (employee.HasAdminRole) { <small class="ea-muted">يحمل دور مدير أيضًا</small> }
+                                    </td>
+                                    <td><span class="ea-badge @(employee.IsActive ? "ea-active" : "ea-inactive")">@(employee.IsActive ? "مفعّل" : "معطّل")</span></td>
+                                    <td>@(employee.TwoFactorEnabled ? "مفعّلة" : "غير مفعّلة")</td>
+                                    <td>
+                                        @if (employee.HasAdminRole || employee.Id == currentAdminId)
+                                        {
+                                            <span class="ea-muted">حساب محمي</span>
+                                        }
+                                        else
+                                        {
+                                            <div class="ea-row-actions">
+                                                @if (!isBusy)
+                                                {
+                                                    <a href="@($"/admin/employees/{employee.Id:D}/reset-two-factor")"
+                                                       class="btn btn-sm btn-outline-warning">
+                                                        إعادة تهيئة التحقق
+                                                    </a>
+                                                }
+                                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                                        disabled="@isBusy" @onclick="() => RequestEmailChange(employee)">تغيير البريد</button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                        disabled="@isBusy" @onclick="() => RequestPasswordReset(employee)">تعيين باس جديد</button>
+                                                <button type="button" class="btn btn-sm @(employee.IsActive ? "btn-outline-danger" : "btn-outline-success")"
+                                                        disabled="@isBusy" @onclick="() => RequestChange(employee)">
+                                                    @(employee.IsActive ? "تعطيل" : "تفعيل")
+                                                </button>
+                                            </div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                            @if (!FilteredOfficers().Any())
+                            {
+                                <tr><td colspan="4" class="ea-empty">لا توجد حسابات تطابق البحث.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</section>
+
+<style>
+    .employee-admin { --ea-navy: #163f59; --ea-teal: #0f766e; max-width: 1400px; margin: 24px auto; padding: 24px; border-radius: 20px; background: #f5f7fb; color: #163f59; }
+    .employee-admin h1 { margin: 6px 0 10px; font-size: clamp(1.6rem, 3vw, 2.1rem); font-weight: 750; }
+    .employee-admin h2 { font-size: 1.15rem; font-weight: 700; margin-bottom: 12px; }
+    .ea-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
+    .ea-header p, .ea-muted { color: #576779; }
+    .ea-eyebrow { color: var(--ea-teal); font-size: .85rem; font-weight: 700; }
+    .ea-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+    .ea-stat, .ea-panel { background: white; border: 1px solid #e0e7ef; border-radius: 16px; padding: 22px; box-shadow: 0 3px 14px #163f5906; }
+    .ea-stat span { display: block; color: #576779; font-size: .9rem; }
+    .ea-stat strong { display: block; margin-top: 8px; font-size: 1.8rem; color: var(--ea-teal); }
+    .ea-grid { display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); gap: 24px; align-items: start; }
+    .ea-filters { display: grid; grid-template-columns: minmax(0, 2fr) minmax(150px, 1fr); gap: 14px; margin: 20px 0; }
+    .ea-help { margin: 10px 0 0; color: #576779; font-size: .82rem; line-height: 1.8; }
+    .ea-email { display: block; color: #576779; margin-top: 5px; font-size: .85rem; overflow-wrap: anywhere; }
+    .ea-table { font-size: .9rem; }
+    .ea-table th { background: #f5f7fb; color: var(--ea-navy); white-space: nowrap; }
+    .ea-table td, .ea-table th { padding: 14px 10px; }
+    .ea-table caption { color: #576779; font-size: .82rem; }
+    .ea-badge { display: inline-block; border-radius: 20px; padding: 5px 12px; white-space: nowrap; font-size: .8rem; font-weight: 700; }
+    .ea-active { background: #e4f4ef; color: #16664d; }
+    .ea-inactive { background: #fce8e8; color: #9d3030; }
+    .ea-confirm { border: 1px solid #e5cd95; background: #fff8e9; border-radius: 12px; padding: 16px; margin-bottom: 18px; }
+    .ea-confirm p { margin: 10px 0; overflow-wrap: anywhere; }
+    .ea-confirm-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .ea-row-actions { display: flex; flex-wrap: wrap; gap: 8px; min-width: 150px; }
+    .ea-row-actions .btn { white-space: nowrap; }
+    .ea-edit { background: #f0f8f7; border: 1px solid #b9dcd7; border-radius: 14px; padding: 20px; margin-bottom: 20px; }
+    .ea-edit h3 { font-size: 1.1rem; font-weight: 700; margin: 0 0 12px; }
+    .ea-edit-target { overflow-wrap: anywhere; margin-bottom: 10px; }
+    .ea-edit form { margin-top: 18px; }
+    .ea-empty { padding: 28px; text-align: center; color: #576779; }
+    .employee-admin .btn-primary { background: var(--ea-teal); border-color: var(--ea-teal); }
+    .employee-admin .btn-primary:hover { background: #0b5e58; border-color: #0b5e58; }
+    .employee-admin .form-control:focus, .employee-admin .form-select:focus { border-color: var(--ea-teal); box-shadow: 0 0 0 .2rem #0f766e20; }
+    .employee-admin .validation-message { margin-top: 6px; font-size: .85rem; }
+    @@media (max-width: 1000px) { .ea-grid { grid-template-columns: 1fr; } }
+    @@media (max-width: 600px) { .employee-admin { padding: 14px; margin: 12px 0; } .ea-header { align-items: start; flex-direction: column; } .ea-stats { grid-template-columns: 1fr; gap: 10px; } .ea-stat { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; } .ea-stat strong { margin: 0; font-size: 1.5rem; } .ea-filters { grid-template-columns: 1fr; } .ea-panel { padding: 16px; } }
+</style>
+
+@code {
+    private List<EmployeeAccountSummary> officers = new();
+    private CreateOfficerInput createModel = new();
+    private EditContext createContext = default!;
+    private EmployeeAccountSummary? pendingChange;
+    private EmployeeAccountSummary? pendingEdit;
+    private bool isPasswordEdit;
+    private EmailEditInput emailModel = new();
+    private PasswordEditInput passwordModel = new();
+    private EditContext emailContext = default!;
+    private EditContext passwordContext = default!;
+    private Guid currentAdminId;
+    private bool isBusy;
+    private bool isLoading = true;
+    private bool canManage;
+    private bool actionSucceeded;
+    private string searchText = string.Empty;
+    private string statusFilter = "all";
+    private string? errorMessage;
+    private string? actionMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        createContext = new EditContext(createModel);
+        await RefreshAsync();
+    }
+
+    private IEnumerable<EmployeeAccountSummary> FilteredOfficers()
+    {
+        var term = searchText.Trim();
+        return officers.Where(item =>
+            (term.Length == 0 || item.FullName.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || item.Email.Contains(term, StringComparison.OrdinalIgnoreCase))
+            && (statusFilter == "all" || (statusFilter == "active" && item.IsActive)
+                || (statusFilter == "inactive" && !item.IsActive)));
+    }
+
+    private async Task RefreshAsync()
+    {
+        if (isBusy) return;
+        isBusy = true;
+        pendingChange = null;
+        ClearEdit();
+        createModel.Password = string.Empty;
+        errorMessage = null;
+        actionMessage = null;
+        try { await LoadDirectoryAsync(); }
+        finally { isBusy = false; isLoading = false; }
+    }
+
+    private async Task LoadDirectoryAsync()
+    {
+        try
+        {
+            var actor = await Authorization.GetCurrentActorAsync();
+            if (actor is null || !actor.HasRole("ADMIN")) throw new UnauthorizedAccessException();
+            var directory = await Employees.GetOfficersAsync();
+            currentAdminId = actor.UserId;
+            officers = directory;
+            canManage = true;
+        }
+        catch (UnauthorizedAccessException) { ClearAccess(); }
+        catch (Exception)
+        {
+            officers.Clear();
+            pendingChange = null;
+            ClearEdit();
+            errorMessage = "تعذر تحديث قائمة الموظفين. حاول تحديث القائمة مجددًا.";
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        if (isBusy || !canManage) return;
+        // Capture the submitted values before awaiting; the service validates them again.
+        var name = createModel.FullName;
+        var email = createModel.Email;
+        var password = createModel.Password;
+        isBusy = true;
+        pendingChange = null;
+        ClearEdit();
+        errorMessage = null;
+        actionMessage = null;
+        try
+        {
+            var result = await Employees.CreateOfficerAsync(name, email, password);
+            SetResult(result);
+            if (result.Succeeded)
+            {
+                createModel = new();
+                createContext = new EditContext(createModel);
+                await LoadDirectoryAsync();
+            }
+        }
+        catch (UnauthorizedAccessException) { ClearAccess(); }
+        catch (Exception)
+        {
+            errorMessage = "تعذر تأكيد إنشاء الحساب. حدّث القائمة وتحقق من البريد قبل إعادة المحاولة.";
+        }
+        finally
+        {
+            createModel.Password = string.Empty;
+            password = string.Empty;
+            isBusy = false;
+        }
+    }
+
+    private void RequestChange(EmployeeAccountSummary employee)
+    {
+        if (isBusy || !canManage || employee.HasAdminRole || employee.Id == currentAdminId) return;
+        ClearEdit();
+        // Keep the displayed concurrency token: a newer edit must fail and refresh.
+        pendingChange = employee;
+        errorMessage = null;
+        actionMessage = null;
+    }
+
+    private void CancelChange()
+    {
+        if (!isBusy) pendingChange = null;
+    }
+
+    private async Task ConfirmChangeAsync()
+    {
+        if (isBusy || !canManage || pendingChange is null) return;
+        var employee = pendingChange;
+        pendingChange = null;
+        isBusy = true;
+        errorMessage = null;
+        actionMessage = null;
+        try
+        {
+            var result = await Employees.SetOfficerActiveAsync(employee.Id, !employee.IsActive, employee.ConcurrencyToken);
+            SetResult(result);
+            await LoadDirectoryAsync();
+        }
+        catch (UnauthorizedAccessException) { ClearAccess(); }
+        catch (Exception)
+        {
+            errorMessage = "تعذر تأكيد حالة الحساب. حدّث القائمة للتحقق من حالته قبل إعادة المحاولة.";
+            officers.Clear();
+        }
+        finally { isBusy = false; }
+    }
+
+    private void RequestEmailChange(EmployeeAccountSummary employee) => OpenEdit(employee, false);
+
+    private void RequestPasswordReset(EmployeeAccountSummary employee) => OpenEdit(employee, true);
+
+    private void OpenEdit(EmployeeAccountSummary employee, bool passwordEdit)
+    {
+        if (isBusy || !canManage || employee.HasAdminRole || employee.Id == currentAdminId) return;
+        ClearEdit();
+        pendingChange = null;
+        createModel.Password = string.Empty;
+        pendingEdit = employee;
+        isPasswordEdit = passwordEdit;
+        emailModel.Email = employee.Email;
+        errorMessage = null;
+        actionMessage = null;
+    }
+
+    private void CancelEdit()
+    {
+        if (!isBusy) ClearEdit();
+    }
+
+    private void ClearEdit()
+    {
+        // Remove secrets from both the old form model and its replacement.
+        passwordModel.Password = string.Empty;
+        passwordModel.ConfirmPassword = string.Empty;
+        pendingEdit = null;
+        isPasswordEdit = false;
+        emailModel = new();
+        passwordModel = new();
+        emailContext = new EditContext(emailModel);
+        passwordContext = new EditContext(passwordModel);
+    }
+
+    private Task SaveEmailAsync() => SaveEditAsync(false);
+
+    private Task SavePasswordAsync() => SaveEditAsync(true);
+
+    private async Task SaveEditAsync(bool passwordEdit)
+    {
+        if (isBusy || !canManage || pendingEdit is null || isPasswordEdit != passwordEdit) return;
+        object model = passwordEdit ? passwordModel : emailModel;
+        if (!Validator.TryValidateObject(model, new ValidationContext(model), new List<ValidationResult>(), true))
+        {
+            errorMessage = "راجع بيانات النموذج وتأكد من تطابق كلمة المرور مع تأكيدها.";
+            return;
+        }
+        // Keep the selected account and the displayed edit token before awaiting.
+        var employee = pendingEdit;
+        var address = emailModel.Email;
+        var password = passwordEdit ? passwordModel.Password : string.Empty;
+        isBusy = true;
+        pendingChange = null;
+        errorMessage = null;
+        actionMessage = null;
+        ClearEdit();
+        try
+        {
+            var result = passwordEdit
+                ? await Employees.ResetOfficerPasswordAsync(employee.Id, password, employee.ConcurrencyToken)
+                : await Employees.ChangeOfficerEmailAsync(employee.Id, address, employee.ConcurrencyToken);
+            SetResult(result);
+            await LoadDirectoryAsync();
+        }
+        catch (UnauthorizedAccessException) { ClearAccess(); }
+        catch (Exception)
+        {
+            officers.Clear();
+            errorMessage = "تعذر تأكيد التعديل. حدّث القائمة وتحقق من حالة الحساب قبل إعادة المحاولة.";
+        }
+        finally
+        {
+            password = string.Empty;
+            ClearEdit();
+            isBusy = false;
+        }
+    }
+
+    private void SetResult(EmployeeOperationResult result)
+    {
+        actionSucceeded = result.Succeeded;
+        actionMessage = result.Message;
+    }
+
+    private void ClearAccess()
+    {
+        canManage = false;
+        currentAdminId = Guid.Empty;
+        officers.Clear();
+        pendingChange = null;
+        ClearEdit();
+        createModel.Password = string.Empty;
+        actionMessage = null;
+        errorMessage = "انتهت الجلسة أو تغيّرت صلاحيات الحساب. أعد تسجيل الدخول بحساب مدير فعّال.";
+    }
+
+    public void Dispose()
+    {
+        createModel.Password = string.Empty;
+        ClearEdit();
+    }
+
+    private sealed class EmailEditInput
+    {
+        [Required(ErrorMessage = "أدخل البريد الإلكتروني الجديد.")]
+        [EmailAddress(ErrorMessage = "أدخل بريدًا إلكترونيًا صحيحًا.")]
+        [StringLength(256, ErrorMessage = "البريد الإلكتروني طويل جدًا.")]
+        public string Email { get; set; } = string.Empty;
+    }
+
+    private sealed class PasswordEditInput
+    {
+        [Required(ErrorMessage = "أدخل كلمة المرور الجديدة.")]
+        [StringLength(128, MinimumLength = 12, ErrorMessage = "كلمة المرور يجب أن تكون من 12 إلى 128 حرفًا.")]
+        public string Password { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "أعد إدخال كلمة المرور الجديدة.")]
+        [StringLength(128, ErrorMessage = "كلمة المرور طويلة جدًا.")]
+        [Compare(nameof(Password), ErrorMessage = "تأكيد كلمة المرور لا يطابق كلمة المرور الجديدة.")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+
+    private sealed class CreateOfficerInput
+    {
+        [Required(ErrorMessage = "أدخل الاسم الكامل.")]
+        [StringLength(120, MinimumLength = 2, ErrorMessage = "الاسم يجب أن يكون من 2 إلى 120 حرفًا.")]
+        public string FullName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "أدخل البريد الإلكتروني.")]
+        [EmailAddress(ErrorMessage = "أدخل بريدًا إلكترونيًا صحيحًا.")]
+        [StringLength(256, ErrorMessage = "البريد الإلكتروني طويل جدًا.")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "أدخل كلمة المرور.")]
+        [StringLength(128, MinimumLength = 12, ErrorMessage = "كلمة المرور يجب أن تكون من 12 إلى 128 حرفًا.")]
+        public string Password { get; set; } = string.Empty;
+    }
+}

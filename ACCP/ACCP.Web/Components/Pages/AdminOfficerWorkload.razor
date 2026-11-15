@@ -1,0 +1,266 @@
+@page "/admin/workload"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "ADMIN")]
+@rendermode InteractiveServer
+@implements IDisposable
+
+@using ACCP.Domain.Enums
+@using ACCP.Web.Security
+
+@inject AdminOfficerWorkloadService Workload
+@inject ILogger<AdminOfficerWorkload> Logger
+
+<PageTitle>متابعة توزيع القضايا | ACCP</PageTitle>
+
+<main class="container py-4" dir="rtl">
+    <header class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h3">متابعة توزيع القضايا</h1>
+            <p class="text-muted mb-0">القضايا المسندة للموظفين، باستثناء المحلولة والمغلقة.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-primary" disabled="@Busy" @onclick="LoadOfficersAsync">
+                تحديث البيانات
+            </button>
+            <a href="/admin/employees" class="btn btn-outline-secondary">إدارة الموظفين</a>
+            <a href="/admin/case-reopening" class="btn btn-outline-secondary">إعادة فتح القضايا</a>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(error))
+    {
+        <div class="alert alert-danger" role="alert">@error</div>
+    }
+
+    @if (accessLost)
+    {
+        <a href="/login" data-enhance-nav="false" class="btn btn-primary">تسجيل الدخول</a>
+    }
+    else if (loadingOfficers)
+    {
+        <p role="status">جارٍ تحميل بيانات الموظفين...</p>
+    }
+    else
+    {
+        <div class="row g-3 mb-4">
+            <div class="col-md-4"><div class="card card-body h-100">
+                <span>إجمالي الموظفين</span><strong class="fs-3">@officers.Count</strong>
+            </div></div>
+            <div class="col-md-4"><div class="card card-body h-100">
+                <span>القضايا المفتوحة المسندة</span><strong class="fs-3">@officers.Sum(item => item.OpenCaseCount)</strong>
+            </div></div>
+            <div class="col-md-4"><div class="card card-body h-100 border-warning">
+                <span>قضايا مسندة لموظفين معطّلين</span>
+                <strong class="fs-3">@officers.Where(item => !item.IsActive).Sum(item => item.OpenCaseCount)</strong>
+            </div></div>
+        </div>
+
+        <section class="card shadow-sm mb-4" aria-labelledby="officers-heading">
+            <div class="card-body">
+                <h2 id="officers-heading" class="h5">أحمال الموظفين</h2>
+                <div class="row g-3 my-2">
+                    <div class="col-md-8">
+                        <label for="workload-search" class="form-label">الاسم أو البريد</label>
+                        <input id="workload-search" type="search" maxlength="256" class="form-control"
+                               disabled="@Busy" @bind="search" @bind:event="oninput" />
+                    </div>
+                    <div class="col-md-4">
+                        <label for="workload-filter" class="form-label">حالة الحساب</label>
+                        <select id="workload-filter" class="form-select" disabled="@Busy" @bind="accountFilter">
+                            <option value="all">الجميع</option>
+                            <option value="active">مفعّل</option>
+                            <option value="inactive">معطّل</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <caption>الأعداد تشمل القضايا التي يكون الموظف مسؤولًا عنها؛ المشاركة وحدها لا تُحسب كإسناد.</caption>
+                        <thead><tr><th scope="col">الموظف</th><th scope="col">الحساب</th><th scope="col">القضايا المفتوحة</th><th scope="col">الإجراء</th></tr></thead>
+                        <tbody>
+                            @foreach (var officer in FilteredOfficers())
+                            {
+                                <tr @key="officer.OfficerId" class="@(selected?.OfficerId == officer.OfficerId ? "table-primary" : null)">
+                                    <td><strong>@officer.FullName</strong><br /><bdi>@officer.Email</bdi></td>
+                                    <td><span class="badge @(officer.IsActive ? "bg-success" : "bg-danger")">@(officer.IsActive ? "مفعّل" : "معطّل")</span></td>
+                                    <td>@officer.OpenCaseCount</td>
+                                    <td><button type="button" class="btn btn-sm btn-outline-primary" disabled="@Busy"
+                                                @onclick="() => LoadCasesAsync(officer, 0)">عرض القضايا</button></td>
+                                </tr>
+                            }
+                            @if (!FilteredOfficers().Any())
+                            {
+                                <tr><td colspan="4" class="text-center text-muted py-4">لا يوجد موظفون يطابقون البحث.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        @if (selected is not null)
+        {
+            <section class="card shadow-sm" aria-labelledby="cases-heading">
+                <div class="card-body">
+                    <h2 id="cases-heading" class="h5">القضايا المفتوحة — @selected.FullName</h2>
+                    @if (!selected.IsActive)
+                    {
+                        <div class="alert alert-warning">هذا الحساب معطّل، وما زالت القضايا التالية مسندة إليه.</div>
+                    }
+                    @if (loadingCases)
+                    {
+                        <p role="status">جارٍ تحميل القضايا...</p>
+                    }
+                    else if (casesFailed)
+                    {
+                        <button type="button" class="btn btn-outline-primary" @onclick="RetryCasesAsync">إعادة المحاولة</button>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped align-middle">
+                                <thead><tr><th scope="col">رقم القضية</th><th scope="col">الحالة</th><th scope="col">تاريخ الإنشاء</th><th scope="col">وقت الإسناد</th><th scope="col">الإجراء</th></tr></thead>
+                                <tbody>
+                                    @foreach (var item in cases)
+                                    {
+                                        <tr @key="item.CaseId"><td><bdi>@item.CaseNumber</bdi></td><td>@StatusText(item.Status)</td><td>@FormatDate(item.CreatedAtUtc)</td><td>@FormatDate(item.AssignedAtUtc)</td><td><a href="@($"/admin/cases/{item.CaseId:D}/reassign")" class="btn btn-sm btn-outline-danger">نقل المسؤولية</a></td></tr>
+                                    }
+                                    @if (cases.Count == 0)
+                                    {
+                                        <tr><td colspan="5" class="text-center text-muted py-4">لا توجد قضايا في هذه الصفحة. يمكنك تحديث البيانات من أعلى الصفحة.</td></tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <nav class="d-flex justify-content-center align-items-center gap-3" aria-label="صفحات قضايا الموظف">
+                            <button type="button" class="btn btn-outline-secondary" disabled="@(Busy || pageIndex == 0)" @onclick="PreviousAsync">السابق</button>
+                            <span aria-live="polite">الصفحة @(pageIndex + 1)</span>
+                            <button type="button" class="btn btn-outline-secondary" disabled="@(Busy || !hasMore)" @onclick="NextAsync">التالي</button>
+                        </nav>
+                    }
+                </div>
+            </section>
+        }
+    }
+</main>
+
+@code {
+    private const int PageSize = 20;
+    private readonly CancellationTokenSource lifetime = new();
+    private IReadOnlyList<OfficerWorkloadSummary> officers = [];
+    private IReadOnlyList<OfficerOpenCaseSummary> cases = [];
+    private OfficerWorkloadSummary? selected;
+    private string search = string.Empty;
+    private string accountFilter = "all";
+    private string error = string.Empty;
+    private bool loadingOfficers, loadingCases, accessLost, casesFailed, hasMore, disposed;
+    private int pageIndex, retryPage;
+    private bool Busy => loadingOfficers || loadingCases;
+
+    protected override Task OnInitializedAsync() => LoadOfficersAsync();
+
+    private IEnumerable<OfficerWorkloadSummary> FilteredOfficers()
+    {
+        var term = search.Trim();
+        return officers.Where(item =>
+            (term.Length == 0 || item.FullName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+             item.Email.Contains(term, StringComparison.OrdinalIgnoreCase)) &&
+            (accountFilter == "all" || (accountFilter == "active" && item.IsActive) ||
+             (accountFilter == "inactive" && !item.IsActive)));
+    }
+
+    private async Task LoadOfficersAsync()
+    {
+        if (Busy || disposed) return;
+        loadingOfficers = true;
+        error = string.Empty;
+        selected = null;
+        officers = [];
+        cases = [];
+        hasMore = false;
+        casesFailed = false;
+        pageIndex = 0;
+        try
+        {
+            var result = await Workload.GetOfficersAsync(lifetime.Token);
+            if (!disposed) { officers = result; accessLost = false; }
+        }
+        catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
+        catch (UnauthorizedAccessException) { DenyAccess(); }
+        catch (Exception exception) { ReportFailure(exception, "تعذر تحميل أحمال الموظفين. اضغط تحديث البيانات للمحاولة مجددًا."); }
+        finally { if (!disposed) loadingOfficers = false; }
+    }
+
+    private async Task LoadCasesAsync(OfficerWorkloadSummary officer, int targetPage)
+    {
+        if (Busy || disposed || targetPage < 0 || accessLost) return;
+        loadingCases = true;
+        selected = officer;
+        retryPage = targetPage;
+        cases = [];
+        hasMore = false;
+        casesFailed = false;
+        error = string.Empty;
+        try
+        {
+            var result = await Workload.GetOpenCasesAsync(officer.OfficerId,
+                skip: checked(targetPage * PageSize), take: PageSize, cancellationToken: lifetime.Token);
+            if (disposed) return;
+            cases = result.Items;
+            hasMore = result.HasMore;
+            pageIndex = targetPage;
+        }
+        catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
+        catch (UnauthorizedAccessException) { DenyAccess(); }
+        catch (Exception exception)
+        {
+            casesFailed = true;
+            ReportFailure(exception, "تعذر تحميل قضايا الموظف. أعد المحاولة أو حدّث البيانات.");
+        }
+        finally { if (!disposed) loadingCases = false; }
+    }
+
+    private Task PreviousAsync() => selected is not null && pageIndex > 0
+        ? LoadCasesAsync(selected, pageIndex - 1) : Task.CompletedTask;
+    private Task NextAsync() => selected is not null && hasMore
+        ? LoadCasesAsync(selected, pageIndex + 1) : Task.CompletedTask;
+    private Task RetryCasesAsync() => selected is not null
+        ? LoadCasesAsync(selected, retryPage) : Task.CompletedTask;
+
+    private void DenyAccess()
+    {
+        if (disposed) return;
+        officers = [];
+        cases = [];
+        selected = null;
+        accessLost = true;
+        error = "انتهت صلاحية جلسة المدير أو تغيّرت صلاحياته. سجّل الدخول مجددًا.";
+    }
+
+    private void ReportFailure(Exception exception, string message)
+    {
+        Logger.LogWarning("Officer workload unavailable. Category: {Category}", exception.GetType().Name);
+        if (!disposed) error = message;
+    }
+
+    private static string FormatDate(DateTime? value) =>
+        value?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "غير متوفر";
+
+    private static string StatusText(CaseStatus status) => status switch
+    {
+        CaseStatus.New => "جديدة",
+        CaseStatus.UnderReview => "قيد المراجعة",
+        CaseStatus.Assigned => "تم تعيين موظف",
+        CaseStatus.InProgress => "قيد المعالجة",
+        CaseStatus.Resolved => "تم حلها",
+        CaseStatus.Closed => "مغلقة",
+        _ => "غير محددة"
+    };
+
+    public void Dispose()
+    {
+        disposed = true;
+        lifetime.Cancel();
+        lifetime.Dispose();
+    }
+}

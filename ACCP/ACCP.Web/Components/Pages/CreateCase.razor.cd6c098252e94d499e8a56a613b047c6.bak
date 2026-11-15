@@ -1,0 +1,285 @@
+﻿@page "/cases/new"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "USER")]
+@rendermode InteractiveServer
+@implements IDisposable
+@using System.Security.Claims
+@using ACCP.Application.Chat
+@using ACCP.Application.Cases
+@using ACCP.Domain.Entities
+@using ACCP.Domain.Enums
+@using Microsoft.AspNetCore.Components.Authorization
+@inject ICaseIntakeAssistant IntakeAssistant
+@inject ICaseService CaseService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ILogger<CreateCase> Logger
+
+<PageTitle>Ù…Ø­Ø§Ø¯Ø«Ø© Ø¬Ø¯ÙŠØ¯Ø© | ACCP</PageTitle>
+
+<main class="intake container py-4" dir="rtl">
+    <div class="heading">
+        <div><span class="eyebrow">ACCP Â· Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø©</span><h1>Ø§Ø­ÙƒÙ Ù„Ù†Ø§ Ø´Ùˆ ØµØ§Ø± Ù…Ø¹Ùƒ</h1>
+            <p>ØµÙ Ø§Ù„Ù…ÙˆÙ‚Ù Ø¨Ø·Ø±ÙŠÙ‚ØªÙƒ. Ø§Ù„Ù…Ø³Ø§Ø¹Ø¯ ÙŠØ³Ø£Ù„ Ø¹Ù† Ø§Ù„ØªÙØ§ØµÙŠÙ„ ÙˆÙŠÙ‚ÙŠÙ‘Ù…Ù‡Ø§ Ø¹Ù†Ø¯ ØªÙˆÙØ± Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„ÙƒØ§ÙÙŠØ©.</p></div>
+        <a href="/cases" class="btn btn-outline-secondary">Ø·Ù„Ø¨Ø§ØªÙŠ</a>
+    </div>
+    <section class="conversation" aria-label="Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø©">
+        <header class="chat-header">
+            <span class="avatar" aria-hidden="true">Ù…</span>
+            <div><strong>Ù…Ø³Ø§Ø¹Ø¯ ACCP</strong><div class="muted small">Ù„Ø§ ÙŠÙÙ‚Ø¯Ù‘Ù… Ø¨Ù„Ø§Øº Ø±Ø³Ù…ÙŠ Ø¯ÙˆÙ† Ù…ÙˆØ§ÙÙ‚ØªÙƒ</div></div>
+            <span class="status">@(savedCaseId.HasValue ? "ØªÙ… ØªÙ‚Ø¯ÙŠÙ… Ø§Ù„Ø¨Ù„Ø§Øº" : busy ? "Ø¬Ø§Ø±Ù Ø§Ù„Ù…Ø¹Ø§Ù„Ø¬Ø©â€¦" : "Ù…Ø­Ø§Ø¯Ø«Ø© Ø¬Ø¯ÙŠØ¯Ø©")</span>
+        </header>
+        <div class="history" role="log" aria-label="Ø±Ø³Ø§Ø¦Ù„ Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø©" aria-live="polite" aria-relevant="additions" tabindex="0">
+            <div class="messages">
+                <div class="message assistant"><span class="speaker">Ø§Ù„Ù…Ø³Ø§Ø¹Ø¯</span><div class="bubble">Ø£Ù‡Ù„Ø§Ù‹ Ø¨Ùƒ. Ø§Ø­ÙƒÙ Ù„ÙŠ Ù…Ø§Ø°Ø§ Ø­Ø¯Ø« ÙˆØ¹Ù„Ù‰ Ø£ÙŠ ØªØ·Ø¨ÙŠÙ‚ Ø£Ùˆ Ù…ÙˆÙ‚Ø¹. Ù„Ø§ ØªÙƒØªØ¨ ÙƒÙ„Ù…Ø§Øª Ø§Ù„Ù…Ø±ÙˆØ± Ø£Ùˆ Ø±Ù…ÙˆØ² Ø§Ù„Ø¯Ø®ÙˆÙ„. Ù„Ù† ÙŠÙØ±Ø³Ù„ Ø¨Ù„Ø§Øº Ù‚Ø¨Ù„ Ù…ÙˆØ§ÙÙ‚ØªÙƒ Ø§Ù„ØµØ±ÙŠØ­Ø©.</div></div>
+                @foreach (var message in messages)
+                {
+                    <div class="message @(message.Role == IntakeChatRole.User ? "user" : "assistant")">
+                        <span class="speaker">@(message.Role == IntakeChatRole.User ? "Ø£Ù†Øª" : "Ø§Ù„Ù…Ø³Ø§Ø¹Ø¯")</span>
+                        <div class="bubble">@message.Content</div>
+                    </div>
+                }
+                @if (busy) { <p class="muted" role="status">Ø¬Ø§Ø±Ù Ø§Ù„Ù…Ø¹Ø§Ù„Ø¬Ø©â€¦</p> }
+            </div>
+        </div>
+        <div class="controls">
+            @if (!string.IsNullOrEmpty(error)) { <div class="alert alert-danger" role="alert">@error</div> }
+            @if (savedCaseId.HasValue)
+            {
+                <div class="alert alert-success" role="status">ØªÙ… ØªÙ‚Ø¯ÙŠÙ… Ø§Ù„Ø¨Ù„Ø§Øº Ø±Ù‚Ù… @savedCaseNumber Ù„Ù„Ù…ÙˆØ¸ÙÙŠÙ† Ø§Ù„Ù…Ø®ØªØµÙŠÙ†. ÙŠÙ…ÙƒÙ†Ùƒ Ù…ØªØ§Ø¨Ø¹Ø© Ø§Ù„Ø±Ø¯ÙˆØ¯ Ù…Ù† Ø§Ù„ØªÙØ§ØµÙŠÙ„.</div>
+                <a href="@($"/cases/{savedCaseId.Value}")" class="btn btn-primary">Ù…ØªØ§Ø¨Ø¹Ø© Ø§Ù„Ø¨Ù„Ø§Øº</a>
+            }
+            else
+            {
+                @if (assessment is not null)
+                {
+                    <section class="assessment" aria-labelledby="assessment-title">
+                        <h2 id="assessment-title">ØªÙ‚ÙŠÙŠÙ… Ø§Ù„Ù…Ø³Ø§Ø¹Ø¯</h2>
+                        <p><strong>Ø¯Ø±Ø¬Ø© Ø§Ù„Ø®Ø·ÙˆØ±Ø© Ø§Ù„Ù…Ù‚Ø¯Ù‘Ø±Ø©: @assessment.RiskPercentage.ToString("0.##")%</strong></p>
+                        <p>@assessment.RiskExplanation</p>
+                        <small class="muted">ØªÙ‚Ø¯ÙŠØ± Ø¢Ù„ÙŠ Ù„Ù„Ù…ÙˆÙ‚ÙØŒ ÙˆÙ„ÙŠØ³ Ø§Ø­ØªÙ…Ø§Ù„Ù‹Ø§ Ù…Ø¤ÙƒØ¯Ù‹Ø§ Ù„ÙˆÙ‚ÙˆØ¹ Ø¬Ø±ÙŠÙ…Ø©.</small>
+                    </section>
+                }
+                @if (reviewing && assessment?.ShouldOfferFormalReport == true)
+                {
+                    <section class="review" aria-labelledby="review-title">
+                        <h2 id="review-title">Ø±Ø§Ø¬Ø¹ Ø§Ù„Ø¨Ù„Ø§Øº Ù‚Ø¨Ù„ ØªÙ‚Ø¯ÙŠÙ…Ù‡</h2>
+                        <h3>@assessment.Title</h3><p class="summary">@assessment.Summary</p>
+                        <p class="muted">Ø³ÙŠÙØ´Ø§Ø±Ùƒ Ù‡Ø°Ø§ Ø§Ù„Ù…Ù„Ø®Øµ Ù…Ø¹ Ø§Ù„Ù…ÙˆØ¸ÙÙŠÙ† Ø§Ù„Ù…Ø®ØªØµÙŠÙ†. Ù‡Ø°Ù‡ Ø§Ù„Ø®Ø·ÙˆØ© Ù„Ø§ ØªÙ…Ù†Ø­ Ù…ÙˆØ§ÙÙ‚Ø© Ø¹Ù„Ù‰ ÙƒØ´Ù Ù‡ÙˆÙŠØªÙƒ Ø£Ùˆ Ù…Ø´Ø§Ø±ÙƒØ© Ø§Ù„Ù…Ø±ÙÙ‚Ø§Øª.</p>
+                        <div class="form-check mb-3">
+                            <input id="formal-consent" type="checkbox" class="form-check-input" @bind="consent" disabled="@busy" />
+                            <label for="formal-consent" class="form-check-label">Ø±Ø§Ø¬Ø¹Øª Ø§Ù„Ù…Ù„Ø®Øµ ÙˆØ£ÙˆØ§ÙÙ‚ Ø¹Ù„Ù‰ ØªÙ‚Ø¯ÙŠÙ…Ù‡ ÙƒØ¨Ù„Ø§Øº Ø±Ø³Ù…ÙŠ.</label>
+                        </div>
+                        <div class="actions">
+                            <button class="btn btn-primary" type="button" disabled="@(busy || !consent)" @onclick="SubmitReport">@(busy ? "Ø¬Ø§Ø±Ù Ø§Ù„ØªÙ‚Ø¯ÙŠÙ…â€¦" : "ØªØ£ÙƒÙŠØ¯ ØªÙ‚Ø¯ÙŠÙ… Ø§Ù„Ø¨Ù„Ø§Øº")</button>
+                            <button class="btn btn-outline-secondary" type="button" disabled="@busy" @onclick="CancelReview">Ø§Ù„Ø¹ÙˆØ¯Ø© Ù„Ù„Ù…Ø­Ø§Ø¯Ø«Ø©</button>
+                        </div>
+                    </section>
+                }
+                else
+                {
+                    @if (assessment?.ShouldOfferFormalReport == true && !offerDeclined)
+                    {
+                        <section class="offer" aria-labelledby="offer-title">
+                            <h2 id="offer-title">Ù‡Ù„ ØªØ±ÙŠØ¯ ØªÙ‚Ø¯ÙŠÙ… Ø¨Ù„Ø§Øº Ø±Ø³Ù…ÙŠØŸ</h2>
+                            <p>Ø¯Ø±Ø¬Ø© Ø§Ù„Ø®Ø·ÙˆØ±Ø© Ø§Ù„Ù…Ù‚Ø¯Ù‘Ø±Ø© Ø£Ø¹Ù„Ù‰ Ù…Ù† 80%. Ø¥Ø°Ø§ ÙˆØ§ÙÙ‚ØªØŒ ØªØ±Ø§Ø¬Ø¹ Ø§Ù„Ù…Ù„Ø®Øµ Ø£ÙˆÙ„Ù‹Ø§ Ù‚Ø¨Ù„ Ø¥Ø±Ø³Ø§Ù„Ù‡ Ù„Ù„Ù…ÙˆØ¸ÙÙŠÙ† Ø§Ù„Ù…Ø®ØªØµÙŠÙ†.</p>
+                            <div class="actions">
+                                <button type="button" class="btn btn-primary" @onclick="ReviewReport" disabled="@busy">Ù†Ø¹Ù…ØŒ Ù…Ø±Ø§Ø¬Ø¹Ø© Ø§Ù„Ø¨Ù„Ø§Øº</button>
+                                <button type="button" class="btn btn-outline-secondary" @onclick="DeclineOffer" disabled="@busy">Ù„Ø§ØŒ Ù…ØªØ§Ø¨Ø¹Ø© Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø©</button>
+                            </div>
+                        </section>
+                    }
+                    @if (offerDeclined) { <p class="muted" role="status">Ù„Ù… ÙŠØªÙ… ØªÙ‚Ø¯ÙŠÙ… Ø¨Ù„Ø§Øº. ÙŠÙ…ÙƒÙ†Ùƒ Ù…ØªØ§Ø¨Ø¹Ø© Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø©.</p> }
+                    @if (pendingReply)
+                    {
+                        <div class="actions">
+                            <button type="button" class="btn btn-primary" disabled="@busy" @onclick="RequestReply">Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø©</button>
+                            <button type="button" class="btn btn-outline-secondary" disabled="@busy" @onclick="EditPendingMessage">ØªØ¹Ø¯ÙŠÙ„ Ø±Ø³Ø§Ù„ØªÙŠ</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <form @onsubmit="SendMessage" @onsubmit:preventDefault>
+                            <label for="chat-message" class="form-label fw-semibold">Ø±Ø³Ø§Ù„ØªÙƒ</label>
+                            <textarea id="chat-message" class="form-control" rows="4" maxlength="3000" placeholder="Ø§ÙƒØªØ¨ Ù…Ø§ Ø­Ø¯Ø« Ù…Ø¹Ùƒâ€¦"
+                                      @bind="draft" @bind:event="oninput" disabled="@busy" aria-describedby="message-help"></textarea>
+                            <div class="composer-footer">
+                                <small id="message-help" class="muted">@draft.Length / 3000</small>
+                                <button type="submit" class="btn btn-primary" disabled="@(busy || string.IsNullOrWhiteSpace(draft))">Ø¥Ø±Ø³Ø§Ù„</button>
+                            </div>
+                        </form>
+                    }
+                }
+                <p class="session-note">Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø© Ø§Ù„Ø­Ø§Ù„ÙŠØ© Ù…Ø¤Ù‚ØªØ©Ø› ØªØ­Ø¯ÙŠØ« Ø§Ù„ØµÙØ­Ø© ÙŠÙÙ‚Ø¯ Ø§Ù„Ø±Ø³Ø§Ø¦Ù„. Ø­ÙØ¸ Ø³Ø¬Ù„ Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø© ÙˆØ§Ø³ØªÙ„Ø§Ù… Ø§Ù„Ù…ÙˆØ¸Ù Ù„Ù‡Ø§ Ù‚ÙŠØ¯ Ø§Ù„ØªØ¬Ù‡ÙŠØ².</p>
+            }
+        </div>
+    </section>
+</main>
+
+<style>
+    .intake { max-width: 960px; color: #163f59; }
+    .heading { display: flex; justify-content: space-between; align-items: start; gap: 20px; margin-bottom: 28px; }
+    .heading .btn { flex-shrink: 0; }
+    .heading h1 { font-size: clamp(1.65rem, 4vw, 2.15rem); margin: 10px 0; }
+    .heading p, .muted { color: #5d7180; }
+    .eyebrow { font-size: .85rem; color: #0f766e; font-weight: 700; }
+    .conversation { background: white; border: 1px solid #dce5eb; border-radius: 22px; overflow: hidden; box-shadow: 0 16px 48px #163f590a; }
+    .chat-header { display: flex; align-items: center; gap: 14px; padding: 20px 24px; border-bottom: 1px solid #dce5eb; }
+    .avatar { display: grid; place-items: center; background: #163f59; color: white; border-radius: 14px; width: 46px; height: 46px; flex-shrink: 0; }
+    .status { margin-inline-start: auto; font-size: .8rem; background: #edf4f2; border-radius: 20px; padding: 5px 12px; }
+    .history { background: #f4f7fa; padding: 24px; min-height: 180px; max-height: 480px; overflow-y: auto; display: flex; flex-direction: column-reverse; }
+    .messages { display: flex; flex-direction: column; gap: 20px; }
+    .message { max-width: 88%; }
+    .message.user { align-self: flex-end; }
+    .speaker { display: block; font-size: .76rem; color: #5d7180; margin-bottom: 6px; }
+    .bubble { padding: 14px 18px; border-radius: 16px; background: white; border: 1px solid #dce5eb; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.85; }
+    .user .bubble { background: #163f59; border-color: #163f59; color: white; }
+    .controls { padding: 24px; }
+    .assessment, .offer, .review { padding: 20px; border: 1px solid #dce5eb; border-radius: 14px; margin-bottom: 20px; overflow-wrap: anywhere; }
+    .assessment { background: #f3f8f6; }
+    .offer { background: #fffaf0; }
+    .controls h2 { font-size: 1.12rem; margin-bottom: 12px; }
+    .controls h3 { font-size: 1.02rem; }
+    .summary { white-space: pre-wrap; line-height: 1.85; }
+    .actions, .composer-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+    .composer-footer { justify-content: space-between; margin-top: 12px; }
+    .controls textarea { resize: vertical; border-radius: 12px; line-height: 1.85; }
+    .session-note { color: #637684; font-size: .8rem; margin: 20px 0 0; }
+    .intake .btn-primary { background: #0f766e; border-color: #0f766e; }
+    .intake .btn-primary:hover { background: #0b5e58; border-color: #0b5e58; }
+    @@media (max-width: 575px) { .heading { flex-wrap: wrap; } .chat-header, .controls, .history { padding: 16px; } .message { max-width: 96%; } .status { font-size: .7rem; } }
+</style>
+
+@code {
+    private readonly List<IntakeChatMessage> messages = [];
+    private readonly CancellationTokenSource lifetime = new();
+    private string draft = string.Empty;
+    private string error = string.Empty;
+    private CaseRiskAssessment? assessment;
+    private bool busy, pendingReply, reviewing, consent, offerDeclined, disposed;
+    private Guid? savedCaseId;
+    private string savedCaseNumber = string.Empty;
+
+    private async Task SendMessage()
+    {
+        if (busy || pendingReply || reviewing || savedCaseId.HasValue || disposed) return;
+        var content = draft.Trim();
+        error = string.Empty;
+        if (content.Length is < 2 or > 3000) { error = "Ø§ÙƒØªØ¨ Ø±Ø³Ø§Ù„Ø© Ø¨ÙŠÙ† Ø­Ø±ÙÙŠÙ† Ùˆ3000 Ø­Ø±Ù."; return; }
+        if (messages.Count >= 38 || messages.Sum(x => x.Content.Length) + content.Length > 24000)
+        { error = "ÙˆØµÙ„Øª Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø© Ù„Ù„Ø­Ø¯ Ø§Ù„Ù…ØªØ§Ø­ ÙÙŠ Ù‡Ø°Ù‡ Ø§Ù„Ù†Ø³Ø®Ø©. Ù„Ù† ØªÙØ±Ø³Ù„ Ø±Ø³Ø§Ø¦Ù„ Ø¥Ø¶Ø§ÙÙŠØ©."; return; }
+        assessment = null;
+        offerDeclined = consent = false;
+        messages.Add(new(IntakeChatRole.User, content));
+        draft = string.Empty;
+        pendingReply = true;
+        await RequestReply();
+    }
+
+    private async Task RequestReply()
+    {
+        if (busy || !pendingReply || savedCaseId.HasValue || disposed) return;
+        busy = true;
+        error = string.Empty;
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
+            timeout.CancelAfter(TimeSpan.FromSeconds(45));
+            // Immutable snapshot; retries reuse the same user turn without duplicating it.
+            var reply = await IntakeAssistant.ReplyAsync(messages.ToArray(), timeout.Token)
+                .WaitAsync(timeout.Token);
+            if (disposed) return;
+            if (reply is null || string.IsNullOrWhiteSpace(reply.Message) || reply.Message.Length > 6000)
+                throw new InvalidOperationException("Invalid assistant reply.");
+            messages.Add(new(IntakeChatRole.Assistant, reply.Message));
+            assessment = reply.Assessment;
+            pendingReply = false;
+        }
+        catch (OperationCanceledException) when (!disposed)
+        { error = "Ø§Ù†ØªÙ‡Øª Ù…Ù‡Ù„Ø© Ø§Ù„Ø±Ø¯. Ø±Ø³Ø§Ù„ØªÙƒ Ù…Ø§ Ø²Ø§Ù„Øª Ù‡Ù†Ø§Ø› ÙŠÙ…ÙƒÙ†Ùƒ Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø©."; }
+        catch (Exception exception) when (!disposed)
+        {
+            Logger.LogWarning("Intake reply unavailable. Failure category: {Category}", exception.GetType().Name);
+            error = "Ø®Ø¯Ù…Ø© Ø§Ù„Ù…Ø³Ø§Ø¹Ø¯ ÙˆØ§Ù„ØªÙ‚ÙŠÙŠÙ… ØºÙŠØ± Ù…ØªØ§Ø­Ø© Ø­Ø§Ù„ÙŠÙ‹Ø§. Ø±Ø³Ø§Ù„ØªÙƒ Ù…Ø§ Ø²Ø§Ù„Øª Ù‡Ù†Ø§Ø› Ù„Ù… ÙŠÙÙ†Ø´Ø£ ØªÙ‚ÙŠÙŠÙ… Ø£Ùˆ ÙŠÙØ±Ø³Ù„ Ø¨Ù„Ø§Øº.";
+        }
+        catch (OperationCanceledException) when (disposed) { }
+        finally { busy = false; }
+    }
+
+    private void EditPendingMessage()
+    {
+        if (busy || !pendingReply || messages.Count == 0 || disposed) return;
+        draft = messages[^1].Content;
+        messages.RemoveAt(messages.Count - 1);
+        pendingReply = false;
+        error = string.Empty;
+    }
+
+    private void ReviewReport()
+    {
+        if (busy || pendingReply || assessment?.ShouldOfferFormalReport != true || savedCaseId.HasValue) return;
+        reviewing = true;
+        consent = false;
+        error = string.Empty;
+    }
+
+    private void DeclineOffer()
+    {
+        if (busy || reviewing || savedCaseId.HasValue) return;
+        offerDeclined = true;
+        consent = false;
+    }
+
+    private void CancelReview()
+    {
+        if (busy) return;
+        reviewing = consent = false;
+        error = string.Empty;
+    }
+
+    private async Task SubmitReport()
+    {
+        if (busy || disposed || savedCaseId.HasValue || pendingReply || !reviewing || !consent ||
+            assessment is not { ShouldOfferFormalReport: true } current) return;
+        busy = true;
+        error = string.Empty;
+        try
+        {
+            var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (disposed) return;
+            var user = state.User;
+            if (user.Identity?.IsAuthenticated != true || !user.IsInRole("USER") ||
+                !Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var reporterId) || reporterId == Guid.Empty)
+            { error = "ØªØ¹Ø°Ø± Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø­Ø³Ø§Ø¨Ùƒ. Ø³Ø¬Ù‘Ù„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ù…Ø¬Ø¯Ø¯Ù‹Ø§."; return; }
+
+            // Submission uses only the current server-side assessment after explicit consent.
+            // High is a legacy coarse category for this >80 branch; the score itself
+            // is not persisted by CyberCase yet. No invented Critical threshold.
+            var saved = await CaseService.CreateForReporterAsync(new CyberCase
+            {
+                Title = current.Title,
+                Description = current.Summary,
+                IncidentType = current.IncidentType,
+                SeverityLevel = SeverityLevel.High,
+                Path = CasePath.FormalReport,
+                IsReporterIdentityDisclosed = false
+            }, reporterId);
+            savedCaseId = saved.Id;
+            savedCaseNumber = saved.CaseNumber;
+            consent = false;
+        }
+        catch (Exception exception) when (!disposed)
+        {
+            Logger.LogWarning("Intake report submission failed. Failure category: {Category}", exception.GetType().Name);
+            error = "ØªØ¹Ø°Ø± ØªØ£ÙƒÙŠØ¯ ØªÙ‚Ø¯ÙŠÙ… Ø§Ù„Ø¨Ù„Ø§Øº. Ø±Ø§Ø¬Ø¹ Ø·Ù„Ø¨Ø§ØªÙŠ Ù‚Ø¨Ù„ Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© Ù„ØªØ¬Ù†Ø¨ Ø§Ù„ØªÙƒØ±Ø§Ø±.";
+            consent = false;
+        }
+        finally { busy = false; }
+    }
+
+    public void Dispose()
+    {
+        if (disposed) return;
+        disposed = true;
+        lifetime.Cancel();
+        lifetime.Dispose();
+    }
+}

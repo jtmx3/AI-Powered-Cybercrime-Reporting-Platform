@@ -1,0 +1,264 @@
+@page "/logout"
+@model ACCP.Web.Pages.Account.LogoutModel
+
+@{
+    Layout = null;
+
+    var returnUrl = User.IsInRole("ADMIN")
+        ? "/admin/workload"
+        : User.IsInRole("OFFICER")
+            ? "/officer/dashboard"
+            : User.IsInRole("USER")
+                ? "/cases"
+                : "/";
+}
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>تسجيل الخروج | ACCP</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        :root {
+            color-scheme: light;
+        }
+
+        body {
+            margin: 0;
+            background: #f4f7fb;
+            color: #19324d;
+            font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+            line-height: 1.9;
+        }
+
+        .page {
+            max-width: 1120px;
+            margin-inline: auto;
+            padding: 25px 24px 50px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 65px;
+        }
+
+        .brand {
+            color: #19324d;
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-decoration: none;
+        }
+
+        .back {
+            color: #647e96;
+            font-size: .82rem;
+            text-decoration: none;
+        }
+
+        .back:hover {
+            color: #176d65;
+            text-decoration: underline;
+        }
+
+        .logout-card {
+            max-width: 510px;
+            margin-inline: auto;
+            padding: 40px;
+            border: 1px solid #dce6ef;
+            border-radius: 18px;
+            background: #fff;
+            text-align: center;
+            box-shadow: 0 12px 35px #19324d05;
+        }
+
+        .logout-icon {
+            display: grid;
+            place-items: center;
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 23px;
+            border: 1px solid #d1e6de;
+            border-radius: 17px;
+            color: #176d65;
+            background: #eef7f3;
+        }
+
+        .logout-icon svg {
+            width: 29px;
+            height: 29px;
+        }
+
+        .eyebrow {
+            margin: 0 0 10px;
+            color: #176d65;
+            font-size: .79rem;
+            font-weight: 650;
+        }
+
+        h1 {
+            margin: 0 0 15px;
+            font-size: 1.65rem;
+            font-weight: 750;
+            line-height: 1.6;
+        }
+
+        .description {
+            margin: 0 0 26px;
+            color: #6b8095;
+            font-size: .88rem;
+            line-height: 1.95;
+        }
+
+        .notice {
+            margin-bottom: 26px;
+            padding: 15px 17px;
+            border: 1px solid #e0e8ef;
+            border-radius: 10px;
+            background: #f5f8fb;
+            color: #60788f;
+            font-size: .79rem;
+            line-height: 1.95;
+        }
+
+        form {
+            margin: 0 0 12px;
+        }
+
+        .button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 47px;
+            padding: 11px 18px;
+            border: 1px solid;
+            border-radius: 9px;
+            font: inherit;
+            font-size: .86rem;
+            font-weight: 650;
+            line-height: 1.6;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .danger {
+            color: #fff;
+            background: #a4434e;
+            border-color: #a4434e;
+        }
+
+        .danger:hover {
+            background: #8e3440;
+            border-color: #8e3440;
+        }
+
+        .secondary {
+            color: #176d65;
+            background: #fff;
+            border-color: #c5ddd5;
+        }
+
+        .secondary:hover {
+            background: #edf7f2;
+            border-color: #176d65;
+        }
+
+        a:focus-visible,
+        button:focus-visible {
+            outline: 3px solid #8cc9bc;
+            outline-offset: 4px;
+        }
+
+        .footer-note {
+            margin: 24px 0 0;
+            padding-top: 20px;
+            border-top: 1px solid #e5edf3;
+            color: #788b9e;
+            font-size: .75rem;
+        }
+
+        @@media (max-width: 600px) {
+            .page {
+                padding: 20px 14px 32px;
+            }
+
+            .topbar {
+                margin-bottom: 35px;
+            }
+
+            .logout-card {
+                padding: 30px 22px;
+                border-radius: 14px;
+            }
+
+            h1 {
+                font-size: 1.45rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="page">
+        <nav class="topbar" aria-label="التنقل">
+            <a href="/" class="brand" dir="ltr">ACCP</a>
+            <a href="@returnUrl" class="back">العودة إلى مساحتك ←</a>
+        </nav>
+
+        <section class="logout-card" aria-labelledby="logout-title">
+            <div class="logout-icon" aria-hidden="true">
+                <svg width="29"
+                     height="29"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="1.7"
+                     stroke-linecap="round"
+                     stroke-linejoin="round">
+                    <path d="M9 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4" />
+                    <path d="M13 8l4 4-4 4M17 12H8" />
+                </svg>
+            </div>
+
+            <p class="eyebrow">حسابك في ACCP</p>
+
+            <h1 id="logout-title">هل تريد تسجيل الخروج؟</h1>
+
+            <p class="description">
+                ستحتاج إلى تسجيل الدخول مجددًا للوصول إلى مساحتك في المنصة.
+            </p>
+
+            <div class="notice">
+                تأكد من حفظ أي تعديلات تعمل عليها قبل تسجيل الخروج.
+            </div>
+
+            <form method="post"
+                  asp-page="/Account/Logout"
+                  asp-antiforgery="true">
+                <button type="submit" class="button danger">
+                    تأكيد تسجيل الخروج
+                </button>
+            </form>
+
+            <a href="@returnUrl" class="button secondary">
+                إلغاء والعودة إلى مساحتي
+            </a>
+
+            <p class="footer-note">
+                تسجيل الخروج ينهي الجلسة الحالية، ولا يحذف حسابك أو بياناتك المحفوظة.
+            </p>
+        </section>
+    </main>
+</body>
+</html>
