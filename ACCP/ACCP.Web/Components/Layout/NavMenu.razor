@@ -1,4 +1,4 @@
-﻿@using System.Security.Claims
+@using System.Security.Claims
 @using ACCP.Application.Notifications
 @using ACCP.Web.Security
 @using Microsoft.AspNetCore.Components.Authorization
@@ -16,7 +16,7 @@
     <div class="wathiq-brand-box">
         <a href="" class="wathiq-brand-anchor">
             <div class="wathiq-emblem" aria-hidden="true">
-                <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg width="42" height="42" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M32 4L8 14V31C8 46.8 18.2 58.6 32 62C45.8 58.6 56 46.8 56 31V14L32 4Z" fill="#0B2240"/>
                     <path d="M32 8.5L12.5 17V30.8C12.5 43.9 20.8 53.9 32 57C43.2 53.9 51.5 43.9 51.5 30.8V17L32 8.5Z" stroke="#0EA5E9" stroke-width="2.2"/>
                     <path d="M22 22H42V25.2H22V22ZM22 29H36V32.2H22V29Z" fill="#38BDF8"/>
@@ -154,20 +154,17 @@
     {
         NavigationManager.LocationChanged += HandleLocationChanged;
         AuthenticationStateProvider.AuthenticationStateChanged += HandleAuthenticationStateChanged;
-
         notificationEvents = NotificationService as AuthorizedNotificationService;
         if (notificationEvents is not null)
         {
             notificationEvents.ReadStateChanged += HandleNotificationReadChanged;
         }
-
         await RefreshUnreadCountAsync();
     }
 
     private async Task RefreshUnreadCountAsync()
     {
         if (componentDisposed) return;
-
         try
         {
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -178,46 +175,23 @@
                 if (Guid.TryParse(idClaim, out var userId))
                 {
                     unreadCount = await NotificationService.GetUnreadCountAsync(userId);
-                    if (!componentDisposed)
-                    {
-                        await InvokeAsync(StateHasChanged);
-                    }
+                    if (!componentDisposed) await InvokeAsync(StateHasChanged);
                 }
             }
-            else
-            {
-                unreadCount = 0;
-            }
+            else { unreadCount = 0; }
         }
-        catch
-        {
-            unreadCount = 0;
-        }
+        catch { unreadCount = 0; }
     }
 
-    private async void HandleLocationChanged(object? sender, LocationChangedEventArgs e)
-    {
-        await RefreshUnreadCountAsync();
-    }
-
-    private async void HandleAuthenticationStateChanged(Task<AuthenticationState> task)
-    {
-        await RefreshUnreadCountAsync();
-    }
-
-    private async void HandleNotificationReadChanged()
-    {
-        await RefreshUnreadCountAsync();
-    }
+    private async void HandleLocationChanged(object? sender, LocationChangedEventArgs e) => await RefreshUnreadCountAsync();
+    private async void HandleAuthenticationStateChanged(Task<AuthenticationState> task) => await RefreshUnreadCountAsync();
+    private async void HandleNotificationReadChanged() => await RefreshUnreadCountAsync();
 
     public void Dispose()
     {
         componentDisposed = true;
         NavigationManager.LocationChanged -= HandleLocationChanged;
         AuthenticationStateProvider.AuthenticationStateChanged -= HandleAuthenticationStateChanged;
-        if (notificationEvents is not null)
-        {
-            notificationEvents.ReadStateChanged -= HandleNotificationReadChanged;
-        }
+        if (notificationEvents is not null) notificationEvents.ReadStateChanged -= HandleNotificationReadChanged;
     }
 }

@@ -1,4 +1,5 @@
-﻿.cases-page { max-width: 1360px; margin-inline: auto; padding-block: .5rem 1.5rem; }
+/* WATHIQ */
+.cases-page { max-width: 1360px; margin-inline: auto; padding-block: .5rem 1.5rem; }
 .cases-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.75rem; }
 .section-caption { display: block; color: #16335B; font-size: .75rem; font-weight: 600; margin-bottom: .35rem; }
 .cases-header h1 { margin: 0 0 .4rem; font-size: clamp(1.5rem, 2.5vw, 2rem); }
