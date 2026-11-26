@@ -4,7 +4,6 @@
 <PageTitle>وَثيق | المنصة الوطنية لتوثيق ومتابعة البلاغات السيبرانية</PageTitle>
 
 <div class="wathiq-home" dir="rtl">
-    <!-- القسم الترحيبي وبطاقة تعريف الخدمة (معيار المنصات الحكومية DGA / سند) -->
     <section class="service-hero" aria-labelledby="service-main-title">
         <div class="service-hero-layout">
             <div class="service-hero-welcome">
@@ -59,26 +58,11 @@
                             <a href="/register" class="cta-quiet-link">
                                 <span>ليس لديك حساب؟ تسجيل مستفيد جديد</span>
                             </a>
-                            <a href="/notifications" class="wathiq-button wathiq-button-quiet">عرض الإشعارات</a>
-                        }
-                        else
-                        {
-                            <a href="/cases/new" class="wathiq-button wathiq-button-primary">
-                                <span>بدء توثيق بلاغ</span><i class="bi bi-arrow-left" aria-hidden="true"></i>
-                            </a>
-                            <a href="/cases" class="wathiq-button wathiq-button-quiet">متابعة طلباتي</a>
-                        }
-                    </Authorized>
-                    <NotAuthorized>
-                        <a href="/login" class="wathiq-button wathiq-button-primary">
-                            <span>الدخول إلى الخدمة</span><i class="bi bi-arrow-left" aria-hidden="true"></i>
-                        </a>
-                        <a href="/register" class="wathiq-button wathiq-button-quiet">إنشاء حساب مستفيد</a>
-                    </NotAuthorized>
-                </AuthorizeView>
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </div>
             </div>
 
-            <!-- بطاقة بيانات الخدمة الرسمية (Official Service Metadata Card) -->
             <aside class="service-spec-card" aria-label="بطاقة بيانات الخدمة">
                 <div class="spec-card-header">
                     <i class="bi bi-card-checklist" aria-hidden="true"></i>
@@ -94,7 +78,7 @@
                         <dd>بصمة جنائية رقمية (SHA-256) وسجل إصدارات</dd>
                     </div>
                     <div class="spec-row">
-                        <dt><i class="bi bi-Sliders" aria-hidden="true"></i> التحكم بالإرسال</dt>
+                        <dt><i class="bi bi-sliders" aria-hidden="true"></i> التحكم بالإرسال</dt>
                         <dd>حفظ خاص للمحادثة قبل الاعتماد الرسمي</dd>
                     </div>
                     <div class="spec-row">
@@ -104,21 +88,8 @@
                 </dl>
             </aside>
         </div>
-
-        <aside class="wathiq-assurance" aria-label="ضوابط الحماية والخصوصية">
-            <div class="wathiq-assurance-heading">
-                <span class="wathiq-assurance-mark"><i class="bi bi-shield-lock" aria-hidden="true"></i></span>
-                <div><span class="wathiq-overline">وَثيق | WATHIQ</span><h2>حماية الإجراء تبدأ من التوثيق</h2></div>
-            </div>
-            <ul class="wathiq-assurance-list">
-                <li><i class="bi bi-person-lock" aria-hidden="true"></i><span><strong>خصوصية مضبوطة</strong><small>إظهار البيانات الشخصية محكوم بالموافقة والصلاحية.</small></span></li>
-                <li><i class="bi bi-file-earmark-lock" aria-hidden="true"></i><span><strong>قرائن محفوظة</strong><small>تسلسل الأدلة وإصداراتها موثق للمراجعة المختصة.</small></span></li>
-                <li><i class="bi bi-journal-check" aria-hidden="true"></i><span><strong>متابعة منظمة</strong><small>يمكن مراجعة تغييرات الحالة والرسائل المتاحة ضمن مساحة الحساب.</small></span></li>
-            </ul>
-        </aside>
     </section>
 
-    <!-- خطوات البداية وآلية العمل الإجرائية -->
     <section class="home-section" aria-labelledby="process-heading">
         <div class="section-header-bar">
             <div>
@@ -190,7 +161,6 @@
         </div>
     </section>
 
-    <!-- إجابات وضوابط تساعد على المتابعة -->
     <section class="home-section" aria-labelledby="guidance-heading">
         <div class="section-header-bar">
             <div>
@@ -201,7 +171,6 @@
         </div>
 
         <div class="guidance-layout">
-            <!-- بطاقة إرشادات السلامة الفورية -->
             <aside class="safety-callout-box" aria-label="تنبيهات أمنية هامة">
                 <div class="callout-top">
                     <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
@@ -223,7 +192,6 @@
                 </ul>
             </aside>
 
-            <!-- الأكورديون التفاعلي المنظم -->
             <div class="guidance-accordions">
                 <details class="wathiq-faq" open>
                     <summary>
