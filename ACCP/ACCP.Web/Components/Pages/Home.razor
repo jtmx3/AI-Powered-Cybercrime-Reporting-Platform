@@ -1,195 +1,111 @@
 ﻿@page "/"
 @using Microsoft.AspNetCore.Components.Authorization
 
-<PageTitle>وَثيق | البوابة الرسمية لتوثيق ومتابعة البلاغات السيبرانية</PageTitle>
+<PageTitle>الصفحة الرئيسية | وَثيق | WATHIQ</PageTitle>
 
-<div class="gov-home" dir="rtl">
-    <!-- القسم الترحيبي السيادي -->
-    <section class="gov-masthead" aria-labelledby="masthead-heading">
-        <div class="gov-masthead-grid">
-            <div class="gov-masthead-main">
-                <div class="gov-classification">
-                    <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
-                    <span>منظومة التوثيق الجنائي الرقمي المعتمدة</span>
-                </div>
+<div class="wathiq-home" dir="rtl">
+    <section class="wathiq-hero" aria-labelledby="hero-title">
+        <div class="wathiq-hero-copy">
+            <div class="wathiq-eyebrow"><i class="bi bi-shield-check" aria-hidden="true"></i><span>منصة التوثيق والمتابعة</span></div>
+            <h1 id="hero-title">مسار موثوق لتوثيق الوقائع السيبرانية ومتابعتها</h1>
+            <p class="wathiq-hero-lead">
+                مساحة منظّمة لتوثيق الوقائع السيبرانية ومتابعتها. تُعرض البيانات وفق صلاحيات الحساب،
+                وتتيح المنصة مراجعة أدلة البلاغ وسجل إصداراتها.
+            </p>
 
-                <h1 id="masthead-heading" class="gov-masthead-title">
-                    منصة «وَثيق» لاستقبال ومتابعة البلاغات السيبرانية
-                </h1>
-
-                <p class="gov-masthead-desc">
-                    قناة رسمية مؤمّنة تتيح للمتضررين توثيق وقائع الجرائم الإلكترونية وحفظ القرائن الرقمية
-                    بسرية تامة، مع إسناد البلاغات إلى محققين مختصين ضمن مسار إجرائي خاضع للرقابة والتدقيق.
-                </p>
-
-                <div class="gov-masthead-actions">
-                    <AuthorizeView Context="auth">
-                        <Authorized>
-                            @if (auth.User.IsInRole("ADMIN"))
-                            {
-                                <a href="/admin/employees" class="btn-gov-primary">
-                                    <span>الدخول إلى لوحة الإدارة</span>
-                                    <i class="bi bi-arrow-left" aria-hidden="true"></i>
-                                </a>
-                                <a href="/admin/audit-logs" class="btn-gov-secondary">
-                                    <span>مراجعة سجل التدقيق</span>
-                                </a>
-                            }
-                            else if (auth.User.IsInRole("OFFICER"))
-                            {
-                                <a href="/officer/dashboard" class="btn-gov-primary">
-                                    <span>فتح لوحة متابعة القضايا</span>
-                                    <i class="bi bi-arrow-left" aria-hidden="true"></i>
-                                </a>
-                            }
-                            else
-                            {
-                                <a href="/cases/new" class="btn-gov-primary">
-                                    <span>بدء توثيق بلاغ جديد</span>
-                                    <i class="bi bi-arrow-left" aria-hidden="true"></i>
-                                </a>
-                                <a href="/cases" class="btn-gov-secondary">
-                                    <span>استعراض البلاغات السابقة</span>
-                                </a>
-                            }
-                        </Authorized>
-                        <NotAuthorized>
-                            <a href="/login" class="btn-gov-primary">
-                                <span>بدء خدمة توثيق بلاغ</span>
-                                <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            <div class="wathiq-hero-actions">
+                <AuthorizeView Context="auth">
+                    <Authorized>
+                        @if (auth.User.IsInRole("ADMIN"))
+                        {
+                            <a href="/admin/employees" class="wathiq-button wathiq-button-primary">
+                                <span>الانتقال إلى إدارة المنصة</span><i class="bi bi-arrow-left" aria-hidden="true"></i>
                             </a>
-                            <a href="/register" class="btn-gov-secondary">
-                                <span>تسجيل حساب مستفيد جديد</span>
+                            <a href="/admin/audit-logs" class="wathiq-button wathiq-button-quiet">سجل التدقيق</a>
+                        }
+                        else if (auth.User.IsInRole("OFFICER"))
+                        {
+                            <a href="/officer/dashboard" class="wathiq-button wathiq-button-primary">
+                                <span>فتح لوحة القضايا</span><i class="bi bi-arrow-left" aria-hidden="true"></i>
                             </a>
-                        </NotAuthorized>
-                    </AuthorizeView>
-                </div>
+                            <a href="/notifications" class="wathiq-button wathiq-button-quiet">عرض الإشعارات</a>
+                        }
+                        else
+                        {
+                            <a href="/cases/new" class="wathiq-button wathiq-button-primary">
+                                <span>بدء توثيق بلاغ</span><i class="bi bi-arrow-left" aria-hidden="true"></i>
+                            </a>
+                            <a href="/cases" class="wathiq-button wathiq-button-quiet">متابعة طلباتي</a>
+                        }
+                    </Authorized>
+                    <NotAuthorized>
+                        <a href="/login" class="wathiq-button wathiq-button-primary">
+                            <span>الدخول إلى الخدمة</span><i class="bi bi-arrow-left" aria-hidden="true"></i>
+                        </a>
+                        <a href="/register" class="wathiq-button wathiq-button-quiet">إنشاء حساب مستفيد</a>
+                    </NotAuthorized>
+                </AuthorizeView>
             </div>
-
-            <aside class="gov-assurance-panel" aria-label="الضمانات الأمنية والخصوصية">
-                <h2 class="gov-assurance-heading">ضمانات الحماية والسرية المعتمدة</h2>
-                <ul class="gov-assurance-list">
-                    <li>
-                        <div class="gov-assurance-icon">
-                            <i class="bi bi-person-lock" aria-hidden="true"></i>
-                        </div>
-                        <div>
-                            <strong>حماية وحجب هوية المشتكي</strong>
-                            <p>تُحجب البيانات الشخصية للمشتكي افتراضياً ولا تُتاح للمحقق المختص إلا بإقرار صريح وموثق من صاحب العلاقة.</p>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="gov-assurance-icon">
-                            <i class="bi bi-file-earmark-lock2" aria-hidden="true"></i>
-                        </div>
-                        <div>
-                            <strong>سلامة سلسلة حيازة الأدلة (SHA-256)</strong>
-                            <p>تُحفظ المرفقات والنسخ المعدلة ببصمة تشفيرية رقمية تمنع التلاعب وتضمن حجيتها الفنية.</p>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="gov-assurance-icon">
-                            <i class="bi bi-journal-check" aria-hidden="true"></i>
-                        </div>
-                        <div>
-                            <strong>فصل الصلاحيات وسجل التدقيق</strong>
-                            <p>لا تتيح الصلاحيات الإدارية الاطلاع على مضمون الشكاوى الخاصة، ويُسجل كل إجراء وصول في سجل رقابي.</p>
-                        </div>
-                    </li>
-                </ul>
-            </aside>
         </div>
+
+        <aside class="wathiq-assurance" aria-label="ضوابط الحماية والخصوصية">
+            <div class="wathiq-assurance-heading">
+                <span class="wathiq-assurance-mark"><i class="bi bi-shield-lock" aria-hidden="true"></i></span>
+                <div><span class="wathiq-overline">وَثيق | WATHIQ</span><h2>حماية الإجراء تبدأ من التوثيق</h2></div>
+            </div>
+            <ul class="wathiq-assurance-list">
+                <li><i class="bi bi-person-lock" aria-hidden="true"></i><span><strong>خصوصية مضبوطة</strong><small>إظهار البيانات الشخصية محكوم بالموافقة والصلاحية.</small></span></li>
+                <li><i class="bi bi-file-earmark-lock" aria-hidden="true"></i><span><strong>قرائن محفوظة</strong><small>تسلسل الأدلة وإصداراتها موثق للمراجعة المختصة.</small></span></li>
+                <li><i class="bi bi-journal-check" aria-hidden="true"></i><span><strong>متابعة منظمة</strong><small>يمكن مراجعة تغييرات الحالة والرسائل المتاحة ضمن مساحة الحساب.</small></span></li>
+            </ul>
+        </aside>
     </section>
 
-    <!-- آلية العمل النظامية -->
-    <section class="gov-section" aria-labelledby="workflow-heading">
-        <div class="gov-section-head">
-            <div>
-                <span class="gov-kicker">الإجراءات النظامية</span>
-                <h2 id="workflow-heading" class="gov-section-title">آلية تقديم ومتابعة البلاغ عبر «وَثيق»</h2>
-            </div>
-            <p class="gov-section-sub">مسار إلكتروني موحّد من ثلاث مراحل يضمن دقة التوثيق وسرعة المعالجة المختصة.</p>
+    <section class="wathiq-section" aria-labelledby="steps-title">
+        <div class="wathiq-section-heading">
+            <div><span class="wathiq-section-kicker">آلية العمل</span><h2 id="steps-title">من التوثيق إلى المتابعة</h2></div>
+            <p>ثلاث محطات واضحة تساعدك على معرفة ما يحدث في كل مرحلة.</p>
         </div>
 
-        <div class="gov-workflow-grid">
-            <article class="gov-step-box">
-                <div class="gov-step-top">
-                    <span class="gov-step-num">المرحلة 01</span>
-                    <i class="bi bi-chat-right-text gov-step-icon" aria-hidden="true"></i>
-                </div>
-                <h3>التوثيق المبدئي لملابسات الواقعة</h3>
-                <p>تدوين تفاصيل الحادثة السيبرانية عبر جلسة محادثة محمية تُحفظ تلقائياً في حسابك دون إرسال رسمي إلا بعد مراجعتك واعتمادك.</p>
+        <div class="wathiq-stepper">
+            <div class="wathiq-stepper-track" aria-hidden="true"></div>
+            <article class="wathiq-step">
+                <div class="wathiq-step-marker"><span>١</span><i class="bi bi-chat-square-text" aria-hidden="true"></i></div>
+                <div class="wathiq-step-content"><span class="wathiq-step-label">المرحلة الأولى</span><h3>توثيق الوقائع</h3><p>دوّن التسلسل الزمني وتفاصيل الواقعة في مساحة حسابك، ويمكنك حفظ المحادثة والعودة إليها لاحقاً.</p></div>
             </article>
-
-            <article class="gov-step-box">
-                <div class="gov-step-top">
-                    <span class="gov-step-num">المرحلة 02</span>
-                    <i class="bi bi-paperclip gov-step-icon" aria-hidden="true"></i>
-                </div>
-                <h3>إيداع القرائن والمرفقات الرقمية</h3>
-                <p>إرفاق المستندات والصور ذات الصلة بالبلاغ مع التحكم الكامل بصلاحية إفصاح المرفقات المقيدة للمحقق وتوثيق سجل الإصدارات.</p>
+            <article class="wathiq-step">
+                <div class="wathiq-step-marker"><span>٢</span><i class="bi bi-folder2-open" aria-hidden="true"></i></div>
+                <div class="wathiq-step-content"><span class="wathiq-step-label">المرحلة الثانية</span><h3>إرفاق القرائن</h3><p>أضف الملفات ذات الصلة، وراجع صلاحيات الإفصاح وسجل الإصدارات قبل اعتماد الإرسال.</p></div>
             </article>
-
-            <article class="gov-step-box gov-step-active">
-                <div class="gov-step-top">
-                    <span class="gov-step-num">المرحلة 03</span>
-                    <i class="bi bi-shield-check gov-step-icon" aria-hidden="true"></i>
-                </div>
-                <h3>الإحالة للمحقق والمتابعة المباشرة</h3>
-                <p>استلام البلاغ من قِبل ضابط تحقيق مخوّل، وتلقي التحديثات والرسائل الرسمية حول حالة القضية حتى إغلاقها النظامي.</p>
+            <article class="wathiq-step">
+                <div class="wathiq-step-marker"><span>٣</span><i class="bi bi-clipboard2-check" aria-hidden="true"></i></div>
+                <div class="wathiq-step-content"><span class="wathiq-step-label">المرحلة الثالثة</span><h3>متابعة الإجراء</h3><p>بعد استيفاء شروط التقديم واعتمادك، تُتابع الحالة والرسائل المتاحة من مساحة حسابك.</p></div>
             </article>
         </div>
     </section>
 
-    <!-- ضوابط وإجابات المتابعة -->
-    <section class="gov-section" aria-labelledby="guidance-heading">
-        <div class="gov-section-head">
-            <div>
-                <span class="gov-kicker">الدليل الإرشادي للمستفيد</span>
-                <h2 id="guidance-heading" class="gov-section-title">إجابات وضوابط تساعدك على المتابعة الآمنة</h2>
-            </div>
-            <p class="gov-section-sub">توضيحات رسمية حول سرية البيانات، إدارة المرفقات، وآليات التواصل مع المختصين.</p>
+    <section class="wathiq-section" aria-labelledby="guidance-title">
+        <div class="wathiq-section-heading">
+            <div><span class="wathiq-section-kicker">دليل المستفيد</span><h2 id="guidance-title">إجابات تساعدك على المتابعة</h2></div>
+            <p>معلومات موجزة عن الخصوصية والأدلة وحالة الطلب.</p>
         </div>
 
-        <div class="gov-faq-container">
-            <details class="gov-accordion" open>
-                <summary>
-                    <span>هل يطّلع الموظف أو مدير النظام على بياناتي الشخصية فور رفع البلاغ؟</span>
-                    <i class="bi bi-chevron-down gov-acc-chevron" aria-hidden="true"></i>
-                </summary>
-                <div class="gov-accordion-body">
-                    تلتزم منصة «وَثيق» بمبدأ الحد الأدنى من كشف البيانات؛ حيث يتعامل المحقق المختص مع رقم القضية ووقائعها دون ظهور اسمك أو بريدك الإلكتروني إلا إذا اخترت تفعيل خيار «الإفصاح عن الهوية». كما تقتصر صلاحية مدير النظام على الجوانب التشغيلية وتوزيع الأحمال دون صلاحية قراءة نصوص الشكاوى أو فتح الأدلة.
-                </div>
+        <div class="wathiq-guidance-grid">
+            <details class="wathiq-guidance-card" open>
+                <summary><span class="wathiq-guidance-icon"><i class="bi bi-person-lock" aria-hidden="true"></i></span><span class="wathiq-guidance-question">من يمكنه الاطلاع على بياناتي الشخصية؟</span><i class="bi bi-plus-lg wathiq-guidance-toggle" aria-hidden="true"></i></summary>
+                <div class="wathiq-guidance-answer">تُتاح البيانات وفق الصلاحيات والموافقات المسجلة. لا تمنح الصلاحيات الإدارية وحدها حق قراءة محتوى الشكوى أو فتح الأدلة الخاصة.</div>
             </details>
-
-            <details class="gov-accordion">
-                <summary>
-                    <span>ما الفرق بين حفظ المحادثة وتقديم البلاغ الرسمي؟</span>
-                    <i class="bi bi-chevron-down gov-acc-chevron" aria-hidden="true"></i>
-                </summary>
-                <div class="gov-accordion-body">
-                    عند كتابة تفاصيل المشكلة في صفحة التوثيق، تُحفظ الرسائل في مساحتك الخاصة لتتمكن من استكمالها في أي وقت. ولا يتحول الطلب إلى «بلاغ رسمي» يُحال لطابور المحققين إلا بعد استيفاء التقييم وموافقتك الصريحة على الإرسال.
-                </div>
+            <details class="wathiq-guidance-card">
+                <summary><span class="wathiq-guidance-icon"><i class="bi bi-chat-square-check" aria-hidden="true"></i></span><span class="wathiq-guidance-question">هل حفظ المحادثة يعني إرسال بلاغ رسمي؟</span><i class="bi bi-plus-lg wathiq-guidance-toggle" aria-hidden="true"></i></summary>
+                <div class="wathiq-guidance-answer">لا. حفظ المحادثة يتيح لك استكمال التوثيق لاحقاً، ولا ينشئ بلاغاً رسمياً أو يحيله للتحقيق بحد ذاته. اتبع خطوات التقديم الظاهرة في حسابك عند توفرها.</div>
             </details>
-
-            <details class="gov-accordion">
-                <summary>
-                    <span>كيف يتم التعامل مع تعديل الأدلة الرقمية أو استبدالها بعد رفعها؟</span>
-                    <i class="bi bi-chevron-down gov-acc-chevron" aria-hidden="true"></i>
-                </summary>
-                <div class="gov-accordion-body">
-                    حفاظاً على سلامة الإجراءات الجنائية، تتيح المنصة إرفاق نسخة محدثة من الدليل مع إلزامية تدوين سبب التعديل، بينما تظل النسخة الأصلية وكافة الإصدارات السابقة محفوظة برقم إصدار متسلسل وتوقيت زمني دقيق للمراجعة المختصة.
-                </div>
+            <details class="wathiq-guidance-card">
+                <summary><span class="wathiq-guidance-icon"><i class="bi bi-file-earmark-lock" aria-hidden="true"></i></span><span class="wathiq-guidance-question">كيف تُحفظ الأدلة عند تحديثها؟</span><i class="bi bi-plus-lg wathiq-guidance-toggle" aria-hidden="true"></i></summary>
+                <div class="wathiq-guidance-answer">تُحفظ النسخ السابقة ضمن سجل الإصدارات، ويُطلب توضيح سبب التحديث حيث ينطبق. لا تشارك بيانات الدخول أو رموز التحقق ضمن أي مرفق أو محادثة.</div>
             </details>
-
-            <details class="gov-accordion">
-                <summary>
-                    <span>ما هي المعلومات التي يُنصح بتجهيزها، وما الذي يجب الامتناع عن إرساله؟</span>
-                    <i class="bi bi-chevron-down gov-acc-chevron" aria-hidden="true"></i>
-                </summary>
-                <div class="gov-accordion-body">
-                    يُنصح بتدوين التسلسل الزمني للواقعة، أسماء الحسابات أو الروابط محل الاشتباه، وإرفاق لقطات شاشة واضحة بصيغة PDF أو صور قياسية. ويُحظر تماماً كتابة كلمات المرور الخاصة بك أو رموز التحقق المؤقتة (OTP) أو الأرقام السرية للبطاقات البنكية داخل المحادثات.
-                </div>
+            <details class="wathiq-guidance-card">
+                <summary><span class="wathiq-guidance-icon"><i class="bi bi-list-check" aria-hidden="true"></i></span><span class="wathiq-guidance-question">ما المعلومات التي أجهزها قبل التوثيق؟</span><i class="bi bi-plus-lg wathiq-guidance-toggle" aria-hidden="true"></i></summary>
+                <div class="wathiq-guidance-answer">جهّز التسلسل الزمني وروابط الحسابات ذات الصلة ولقطات واضحة للوقائع. امتنع عن إرسال كلمات المرور أو رموز الاستخدام لمرة واحدة أو بيانات البطاقات.</div>
             </details>
         </div>
     </section>

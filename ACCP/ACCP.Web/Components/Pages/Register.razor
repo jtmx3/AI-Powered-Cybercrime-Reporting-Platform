@@ -10,10 +10,16 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject IAuditService AuditService
 @inject IHttpContextAccessor HttpContextAccessor
-<PageTitle>إنشاء حساب مشتكي | ACCP</PageTitle>
+<PageTitle>إنشاء حساب مشتكي | وَثيق | WATHIQ</PageTitle>
 
 <main class="register-page" dir="rtl">
-    <a href="/" class="register-back"><span aria-hidden="true">→</span> العودة إلى الرئيسية</a>
+    <header class="register-topbar">
+        <a href="/" class="register-brand" aria-label="وَثيق | WATHIQ الصفحة الرئيسية">
+            <img src="wathiq-emblem.svg" alt="" aria-hidden="true" />
+            <span><strong>وَثيق</strong><small dir="ltr">| WATHIQ</small></span>
+        </a>
+        <a href="/" class="register-back"><i class="bi bi-arrow-left" aria-hidden="true"></i> العودة إلى الرئيسية</a>
+    </header>
 
     <div class="register-shell">
         <section class="register-form-panel" aria-labelledby="register-title">
@@ -24,7 +30,7 @@
             @if (!string.IsNullOrWhiteSpace(successMessage))
             {
                 <div class="register-success" role="status" aria-live="polite">
-                    <span class="register-success-icon" aria-hidden="true">✓</span>
+                    <span class="register-success-icon" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
                     <h2>حسابك جاهز</h2>
                     <p>@successMessage</p>
                     <a href="/login" data-enhance-nav="false" class="register-primary-link">الانتقال إلى تسجيل الدخول <span aria-hidden="true">←</span></a>
@@ -93,7 +99,7 @@
         </section>
 
         <aside class="register-introduction" aria-labelledby="register-introduction-title">
-            <span class="register-intro-badge">حسابك في ACCP</span>
+            <span class="register-intro-badge">حسابك في وَثيق</span>
             <h2 id="register-introduction-title">تفاصيلك في مكانها.<br /><span>ومتابعتك أوضح.</span></h2>
             <p class="register-intro-description">هذه الصفحة مخصّصة لإنشاء حساب مشتكي. حسابات الموظفين تُدار من مسؤول المنصة.</p>
             <ol class="register-guide">
@@ -108,50 +114,56 @@
 
 <style>
     .register-page, .register-page * { box-sizing: border-box; }
-    .register-page { max-width: 1100px; width: 100%; margin-inline: auto; padding-block: .5rem 1.5rem; color: #20324a; font-family: "Segoe UI", Tahoma, Arial, sans-serif; line-height: 1.75; }
-    .register-back { display: inline-flex; align-items: center; gap: .5rem; min-height: 2.75rem; margin-bottom: 1rem; color: #526279; font-size: .8rem; text-decoration: none; }
-    .register-back:hover { color: #146c60; text-decoration: underline; }
-    .register-shell { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); background: #fff; border: 1px solid #dce5ed; border-radius: 1rem; overflow: hidden; box-shadow: 0 12px 40px #13243a06; }
+    .register-page { max-width: 1100px; width: 100%; margin-inline: auto; padding-block: .5rem 1.5rem; color: var(--wathiq-navy-950); font-family: var(--wathiq-font); line-height: 1.75; }
+    .register-topbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .8rem; margin-bottom: 1rem; }
+    .register-brand { display: inline-flex; align-items: center; gap: .65rem; color: var(--wathiq-navy-900); text-decoration: none; }
+    .register-brand img { display: block; width: 40px; height: 46px; object-fit: contain; }
+    .register-brand span { display: flex; flex-direction: column; line-height: 1.3; }
+    .register-brand strong { font-size: 1.1rem; }
+    .register-brand small { color: var(--wathiq-navy-800); font-size: .67rem; font-weight: 700; letter-spacing: .08em; }
+    .register-back { display: inline-flex; align-items: center; gap: .5rem; min-height: 2.75rem; margin-bottom: 1rem; color: #16335B; font-size: .8rem; text-decoration: none; }
+    .register-back:hover { color: #16335B; text-decoration: underline; }
+    .register-shell { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); background: #FFFFFF; border: 1px solid #E0F2FE; border-radius: 1rem; overflow: hidden; box-shadow: 0 12px 40px #0F274406; }
     .register-form-panel { min-width: 0; padding: clamp(1.4rem, 3vw, 2.6rem); }
-    .register-eyebrow { display: block; color: #146c60; font-size: .75rem; font-weight: 600; margin-bottom: .35rem; }
-    .register-form-panel h1 { font-size: clamp(1.4rem, 2.3vw, 1.9rem); color: #1b314b; line-height: 1.6; margin: 0 0 .6rem; }
-    .register-description { color: #617087; font-size: .86rem; line-height: 1.9; margin: 0 0 1.5rem; }
+    .register-eyebrow { display: block; color: #16335B; font-size: .75rem; font-weight: 600; margin-bottom: .35rem; }
+    .register-form-panel h1 { font-size: clamp(1.4rem, 2.3vw, 1.9rem); color: #16335B; line-height: 1.6; margin: 0 0 .6rem; }
+    .register-description { color: #16335B; font-size: .86rem; line-height: 1.9; margin: 0 0 1.5rem; }
     .register-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
     .register-field { margin-bottom: 1.1rem; }
-    .register-label { display: block; color: #20324a; font-size: .83rem; font-weight: 600; margin-bottom: .4rem; }
-    .register-page .form-control { display: block; width: 100%; min-height: 2.9rem; padding: .65rem .8rem; border: 1px solid #c9d4e0; border-radius: .6rem; color: #20324a; background: #fff; font: inherit; font-size: .9rem; line-height: 1.5; }
-    .register-page .form-control:focus { outline: 0; border-color: #368c7e; box-shadow: 0 0 0 .2rem #146c601c; }
-    .register-page .form-control.invalid { border-color: #b42338; outline: 1px solid #b42338; }
-    .register-field-help { color: #617087; font-size: .72rem; line-height: 1.9; margin: .4rem 0 0; }
-    .register-page .validation-message { color: #b42338; font-size: .77rem; line-height: 1.8; margin-top: .3rem; }
-    .register-errors { color: #8e2030; background: #fff0f1; border: 1px solid #f0cbd1; border-radius: .65rem; padding: .9rem 1rem; margin-bottom: 1.2rem; font-size: .82rem; }
+    .register-label { display: block; color: #16335B; font-size: .83rem; font-weight: 600; margin-bottom: .4rem; }
+    .register-page .form-control { display: block; width: 100%; min-height: 2.9rem; padding: .65rem .8rem; border: 1px solid #E0F2FE; border-radius: .6rem; color: #16335B; background: #FFFFFF; font: inherit; font-size: .9rem; line-height: 1.5; }
+    .register-page .form-control:focus { outline: 0; border-color: #0F2744; box-shadow: 0 0 0 .2rem #16335B1c; }
+    .register-page .form-control.invalid { border-color: #16335B; outline: 1px solid #16335B; }
+    .register-field-help { color: #16335B; font-size: .72rem; line-height: 1.9; margin: .4rem 0 0; }
+    .register-page .validation-message { color: #16335B; font-size: .77rem; line-height: 1.8; margin-top: .3rem; }
+    .register-errors { color: #0F2744; background: #F8FAFC; border: 1px solid #F1F5F9; border-radius: .65rem; padding: .9rem 1rem; margin-bottom: 1.2rem; font-size: .82rem; }
     .register-errors strong { display: block; margin-bottom: .4rem; }
     .register-errors ul { margin: 0; padding-inline-start: 1.15rem; }
-    .register-submit, .register-primary-link { display: flex; justify-content: center; align-items: center; gap: 1rem; width: 100%; min-height: 3rem; padding: .7rem 1rem; border: 1px solid #146c60; border-radius: .6rem; color: #fff; background: #146c60; font: 600 .9rem/1.5 "Segoe UI", Tahoma, Arial, sans-serif; text-decoration: none; cursor: pointer; }
-    .register-submit:hover, .register-primary-link:hover { color: #fff; background: #10584e; border-color: #10584e; }
+    .register-submit, .register-primary-link { display: flex; justify-content: center; align-items: center; gap: 1rem; width: 100%; min-height: 3rem; padding: .7rem 1rem; border: 1px solid #16335B; border-radius: .6rem; color: #FFFFFF; background: #16335B; font: 600 .9rem/1.5 "Segoe UI", Tahoma, Arial, sans-serif; text-decoration: none; cursor: pointer; }
+    .register-submit:hover, .register-primary-link:hover { color: #FFFFFF; background: #16335B; border-color: #16335B; }
     .register-submit:disabled { opacity: .65; cursor: wait; }
-    .register-fields:disabled .form-control { background: #f5f7fa; }
-    .register-login { color: #617087; font-size: .8rem; text-align: center; border-top: 1px solid #e7edf3; padding-top: 1.1rem; margin: 1.3rem 0 0; }
-    .register-login a { color: #146c60; text-decoration: none; font-weight: 600; margin-inline-start: .25rem; }
+    .register-fields:disabled .form-control { background: #F1F5F9; }
+    .register-login { color: #16335B; font-size: .8rem; text-align: center; border-top: 1px solid #E0F2FE; padding-top: 1.1rem; margin: 1.3rem 0 0; }
+    .register-login a { color: #16335B; text-decoration: none; font-weight: 600; margin-inline-start: .25rem; }
     .register-login a:hover { text-decoration: underline; }
-    .register-introduction { min-width: 0; display: flex; flex-direction: column; justify-content: center; padding: clamp(1.4rem, 3vw, 2.5rem); background: #13243a; color: #fff; }
-    .register-intro-badge { align-self: flex-start; color: #c1ead9; background: #204039; border: 1px solid #77bca54d; border-radius: 2rem; font-size: .71rem; padding: .3rem .7rem; margin-bottom: 1.25rem; }
-    .register-introduction h2 { font-size: clamp(1.5rem, 2.4vw, 2.1rem); color: #fff; line-height: 1.8; margin: 0 0 1rem; }
-    .register-introduction h2 span { color: #a5ddc8; }
-    .register-intro-description { color: #b9c9da; font-size: .82rem; line-height: 2; margin: 0 0 1.7rem; }
+    .register-introduction { min-width: 0; display: flex; flex-direction: column; justify-content: center; padding: clamp(1.4rem, 3vw, 2.5rem); background: #0F2744; color: #FFFFFF; }
+    .register-intro-badge { align-self: flex-start; color: #E0F2FE; background: #0F2744; border: 1px solid #38BDF84d; border-radius: 2rem; font-size: .71rem; padding: .3rem .7rem; margin-bottom: 1.25rem; }
+    .register-introduction h2 { font-size: clamp(1.5rem, 2.4vw, 2.1rem); color: #FFFFFF; line-height: 1.8; margin: 0 0 1rem; }
+    .register-introduction h2 span { color: #E0F2FE; }
+    .register-intro-description { color: #E0F2FE; font-size: .82rem; line-height: 2; margin: 0 0 1.7rem; }
     .register-guide { display: grid; gap: 1.2rem; list-style: none; margin: 0 0 1.8rem; padding: 0; }
     .register-guide li { display: flex; align-items: start; gap: .75rem; }
-    .register-guide li > span { display: grid; place-items: center; flex-shrink: 0; width: 1.85rem; height: 1.85rem; border: 1px solid #ffffff26; border-radius: .5rem; color: #b9ddcf; font: 600 .7rem/1 "Segoe UI", sans-serif; }
-    .register-guide h3 { color: #fff; font-size: .85rem; margin: .1rem 0 .3rem; }
-    .register-guide p { color: #b9c9da; font-size: .73rem; line-height: 1.9; margin: 0; }
-    .register-intro-note { border-top: 1px solid #ffffff26; padding-top: 1.1rem; }
-    .register-intro-note strong { font-size: .78rem; color: #d1e6de; }
-    .register-intro-note p { color: #b9c9da; font-size: .73rem; line-height: 1.9; margin: .35rem 0 0; }
-    .register-success { display: flex; flex-direction: column; align-items: center; text-align: center; border: 1px solid #cde3d7; border-radius: .8rem; background: #f2f9f5; padding: 1.5rem; }
-    .register-success-icon { display: grid; place-items: center; width: 2.6rem; height: 2.6rem; font-size: 1.2rem; border-radius: 50%; color: #146c60; background: #dbeee3; margin-bottom: .75rem; }
-    .register-success h2 { font-size: 1.2rem; color: #1b5145; margin: 0 0 .6rem; }
-    .register-success p { color: #42665d; font-size: .86rem; margin: 0 0 1.25rem; line-height: 1.9; }
-    .register-page a:focus-visible, .register-submit:focus-visible { outline: 3px solid #247f73; outline-offset: 3px; }
+    .register-guide li > span { display: grid; place-items: center; flex-shrink: 0; width: 1.85rem; height: 1.85rem; border: 1px solid #FFFFFF26; border-radius: .5rem; color: #E0F2FE; font: 600 .7rem/1 "Segoe UI", sans-serif; }
+    .register-guide h3 { color: #FFFFFF; font-size: .85rem; margin: .1rem 0 .3rem; }
+    .register-guide p { color: #E0F2FE; font-size: .73rem; line-height: 1.9; margin: 0; }
+    .register-intro-note { border-top: 1px solid #FFFFFF26; padding-top: 1.1rem; }
+    .register-intro-note strong { font-size: .78rem; color: #E0F2FE; }
+    .register-intro-note p { color: #E0F2FE; font-size: .73rem; line-height: 1.9; margin: .35rem 0 0; }
+    .register-success { display: flex; flex-direction: column; align-items: center; text-align: center; border: 1px solid #E0F2FE; border-radius: .8rem; background: #F1F5F9; padding: 1.5rem; }
+    .register-success-icon { display: grid; place-items: center; width: 2.6rem; height: 2.6rem; font-size: 1.2rem; border-radius: 50%; color: #16335B; background: #E0F2FE; margin-bottom: .75rem; }
+    .register-success h2 { font-size: 1.2rem; color: #16335B; margin: 0 0 .6rem; }
+    .register-success p { color: #16335B; font-size: .86rem; margin: 0 0 1.25rem; line-height: 1.9; }
+    .register-page a:focus-visible, .register-submit:focus-visible { outline: 3px solid #16335B; outline-offset: 3px; }
     @@media (min-width: 992px) and (max-width: 1199.98px) {
         .register-shell { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
         .register-form-panel, .register-introduction { padding: 1.5rem; }
@@ -163,6 +175,7 @@
         .register-introduction h2 { font-size: 1.7rem; }
     }
     @@media (max-width: 399.98px) {
+        .register-topbar { align-items: flex-start; }
         .register-form-panel, .register-introduction { padding: 1.15rem; }
         .register-success { padding: 1.15rem; }
     }

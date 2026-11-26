@@ -3,7 +3,7 @@
     max-width: 1500px;
     margin: 0 auto !important;
     padding: 32px 12px 48px !important;
-    color: #19324d;
+    color: #16335B;
 }
 
 /* رأس الصفحة */
@@ -20,7 +20,7 @@
 }
 
 .container-fluid > .d-flex:first-child p {
-    color: #687e95 !important;
+    color: #0F2744 !important;
     font-size: .87rem;
     line-height: 1.9;
 }
@@ -28,9 +28,9 @@
 /* البطاقات */
 .container-fluid .card {
     min-width: 0;
-    border: 1px solid #dce6ef !important;
+    border: 1px solid #E0F2FE !important;
     border-radius: 14px;
-    background: #fff;
+    background: #FFFFFF;
     box-shadow: none !important;
 }
 
@@ -43,7 +43,7 @@
 .container-fluid .form-label {
     display: block;
     margin-bottom: 9px;
-    color: #29455f;
+    color: #16335B;
     font-size: .81rem;
     font-weight: 650;
 }
@@ -52,24 +52,24 @@
 .container-fluid .form-select {
     min-height: 45px;
     padding: 11px 12px;
-    border: 1px solid #cbd9e6;
+    border: 1px solid #E0F2FE;
     border-radius: 9px;
-    background-color: #fff;
-    color: #19324d;
+    background-color: #FFFFFF;
+    color: #16335B;
     font: inherit;
     font-size: .84rem;
 }
 
 .container-fluid .form-control::placeholder {
-    color: #8293a5;
+    color: #16335B;
     font-size: .78rem;
 }
 
 .container-fluid .form-control:focus,
 .container-fluid .form-select:focus {
-    border-color: #176d65;
+    border-color: #16335B;
     outline: 0;
-    box-shadow: 0 0 0 3px #e2f1ed;
+    box-shadow: 0 0 0 3px #E0F2FE;
 }
 
 /* إحصائيات نتائج البحث */
@@ -82,28 +82,28 @@
 }
 
 .container-fluid > .row .small {
-    color: #60778e !important;
+    color: #0F2744 !important;
     font-size: .82rem;
     line-height: 1.8;
 }
 
 .container-fluid > .row .fs-3 {
     margin-top: 13px;
-    color: #19324d;
+    color: #16335B;
     font-size: 1.95rem !important;
     line-height: 1.2;
 }
 
 .container-fluid .text-success {
-    color: #176d65 !important;
+    color: #16335B !important;
 }
 
 .container-fluid .text-danger {
-    color: #ad4652 !important;
+    color: #16335B !important;
 }
 
 .container-fluid .text-muted {
-    color: #6b8095 !important;
+    color: #0F2744 !important;
 }
 
 /* جدول التدقيق */
@@ -118,21 +118,21 @@
 .container-fluid .table-responsive {
     border-radius: 13px;
     scrollbar-width: thin;
-    scrollbar-color: #bdcddb #f5f8fb;
+    scrollbar-color: #E0F2FE #F8FAFC;
 }
 
 .container-fluid .table {
     min-width: 1120px;
     margin-bottom: 0;
-    border-color: #e6edf3;
-    color: #29455f;
+    border-color: #E0F2FE;
+    color: #16335B;
     font-size: .81rem;
 }
 
 .container-fluid .table th {
     padding: 17px 16px;
-    background-color: #f4f7fb;
-    color: #566e86;
+    background-color: #F1F5F9;
+    color: #16335B;
     font-size: .77rem;
     font-weight: 700;
     white-space: nowrap;
@@ -150,14 +150,14 @@
 }
 
 .container-fluid .table-hover tbody tr:hover > td {
-    --bs-table-accent-bg: #f5f9fc;
-    --bs-table-hover-bg: #f5f9fc;
-    --bs-table-hover-color: #29455f;
+    --bs-table-accent-bg: #F8FAFC;
+    --bs-table-hover-bg: #F8FAFC;
+    --bs-table-hover-color: #16335B;
 }
 
 .container-fluid .table td:first-child {
     min-width: 165px;
-    color: #657b91;
+    color: #0F2744;
     direction: ltr;
     text-align: right;
     unicode-bidi: isolate;
@@ -197,7 +197,7 @@
 }
 
 .container-fluid .fw-semibold {
-    color: #29455f;
+    color: #16335B;
     font-weight: 650 !important;
 }
 
@@ -212,10 +212,10 @@
     max-width: 100%;
     margin-top: 5px;
     padding: 3px 8px;
-    border: 1px solid #e1e8f0;
+    border: 1px solid #E0F2FE;
     border-radius: 6px;
-    background-color: #f3f6fa;
-    color: #5d7389;
+    background-color: #F1F5F9;
+    color: #16335B;
     direction: ltr;
     unicode-bidi: isolate;
     font-size: .73rem;
@@ -232,13 +232,13 @@
 }
 
 .container-fluid .badge.bg-success {
-    color: #21694e !important;
-    background-color: #e9f6ee !important;
+    color: #16335B !important;
+    background-color: #F1F5F9 !important;
 }
 
 .container-fluid .badge.bg-danger {
-    color: #a2424c !important;
-    background-color: #fcecef !important;
+    color: #16335B !important;
+    background-color: #F1F5F9 !important;
 }
 
 /* الأزرار */
@@ -257,39 +257,39 @@
 }
 
 .container-fluid .btn-primary {
-    color: #fff;
-    background-color: #176d65;
-    border-color: #176d65;
+    color: #FFFFFF;
+    background-color: #16335B;
+    border-color: #16335B;
 }
 
 .container-fluid .btn-primary:hover:not(:disabled) {
-    color: #fff;
-    background-color: #11564f;
-    border-color: #11564f;
+    color: #FFFFFF;
+    background-color: #16335B;
+    border-color: #16335B;
 }
 
 .container-fluid .btn-outline-primary {
-    color: #176d65;
-    background-color: #fff;
-    border-color: #c5ddd5;
+    color: #16335B;
+    background-color: #FFFFFF;
+    border-color: #E0F2FE;
 }
 
 .container-fluid .btn-outline-primary:hover {
-    color: #11564f;
-    background-color: #edf7f2;
-    border-color: #176d65;
+    color: #16335B;
+    background-color: #F1F5F9;
+    border-color: #16335B;
 }
 
 .container-fluid .btn-outline-secondary {
-    color: #516d85;
-    background-color: #fff;
-    border-color: #cfdae5;
+    color: #16335B;
+    background-color: #FFFFFF;
+    border-color: #E0F2FE;
 }
 
 .container-fluid .btn-outline-secondary:hover:not(:disabled) {
-    color: #29455f;
-    background-color: #f2f6fa;
-    border-color: #aebfd0;
+    color: #16335B;
+    background-color: #F1F5F9;
+    border-color: #E0F2FE;
 }
 
 .container-fluid .btn-sm {
@@ -305,7 +305,7 @@
 }
 
 .container-fluid .btn:focus-visible {
-    outline: 3px solid #8cc9bc;
+    outline: 3px solid #38BDF8;
     outline-offset: 3px;
     box-shadow: none;
 }
@@ -320,21 +320,21 @@
 }
 
 .container-fluid .alert-danger {
-    color: #993b46;
-    background-color: #fff0f2;
-    border-color: #edcbd1;
+    color: #16335B;
+    background-color: #F8FAFC;
+    border-color: #F1F5F9;
 }
 
 .container-fluid .alert-info {
-    color: #315f7e;
-    background-color: #eef6fc;
-    border-color: #d5e5f1;
+    color: #16335B;
+    background-color: #F1F5F9;
+    border-color: #E0F2FE;
 }
 
 .container-fluid .alert-secondary {
-    color: #596f85;
-    background-color: #f2f6fa;
-    border-color: #dce6ef;
+    color: #16335B;
+    background-color: #F1F5F9;
+    border-color: #E0F2FE;
 }
 
 /* الجوال */

@@ -1,7 +1,7 @@
 /* صفحة إدارة الموظفين */
 .employee-admin {
-    --ea-navy: #19324d;
-    --ea-teal: #176d65;
+    --ea-navy: #16335B;
+    --ea-teal: #16335B;
 
     width: 100%;
     max-width: 1320px;
@@ -40,7 +40,7 @@
 
 .ea-header p {
     margin: 0;
-    color: #687e95;
+    color: #0F2744;
     font-size: .87rem;
     line-height: 1.9;
 }
@@ -53,7 +53,7 @@
 }
 
 .ea-muted {
-    color: #687e95;
+    color: #0F2744;
     font-size: .8rem;
     line-height: 1.9;
 }
@@ -69,15 +69,15 @@
 .ea-stat {
     display: block;
     padding: 22px;
-    border: 1px solid #dce6ef;
+    border: 1px solid #E0F2FE;
     border-radius: 14px;
-    background: #fff;
+    background: #FFFFFF;
     box-shadow: none;
 }
 
 .ea-stat span {
     display: block;
-    color: #60778e;
+    color: #0F2744;
     font-size: .83rem;
     line-height: 1.8;
 }
@@ -85,17 +85,17 @@
 .ea-stat strong {
     display: block;
     margin-top: 13px;
-    color: #19324d;
+    color: #16335B;
     font-size: 1.9rem;
     line-height: 1.2;
 }
 
 .ea-stat:nth-child(2) strong {
-    color: #176d65;
+    color: #16335B;
 }
 
 .ea-stat:nth-child(3) strong {
-    color: #b24b54;
+    color: #16335B;
 }
 
 /* نموذج الإضافة وقائمة الموظفين */
@@ -109,14 +109,14 @@
 .ea-panel {
     min-width: 0;
     padding: 24px;
-    border: 1px solid #dce6ef;
+    border: 1px solid #E0F2FE;
     border-radius: 14px;
-    background: #fff;
+    background: #FFFFFF;
     box-shadow: none;
 }
 
 .ea-grid > aside {
-    border-top: 3px solid #176d65;
+    border-top: 3px solid #16335B;
 }
 
 .ea-grid > aside > p {
@@ -125,7 +125,7 @@
 
 .ea-directory > h2 {
     padding-bottom: 17px;
-    border-bottom: 1px solid #e6edf3;
+    border-bottom: 1px solid #E0F2FE;
 }
 
 /* البحث والتصفية */
@@ -139,7 +139,7 @@
 .employee-admin .form-label {
     display: block;
     margin-bottom: 9px;
-    color: #29455f;
+    color: #16335B;
     font-size: .81rem;
     font-weight: 650;
 }
@@ -149,26 +149,26 @@
     width: 100%;
     min-height: 45px;
     padding: 11px 12px;
-    border: 1px solid #cbd9e6;
+    border: 1px solid #E0F2FE;
     border-radius: 9px;
-    background-color: #fff;
-    color: #19324d;
+    background-color: #FFFFFF;
+    color: #16335B;
     font: inherit;
     font-size: .85rem;
 }
 
 .employee-admin ::deep .form-control:focus,
 .employee-admin ::deep .form-select:focus {
-    border-color: #176d65;
+    border-color: #16335B;
     outline: 0;
-    box-shadow: 0 0 0 3px #e2f1ed;
+    box-shadow: 0 0 0 3px #E0F2FE;
 }
 
 .employee-admin ::deep .form-control:disabled,
 .employee-admin ::deep .form-select:disabled,
 .employee-admin ::deep fieldset:disabled .form-control {
-    color: #75879a;
-    background-color: #f2f5f8;
+    color: #0F2744;
+    background-color: #F1F5F9;
     cursor: not-allowed;
 }
 
@@ -185,20 +185,20 @@
 
 .ea-help {
     margin: 10px 0 0;
-    color: #6c8095;
+    color: #0F2744;
     font-size: .75rem;
     line-height: 1.95;
 }
 
 .employee-admin ::deep .validation-message {
     margin-top: 7px;
-    color: #ad3d49;
+    color: #16335B;
     font-size: .77rem;
     line-height: 1.8;
 }
 
 .employee-admin ::deep .form-control.invalid {
-    border-color: #c7747e;
+    border-color: #E0F2FE;
 }
 
 /* الأزرار */
@@ -219,77 +219,77 @@
 
 .employee-admin ::deep .btn-primary,
 .employee-admin ::deep .btn-success {
-    color: #fff;
-    background-color: #176d65;
-    border-color: #176d65;
+    color: #FFFFFF;
+    background-color: #16335B;
+    border-color: #16335B;
 }
 
 .employee-admin ::deep .btn-primary:hover:not(:disabled),
 .employee-admin ::deep .btn-success:hover:not(:disabled) {
-    color: #fff;
-    background-color: #11564f;
-    border-color: #11564f;
+    color: #FFFFFF;
+    background-color: #16335B;
+    border-color: #16335B;
 }
 
 .employee-admin ::deep .btn-outline-primary,
 .employee-admin ::deep .btn-outline-success {
-    color: #176d65;
-    background-color: #fff;
-    border-color: #c5ddd5;
+    color: #16335B;
+    background-color: #FFFFFF;
+    border-color: #E0F2FE;
 }
 
 .employee-admin ::deep .btn-outline-primary:hover:not(:disabled),
 .employee-admin ::deep .btn-outline-success:hover:not(:disabled) {
-    color: #11564f;
-    background-color: #edf7f2;
-    border-color: #176d65;
+    color: #16335B;
+    background-color: #F1F5F9;
+    border-color: #16335B;
 }
 
 .employee-admin ::deep .btn-outline-secondary {
-    color: #516d85;
-    background-color: #fff;
-    border-color: #d1dde8;
+    color: #16335B;
+    background-color: #FFFFFF;
+    border-color: #E0F2FE;
 }
 
 .employee-admin ::deep .btn-outline-secondary:hover:not(:disabled) {
-    color: #29455f;
-    background-color: #f2f6fa;
-    border-color: #aebfd0;
+    color: #16335B;
+    background-color: #F1F5F9;
+    border-color: #E0F2FE;
 }
 
 .employee-admin ::deep .btn-outline-warning {
-    color: #82611d;
-    background-color: #fff;
-    border-color: #e6d6af;
+    color: #16335B;
+    background-color: #FFFFFF;
+    border-color: #F1F5F9;
 }
 
 .employee-admin ::deep .btn-outline-warning:hover {
-    color: #705014;
-    background-color: #fff7e6;
-    border-color: #b99a56;
+    color: #0F2744;
+    background-color: #F8FAFC;
+    border-color: #16335B;
 }
 
 .employee-admin ::deep .btn-outline-danger {
-    color: #a4434e;
-    background-color: #fff;
-    border-color: #e6c9ce;
+    color: #16335B;
+    background-color: #FFFFFF;
+    border-color: #F1F5F9;
 }
 
 .employee-admin ::deep .btn-outline-danger:hover:not(:disabled) {
-    color: #913540;
-    background-color: #fff0f2;
-    border-color: #cb7b87;
+    color: #16335B;
+    background-color: #F8FAFC;
+    border-color: #E0F2FE;
 }
 
 .employee-admin ::deep .btn-danger {
-    color: #fff;
-    background-color: #a4434e;
-    border-color: #a4434e;
+    color: #FFFFFF;
+    background-color: #16335B;
+    border-color: #16335B;
 }
 
 .employee-admin ::deep .btn-danger:hover:not(:disabled) {
-    background-color: #8e3440;
-    border-color: #8e3440;
+    background-color: #16335B;
+    border-color: #16335B;
 }
 
 .employee-admin ::deep .btn:disabled {
@@ -298,31 +298,31 @@
 }
 
 .employee-admin ::deep .btn:focus-visible {
-    outline: 3px solid #8cc9bc;
+    outline: 3px solid #38BDF8;
     outline-offset: 3px;
     box-shadow: none;
 }
 
 /* جدول الموظفين */
 .employee-admin .table-responsive {
-    border: 1px solid #e0e8f0;
+    border: 1px solid #E0F2FE;
     border-radius: 10px;
     scrollbar-width: thin;
-    scrollbar-color: #c3d1df #f5f8fb;
+    scrollbar-color: #E0F2FE #F8FAFC;
 }
 
 .ea-table {
     min-width: 650px;
     margin-bottom: 0;
-    color: #29455f;
+    color: #16335B;
     font-size: .82rem;
-    border-color: #e6edf3;
+    border-color: #E0F2FE;
 }
 
 .ea-table th {
     padding: 15px 13px;
-    color: #566e86;
-    background: #f4f7fb;
+    color: #16335B;
+    background: #F1F5F9;
     font-size: .77rem;
     font-weight: 650;
     white-space: nowrap;
@@ -341,13 +341,13 @@
 
 .ea-table td > strong {
     display: block;
-    color: #19324d;
+    color: #16335B;
     font-size: .87rem;
     overflow-wrap: anywhere;
 }
 
 .ea-table tbody tr:hover {
-    background-color: #fbfcfe;
+    background-color: #F8FAFC;
 }
 
 .ea-table tbody tr:last-child td {
@@ -356,8 +356,8 @@
 
 .ea-table caption {
     padding: 13px;
-    border-top: 1px solid #e6edf3;
-    color: #6d8297;
+    border-top: 1px solid #E0F2FE;
+    color: #0F2744;
     font-size: .74rem;
     line-height: 1.8;
 }
@@ -365,7 +365,7 @@
 .ea-email {
     display: block;
     margin-top: 5px;
-    color: #6c8095;
+    color: #0F2744;
     font-size: .75rem;
     overflow-wrap: anywhere;
 }
@@ -391,13 +391,13 @@
 }
 
 .ea-active {
-    color: #21694e;
-    background: #e9f6ee;
+    color: #16335B;
+    background: #F1F5F9;
 }
 
 .ea-inactive {
-    color: #a2424c;
-    background: #fcecef;
+    color: #16335B;
+    background: #F1F5F9;
 }
 
 /* إجراءات كل حساب */
@@ -419,11 +419,11 @@
 .ea-confirm {
     margin-bottom: 22px;
     padding: 20px;
-    border: 1px solid #ead8b0;
-    border-inline-start: 4px solid #b7944e;
+    border: 1px solid #F1F5F9;
+    border-inline-start: 4px solid #16335B;
     border-radius: 11px;
-    background: #fff9ec;
-    color: #795b21;
+    background: #F8FAFC;
+    color: #16335B;
 }
 
 .ea-confirm > strong {
@@ -450,15 +450,15 @@
 .ea-edit {
     margin-bottom: 22px;
     padding: 22px;
-    border: 1px solid #c8e0d8;
-    border-inline-start: 4px solid #176d65;
+    border: 1px solid #E0F2FE;
+    border-inline-start: 4px solid #16335B;
     border-radius: 11px;
-    background: #f2f9f6;
+    background: #F1F5F9;
 }
 
 .ea-edit h3 {
     margin: 0 0 12px;
-    color: #19324d;
+    color: #16335B;
     font-size: 1rem;
     font-weight: 750;
     line-height: 1.7;
@@ -466,7 +466,7 @@
 
 .ea-edit-target {
     margin-bottom: 10px;
-    color: #4e6b80;
+    color: #16335B;
     font-size: .82rem;
     line-height: 1.9;
     overflow-wrap: anywhere;
@@ -487,26 +487,26 @@
 }
 
 .employee-admin .alert-success {
-    color: #21674e;
-    background-color: #edf8f1;
-    border-color: #cee8d8;
+    color: #16335B;
+    background-color: #F1F5F9;
+    border-color: #E0F2FE;
 }
 
 .employee-admin .alert-warning {
-    color: #7c5d1c;
-    background-color: #fff8e8;
-    border-color: #eadbb7;
+    color: #16335B;
+    background-color: #F8FAFC;
+    border-color: #F1F5F9;
 }
 
 .employee-admin .alert-danger {
-    color: #993b46;
-    background-color: #fff0f2;
-    border-color: #edcbd1;
+    color: #16335B;
+    background-color: #F8FAFC;
+    border-color: #F1F5F9;
 }
 
 .ea-empty {
     padding: 36px 20px;
-    color: #6b8095;
+    color: #0F2744;
     font-size: .87rem;
     line-height: 1.9;
     text-align: center;

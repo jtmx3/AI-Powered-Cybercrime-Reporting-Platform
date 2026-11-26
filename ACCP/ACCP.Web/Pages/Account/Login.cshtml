@@ -10,63 +10,67 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#13243a" />
-    <title>تسجيل الدخول | ACCP</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#0A192F" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <title>تسجيل الدخول | وَثيق | WATHIQ</title>
     <style>
-.accp-auth { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; margin: 0; background: #f4f7fb; color: #20324a; font-family: "Segoe UI", Tahoma, Arial, sans-serif; line-height: 1.75; }
+.accp-auth { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; margin: 0; background: #F8FAFC; color: #0F2744; font-family: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif; line-height: 1.75; }
 .auth-topbar { width: min(1120px, calc(100% - 3rem)); margin-inline: auto; padding-block: 1.3rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-.auth-brand { display: inline-flex; align-items: center; gap: .7rem; text-decoration: none; color: #1b314b; }
-.auth-brand:hover { color: #146c60; }
-.auth-brand-icon { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; color: #146c60; background: #e9f5ef; border: 1px solid #cfe4da; border-radius: .8rem; }
-.auth-brand-icon svg { width: 1.65rem; height: 1.65rem; }
+.auth-brand { display: inline-flex; align-items: center; gap: .7rem; text-decoration: none; color: #0F2744; }
+.auth-brand:hover { color: #0F2744; }
+.auth-brand-icon { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; color: #0F2744; background: #E0F2FE; border: 1px solid #E0F2FE; border-radius: .8rem; }
+.auth-brand-icon img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .auth-brand > span:last-child { display: flex; flex-direction: column; gap: .05rem; }
-.auth-brand strong { font-size: 1.2rem; letter-spacing: .09em; line-height: 1.3; text-align: start; }
-.auth-brand small { color: #617087; font-size: .68rem; }
-.auth-home-link { display: inline-flex; align-items: center; gap: .5rem; min-height: 2.75rem; font-size: .8rem; text-decoration: none; color: #526279; }
-.auth-home-link:hover { color: #146c60; text-decoration: underline; }
-.auth-shell { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); width: min(1040px, calc(100% - 3rem)); margin: auto; border: 1px solid #dce5ed; border-radius: 1.1rem; background: #fff; overflow: hidden; box-shadow: 0 16px 48px #13243a08; }
+.auth-brand strong { font-size: 1.2rem; letter-spacing: normal; line-height: 1.3; text-align: start; }
+.auth-brand small { color: #16335B; font-size: .68rem; letter-spacing: .08em; }
+.auth-home-link { display: inline-flex; align-items: center; gap: .5rem; min-height: 2.75rem; font-size: .8rem; text-decoration: none; color: #16335B; }
+.auth-home-link:hover { color: #0F2744; text-decoration: underline; }
+.auth-shell { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); width: min(1040px, calc(100% - 3rem)); margin: auto; border: 1px solid #E0F2FE; border-radius: 1.1rem; background: #FFFFFF; overflow: hidden; box-shadow: 0 16px 48px #0A192F08; }
 .auth-form-panel { padding: clamp(1.5rem, 4vw, 3.1rem); min-width: 0; }
-.auth-eyebrow { display: block; color: #146c60; font-size: .76rem; font-weight: 600; margin-bottom: .4rem; }
-.auth-form-panel h1 { font-size: 1.9rem; line-height: 1.6; margin: 0 0 .55rem; color: #1b314b; }
-.auth-description { font-size: .88rem; color: #617087; margin: 0 0 1.65rem; line-height: 1.9; }
+.auth-eyebrow { display: block; color: #0F2744; font-size: .76rem; font-weight: 600; margin-bottom: .4rem; }
+.auth-form-panel h1 { font-size: 1.9rem; line-height: 1.6; margin: 0 0 .55rem; color: #0F2744; }
+.auth-description { font-size: .88rem; color: #16335B; margin: 0 0 1.65rem; line-height: 1.9; }
 .auth-field { margin-bottom: 1.1rem; }
 .auth-form .form-label { font-size: .85rem; margin-bottom: .45rem; }
-.auth-form .form-control { min-height: 3rem; border-color: #c9d4e0; border-radius: .6rem; background: #fff; color: #20324a; }
-.auth-form .form-control:focus { border-color: #368c7e; box-shadow: 0 0 0 .2rem #146c601c; }
-.auth-field-error { display: block; color: #b42338; font-size: .78rem; margin-top: .3rem; line-height: 1.8; }
+.auth-form .form-control { min-height: 3rem; border-color: #E0F2FE; border-radius: .6rem; background: #FFFFFF; color: #0F2744; }
+.auth-form .form-control:focus { border-color: #0F2744; box-shadow: 0 0 0 .2rem #0284C71c; }
+.auth-field-error { display: block; color: #0F2744; font-size: .78rem; margin-top: .3rem; line-height: 1.8; }
 .auth-field-error.field-validation-valid { display: none; }
-.auth-form .input-validation-error { border-color: #b42338; }
+.auth-form .input-validation-error { border-color: #0F2744; }
 .auth-validation.validation-summary-valid { display: none; }
-.auth-validation.validation-summary-errors { color: #8e2030; background: #fff0f1; border: 1px solid #f0cbd1; border-radius: .6rem; padding: .85rem 1rem; margin-bottom: 1.2rem; font-size: .84rem; }
+.auth-validation.validation-summary-errors { color: #0F2744; background: #E0F2FE; border: 1px solid #E0F2FE; border-radius: .6rem; padding: .85rem 1rem; margin-bottom: 1.2rem; font-size: .84rem; }
 .auth-validation ul { padding-inline-start: 1.1rem; margin: 0; }
 .auth-options { display: flex; justify-content: space-between; align-items: center; gap: .7rem; flex-wrap: wrap; margin-block: .2rem 1.4rem; font-size: .78rem; }
 .auth-options .form-check { margin: 0; }
-.auth-options .form-check-label { cursor: pointer; line-height: 1.8; color: #526279; }
-.auth-options a { color: #146c60; text-decoration: none; padding-block: .35rem; }
+.auth-options .form-check-label { cursor: pointer; line-height: 1.8; color: #16335B; }
+.auth-options a { color: #0F2744; text-decoration: none; padding-block: .35rem; }
 .auth-options a:hover { text-decoration: underline; }
 .auth-submit { display: flex; width: 100%; align-items: center; justify-content: center; gap: 1rem; min-height: 3rem; border-radius: .6rem; }
-.auth-recovery-note { display: flex; align-items: start; gap: .6rem; padding: .85rem; margin-top: 1.15rem; border-radius: .6rem; background: #f5f8fb; border: 1px solid #e6ecf2; }
-.auth-note-icon { display: inline-block; flex-shrink: 0; color: #617087; width: 1.15rem; height: 1.15rem; margin-top: .15rem; }
+.auth-recovery-note { display: flex; align-items: start; gap: .6rem; padding: .85rem; margin-top: 1.15rem; border-radius: .6rem; background: #F8FAFC; border: 1px solid #E0F2FE; }
+.auth-note-icon { display: inline-block; flex-shrink: 0; color: #16335B; width: 1.15rem; height: 1.15rem; margin-top: .15rem; }
 .auth-note-icon svg { display: block; width: 100%; height: 100%; }
-.auth-recovery-note p { color: #617087; font-size: .71rem; line-height: 1.9; margin: 0; }
-.auth-register { padding-top: 1.2rem; border-top: 1px solid #e7edf3; margin: 1.3rem 0 0; color: #617087; font-size: .82rem; text-align: center; }
-.auth-register a { color: #146c60; font-weight: 600; text-decoration: none; margin-inline-start: .25rem; }
+.auth-recovery-note p { color: #16335B; font-size: .71rem; line-height: 1.9; margin: 0; }
+.auth-register { padding-top: 1.2rem; border-top: 1px solid #E0F2FE; margin: 1.3rem 0 0; color: #16335B; font-size: .82rem; text-align: center; }
+.auth-register a { color: #0F2744; font-weight: 600; text-decoration: none; margin-inline-start: .25rem; }
 .auth-register a:hover { text-decoration: underline; }
-.auth-introduction { padding: clamp(1.5rem, 4vw, 3rem); background: #13243a; color: #fff; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-.auth-intro-badge { align-self: flex-start; display: inline-flex; padding: .3rem .7rem; margin-bottom: 1.3rem; border: 1px solid #77bca54d; border-radius: 2rem; background: #204039; color: #c1ead9; font-size: .71rem; }
-.auth-introduction h2 { color: #fff; font-size: clamp(1.7rem, 2.6vw, 2.2rem); margin: 0 0 1rem; line-height: 1.7; }
-.auth-introduction h2 span { color: #a5ddc8; }
-.auth-intro-description { color: #b9c9da; font-size: .85rem; line-height: 1.95; margin: 0 0 1.8rem; }
+.auth-introduction { padding: clamp(1.5rem, 4vw, 3rem); background: #0A192F; color: #FFFFFF; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+.auth-intro-badge { align-self: flex-start; display: inline-flex; padding: .3rem .7rem; margin-bottom: 1.3rem; border: 1px solid #38BDF84d; border-radius: 2rem; background: #16335B; color: #E0F2FE; font-size: .71rem; }
+.auth-introduction h2 { color: #FFFFFF; font-size: clamp(1.7rem, 2.6vw, 2.2rem); margin: 0 0 1rem; line-height: 1.7; }
+.auth-introduction h2 span { color: #38BDF8; }
+.auth-intro-description { color: #E0F2FE; font-size: .85rem; line-height: 1.95; margin: 0 0 1.8rem; }
 .auth-role-list { list-style: none; display: grid; gap: 1.2rem; padding: 0; margin: 0 0 1.8rem; }
 .auth-role-list li { display: flex; align-items: start; gap: .75rem; }
-.auth-role-number { display: grid; place-items: center; flex-shrink: 0; width: 1.85rem; height: 1.85rem; border-radius: .5rem; border: 1px solid #ffffff26; color: #b9ddcf; background: #ffffff05; font: 600 .7rem/1 "Segoe UI", sans-serif; }
-.auth-role-list h3 { color: #fff; font-size: .85rem; margin: .1rem 0 .25rem; }
-.auth-role-list p { color: #b9c9da; font-size: .73rem; line-height: 1.9; margin: 0; }
-.auth-mfa-note { border-top: 1px solid #ffffff26; padding-top: 1.1rem; }
-.auth-mfa-note strong { font-size: .75rem; color: #d1e6de; font-weight: 600; }
-.auth-mfa-note p { font-size: .72rem; line-height: 1.9; color: #b9c9da; margin: .35rem 0 0; }
-.auth-footer { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; width: min(1040px, calc(100% - 3rem)); margin: 1.25rem auto 0; padding-block: .5rem 1rem; font-size: .7rem; color: #617087; }
-.accp-auth :focus-visible { outline: 3px solid #247f73; outline-offset: 3px; }
+.auth-role-number { display: grid; place-items: center; flex-shrink: 0; width: 1.85rem; height: 1.85rem; border-radius: .5rem; border: 1px solid #FFFFFF26; color: #E0F2FE; background: #FFFFFF05; font: 600 .7rem/1 "Segoe UI", sans-serif; }
+.auth-role-list h3 { color: #FFFFFF; font-size: .85rem; margin: .1rem 0 .25rem; }
+.auth-role-list p { color: #E0F2FE; font-size: .73rem; line-height: 1.9; margin: 0; }
+.auth-mfa-note { border-top: 1px solid #FFFFFF26; padding-top: 1.1rem; }
+.auth-mfa-note strong { font-size: .75rem; color: #E0F2FE; font-weight: 600; }
+.auth-mfa-note p { font-size: .72rem; line-height: 1.9; color: #E0F2FE; margin: .35rem 0 0; }
+.auth-footer { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; width: min(1040px, calc(100% - 3rem)); margin: 1.25rem auto 0; padding-block: .5rem 1rem; font-size: .7rem; color: #16335B; }
+.accp-auth :focus-visible { outline: 3px solid #0284C7; outline-offset: 3px; }
 @@media (max-width: 767.98px) {
     .auth-topbar { width: calc(100% - 2rem); padding-block: 1rem; }
     .auth-shell { width: min(560px, calc(100% - 2rem)); grid-template-columns: minmax(0, 1fr); margin-block: .25rem; }
@@ -89,31 +93,30 @@
 .accp-auth h1, .accp-auth h2, .accp-auth h3 { font-family: inherit; font-weight: 700; }
 .accp-auth a { text-underline-offset: .2em; }
 .auth-form .form-label { display: block; font-weight: 600; }
-.auth-form .form-control { display: block; width: 100%; padding: .65rem .8rem; border: 1px solid #c9d4e0; font: inherit; line-height: 1.5; }
+.auth-form .form-control { display: block; width: 100%; padding: .65rem .8rem; border: 1px solid #E0F2FE; font: inherit; line-height: 1.5; }
 .auth-options .form-check { display: flex; align-items: center; gap: .5rem; padding: 0; }
-.auth-options .form-check-input { width: 1.05rem; height: 1.05rem; margin: 0; accent-color: #146c60; cursor: pointer; flex-shrink: 0; }
-.auth-submit { border: 1px solid #146c60; background: #146c60; color: #fff; font: 600 .95rem/1.5 "Segoe UI", Tahoma, Arial, sans-serif; padding: .75rem 1rem; cursor: pointer; }
-.auth-submit:hover { background: #10584e; border-color: #10584e; }
+.auth-options .form-check-input { width: 1.05rem; height: 1.05rem; margin: 0; accent-color: #0F2744; cursor: pointer; flex-shrink: 0; }
+.auth-submit { border: 1px solid #0284C7; background: #0F2744; color: #FFFFFF; font: 600 .95rem/1.5 "IBM Plex Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif; padding: .75rem 1rem; cursor: pointer; }
+.auth-submit:hover { background: #0F2744; border-color: #0F2744; }
 .auth-field-error:empty { display: none; }
 .auth-brand-icon svg, .auth-note-icon svg { display: block; max-width: 100%; max-height: 100%; flex-shrink: 0; }
     </style>
+    <link rel="stylesheet" href="/wathiq-brand.css" />
 </head>
 <body class="accp-auth">
     <header class="auth-topbar">
-        <a href="/" class="auth-brand" aria-label="ACCP — الصفحة الرئيسية">
-            <span class="auth-brand-icon" aria-hidden="true">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-8 3v6c0 4 4 7 8 9 4-2 8-5 8-9V6Z" /><path d="m8.5 12 2.3 2.3 4.7-5" /></svg>
-            </span>
-            <span><strong dir="ltr">ACCP</strong><small>منصة متابعة البلاغات</small></span>
+        <a href="/" class="auth-brand" aria-label="وَثيق | WATHIQ — الصفحة الرئيسية">
+            <span class="auth-brand-icon" aria-hidden="true"><img src="/wathiq-emblem.svg" alt="" /></span>
+            <span><strong>وَثيق</strong><small dir="ltr">WATHIQ · بوابة التوثيق والمتابعة</small></span>
         </a>
         <a href="/" class="auth-home-link"><span aria-hidden="true">→</span> العودة إلى الرئيسية</a>
     </header>
 
     <main class="auth-shell">
         <section class="auth-form-panel" aria-labelledby="login-title">
-            <span class="auth-eyebrow">مرحبًا بعودتك</span>
+            <span class="auth-eyebrow">مرحبًا بعودتك إلى وَثيق</span>
             <h1 id="login-title">تسجيل الدخول</h1>
-            <p class="auth-description">أدخل بيانات حسابك للوصول إلى مساحتك في المنصة.</p>
+            <p class="auth-description">أدخل بيانات حسابك للوصول إلى مساحتك الآمنة في بوابة وَثيق.</p>
 
             <form method="post" class="auth-form">
                 @Html.AntiForgeryToken()
@@ -154,11 +157,11 @@
                 <p>استعادة كلمة المرور بالبريد متاحة للمشتكين. الموظف الذي نسي كلمة مروره يتواصل مع مسؤول المنصة.</p>
             </div>
 
-            <p class="auth-register">لا تمتلك حساب مشتكي؟ <a href="/register">إنشاء حساب جديد</a></p>
+            <p class="auth-register">لا تمتلك حساب مشتكي؟ <a href="/register">إنشاء حساب في وَثيق</a></p>
         </section>
 
         <aside class="auth-introduction" aria-labelledby="introduction-title">
-            <span class="auth-intro-badge">مساحتك في ACCP</span>
+            <span class="auth-intro-badge">بوابة وَثيق</span>
             <h2 id="introduction-title">متابعة أوضح.<br /><span>وخطوات منظّمة.</span></h2>
             <p class="auth-intro-description">بعد تسجيل الدخول، تظهر لك مساحة الحساب والإجراءات المتاحة وفق دورك في المنصة.</p>
             <ul class="auth-role-list">
@@ -173,6 +176,6 @@
         </aside>
     </main>
 
-    <footer class="auth-footer"><span>ACCP · منصة متابعة البلاغات</span><span>© @DateTime.UtcNow.Year</span></footer>
+    <footer class="auth-footer"><span>وَثيق | WATHIQ · بوابة التوثيق والمتابعة</span><span>© @DateTime.UtcNow.Year</span></footer>
 </body>
 </html>
