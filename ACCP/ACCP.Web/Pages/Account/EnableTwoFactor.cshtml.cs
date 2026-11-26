@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace ACCP.Web.Pages.Account;
@@ -19,6 +20,7 @@ namespace ACCP.Web.Pages.Account;
 // The password-verified enrollment cookie grants access to this page only.
 // Every handler rechecks that proof or the current authenticated staff account.
 [AllowAnonymous]
+[EnableRateLimiting("auth-login")]
 [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
 [RequestSizeLimit(16 * 1024)]
 public sealed class EnableTwoFactorModel : PageModel

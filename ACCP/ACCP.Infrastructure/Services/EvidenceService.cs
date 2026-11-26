@@ -2,8 +2,10 @@ using System.Data;
 using System.Security.Cryptography;
 using ACCP.Application.Auditing;
 using ACCP.Application.EvidenceManagement;
+using ACCP.Application.Security;
 using ACCP.Domain.Enums;
 using ACCP.Infrastructure.Data;
+using ACCP.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using EvidenceEntity = ACCP.Domain.Entities.Evidence;
@@ -15,14 +17,20 @@ public class EvidenceService : IEvidenceService
     private readonly AccpDbContext _dbContext;
     private readonly IHostEnvironment _environment;
     private readonly IAuditService _auditService;
+    private readonly IDataEncryptionService? _encryptionService;
+    private readonly IEvidenceMalwareScanner _malwareScanner;
     public EvidenceService(
         AccpDbContext dbContext,
         IHostEnvironment environment,
-        IAuditService auditService)
+        IAuditService auditService,
+        IDataEncryptionService? encryptionService = null,
+        IEvidenceMalwareScanner? malwareScanner = null)
     {
         _dbContext = dbContext;
         _environment = environment;
         _auditService = auditService;
+        _encryptionService = encryptionService;
+        _malwareScanner = malwareScanner ?? new HeuristicEvidenceMalwareScanner();
     }
     public async Task<EvidenceRevisionEntity> UploadRevisionAsync(
         EvidenceRevisionUploadRequest request,
@@ -74,6 +82,19 @@ public class EvidenceService : IEvidenceService
         }
         (EvidenceType evidenceType, string safeContentType) =
             DetectAndValidateFile(fileBytes, extension);
+        var scanResult = await _malwareScanner.ScanAsync(fileBytes, extension);
+        if (!scanResult.IsClean)
+        {
+            await WriteAccessDeniedAuditAsync(
+                reporterId,
+                originalEvidence.CyberCaseId,
+                originalEvidence.Id,
+                "تم رفض نسخة دليل بعد فشل الفحص الأمني للملف.",
+                scanResult.ThreatName ?? "Malicious payload detected.");
+            throw new InvalidOperationException(
+                scanResult.Reason ?? "تم رفض الملف بعد الفحص الأمني.");
+        }
+        fileBytes = EvidenceMetadataSanitizer.SanitizeAndValidate(fileBytes, extension);
         if (request.ChangeType ==
                 EvidenceChangeType.ModifiedVersion &&
             evidenceType != originalEvidence.Type)
@@ -121,11 +142,14 @@ public class EvidenceService : IEvidenceService
         string storageKey =
             $"{caseFolderName}/Revisions/" +
             $"{evidenceFolderName}/{storedFileName}";
+        byte[] bytesToPersist = _encryptionService is not null
+            ? _encryptionService.EncryptBytes(fileBytes, AesGcmDataEncryptionService.EvidenceFilePurpose)
+            : fileBytes;
         try
         {
             await File.WriteAllBytesAsync(
                 fullFilePath,
-                fileBytes);
+                bytesToPersist);
             await using var transaction =
                 await _dbContext.Database
                     .BeginTransactionAsync(
@@ -279,6 +303,19 @@ public class EvidenceService : IEvidenceService
         }
         (EvidenceType evidenceType, string safeContentType) =
             DetectAndValidateFile(fileBytes, extension);
+        var scanResult = await _malwareScanner.ScanAsync(fileBytes, extension);
+        if (!scanResult.IsClean)
+        {
+            await WriteAccessDeniedAuditAsync(
+                reporterId,
+                request.CyberCaseId,
+                null,
+                "تم رفض دليل مرفوع بعد فشل الفحص الأمني للملف.",
+                scanResult.ThreatName ?? "Malicious payload detected.");
+            throw new InvalidOperationException(
+                scanResult.Reason ?? "تم رفض الملف بعد الفحص الأمني.");
+        }
+        fileBytes = EvidenceMetadataSanitizer.SanitizeAndValidate(fileBytes, extension);
         string sha256Hash =
             Convert.ToHexString(SHA256.HashData(fileBytes));
         string storedFileName =
@@ -296,9 +333,12 @@ public class EvidenceService : IEvidenceService
             storedFileName);
         string storageKey =
             $"{caseFolderName}/{storedFileName}";
+        byte[] bytesToPersist = _encryptionService is not null
+            ? _encryptionService.EncryptBytes(fileBytes, AesGcmDataEncryptionService.EvidenceFilePurpose)
+            : fileBytes;
         await File.WriteAllBytesAsync(
             fullFilePath,
-            fileBytes);
+            bytesToPersist);
         var evidence = new EvidenceEntity
         {
             OriginalFileName = safeOriginalFileName,

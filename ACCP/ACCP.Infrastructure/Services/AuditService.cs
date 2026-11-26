@@ -1,7 +1,9 @@
 using ACCP.Application.Auditing;
+using ACCP.Application.Security;
 using ACCP.Domain.Entities;
 using ACCP.Domain.Enums;
 using ACCP.Infrastructure.Data;
+using ACCP.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 
 namespace ACCP.Infrastructure.Services;
@@ -12,10 +14,14 @@ public sealed class AuditService : IAuditService
     private const int MaximumSearchTermLength = 200;
 
     private readonly AccpDbContext _dbContext;
+    private readonly IPiiMaskingService _piiMasking;
 
-    public AuditService(AccpDbContext dbContext)
+    public AuditService(
+        AccpDbContext dbContext,
+        IPiiMaskingService? piiMasking = null)
     {
         _dbContext = dbContext;
+        _piiMasking = piiMasking ?? new PiiMaskingService();
     }
 
     public async Task<AuditLog> WriteAsync(
@@ -30,7 +36,7 @@ public sealed class AuditService : IAuditService
             nameof(request.EntityType));
 
         string description = CleanRequired(
-            request.Description,
+            _piiMasking.MaskSensitiveText(request.Description),
             1000,
             nameof(request.Description));
 
@@ -70,7 +76,9 @@ public sealed class AuditService : IAuditService
             Description = description,
             IsSuccessful = request.IsSuccessful,
             FailureReason = CleanOptional(
-                request.FailureReason,
+                request.FailureReason is null
+                    ? null
+                    : _piiMasking.MaskSensitiveText(request.FailureReason),
                 500),
             IpAddress = CleanOptional(
                 request.IpAddress,

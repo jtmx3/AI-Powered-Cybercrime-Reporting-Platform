@@ -1,0 +1,42 @@
+# Build outputs
+bin/
+obj/
+out/
+publish/
+
+# IDE & Editor files
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.swp
+*~
+
+# Backups & temporary files
+*.bak
+*.backup
+*.backup*
+LoginBackups/
+PageBackups/
+RepairBackups/
+SecurityFileBackups/
+
+# Sensitive runtime data & cryptographic keys (NEVER commit to Git)
+App_Data/Evidence/
+App_Data/DataProtectionKeys/
+secrets.json
+appsettings.Production.json
+appsettings.Local.json
+*.pfx
+*.key
+*.pem
+.env
+.env.*
+
+# Test results & logs
+TestResults/
+*.trx
+*.coverage
+*.log

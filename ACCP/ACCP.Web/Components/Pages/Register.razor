@@ -1,13 +1,16 @@
-﻿@page "/register"
+@page "/register"
 @rendermode InteractiveServer
 @using System.ComponentModel.DataAnnotations
 @using ACCP.Application.Auditing
+@using ACCP.Application.Security
 @using ACCP.Domain.Enums
 @using ACCP.Infrastructure.Identity
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Http
 @using Microsoft.AspNetCore.Identity
 @inject UserManager<ApplicationUser> UserManager
+@inject IPasswordHasher<ApplicationUser> PasswordHasher
+@inject IRegistrationRateLimiter RegistrationRateLimiter
 @inject IAuditService AuditService
 @inject IHttpContextAccessor HttpContextAccessor
 <PageTitle>إنشاء حساب مشتكي | وَثيق</PageTitle>
@@ -218,6 +221,22 @@
             registerModel.Email.Trim();
         ApplicationUser? user = null;
         bool registrationCompleted = false;
+
+        using RegistrationRateLease rateLease =
+            RegistrationRateLimiter.TryAcquire(requestIpAddress);
+        if (!rateLease.IsAllowed)
+        {
+            errorMessages.Add(
+                "تم تجاوز الحد المسموح لمحاولات إنشاء الحساب مؤقتًا. يرجى الانتظار قليلًا ثم المحاولة مجددًا.");
+            await WriteRegistrationAuditSafelyAsync(
+                user: null,
+                attemptedEmail: normalizedEmail,
+                isSuccessful: false,
+                failureReason: rateLease.Reason ?? "RegistrationRateLimited");
+            isSubmitting = false;
+            return;
+        }
+
         try
         {
             user = new ApplicationUser
@@ -234,11 +253,25 @@
                     registerModel.Password);
             if (!createResult.Succeeded)
             {
+                bool hasDuplicateAccountError = createResult.Errors.Any(error =>
+                    string.Equals(error.Code, "DuplicateEmail", StringComparison.Ordinal) ||
+                    string.Equals(error.Code, "DuplicateUserName", StringComparison.Ordinal));
+
+                if (hasDuplicateAccountError)
+                {
+                    // موازنة زمن الاستجابة بتجزئة Argon2id وهمية لمنع كشف الإيميلات المسجلة عبر Timing Attack.
+                    _ = PasswordHasher.HashPassword(user, registerModel.Password);
+                }
+
+                HashSet<string> uniqueErrors = new(StringComparer.Ordinal);
                 foreach (IdentityError error
                     in createResult.Errors)
                 {
-                    errorMessages.Add(
-                        TranslateIdentityError(error));
+                    string translated = TranslateIdentityError(error);
+                    if (uniqueErrors.Add(translated))
+                    {
+                        errorMessages.Add(translated);
+                    }
                 }
                 await WriteRegistrationAuditSafelyAsync(
                     user: null,
@@ -350,10 +383,8 @@
     {
         return error.Code switch
         {
-            "DuplicateEmail" =>
-                "البريد الإلكتروني مستخدم مسبقًا.",
-            "DuplicateUserName" =>
-                "البريد الإلكتروني مستخدم مسبقًا.",
+            "DuplicateEmail" or "DuplicateUserName" =>
+                "تعذر إكمال إنشاء الحساب بالبيانات المدخلة. إذا كان لديك حساب مسبق، يمكنك تسجيل الدخول أو استعادة كلمة المرور.",
             "PasswordTooShort" =>
                 "كلمة المرور قصيرة جدًا.",
             "PasswordRequiresDigit" =>
@@ -379,11 +410,15 @@
         [Required(ErrorMessage = "البريد الإلكتروني مطلوب.")]
         [EmailAddress(
             ErrorMessage = "صيغة البريد الإلكتروني غير صحيحة.")]
+        [StringLength(
+            256,
+            ErrorMessage = "البريد الإلكتروني طويل جدًا.")]
         public string Email { get; set; } = string.Empty;
         [Required(ErrorMessage = "كلمة المرور مطلوبة.")]
-        [MinLength(
-            8,
-            ErrorMessage = "كلمة المرور يجب ألا تقل عن 8 أحرف.")]
+        [StringLength(
+            128,
+            MinimumLength = 8,
+            ErrorMessage = "كلمة المرور يجب أن تكون بين 8 و128 حرفًا.")]
         public string Password { get; set; } = string.Empty;
         [Required(ErrorMessage = "تأكيد كلمة المرور مطلوب.")]
         [Compare(

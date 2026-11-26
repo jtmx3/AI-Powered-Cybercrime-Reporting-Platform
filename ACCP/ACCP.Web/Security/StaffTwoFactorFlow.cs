@@ -137,6 +137,12 @@ public static class StaffTwoFactorFlow
     {
         return app.Use(async (context, next) =>
         {
+            if (IsStaticAssetRequest(context.Request.Path))
+            {
+                await next(context);
+                return;
+            }
+
             if (context.User.Identity?.IsAuthenticated == true &&
                 !await IsApplicationSessionAllowedAsync(context))
             {
@@ -155,6 +161,24 @@ public static class StaffTwoFactorFlow
 
             await next(context);
         });
+    }
+
+    private static bool IsStaticAssetRequest(PathString path)
+    {
+        var value = path.Value;
+        if (string.IsNullOrEmpty(value))
+        {
+            return false;
+        }
+
+        return value.StartsWith("/_framework/", StringComparison.OrdinalIgnoreCase) ||
+               value.StartsWith("/lib/", StringComparison.OrdinalIgnoreCase) ||
+               value.EndsWith(".css", StringComparison.OrdinalIgnoreCase) ||
+               value.EndsWith(".js", StringComparison.OrdinalIgnoreCase) ||
+               value.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+               value.EndsWith(".ico", StringComparison.OrdinalIgnoreCase) ||
+               value.EndsWith(".svg", StringComparison.OrdinalIgnoreCase) ||
+               value.EndsWith(".woff2", StringComparison.OrdinalIgnoreCase);
     }
 
     private static async Task<bool>

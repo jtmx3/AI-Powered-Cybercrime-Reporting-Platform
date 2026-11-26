@@ -69,6 +69,7 @@ public sealed class AuthorizedCaseService : ICaseService
         return await WithCoreAsync((_, db) => db.CyberCases.AsNoTracking()
             .Where(item => item.ReporterId == actor.UserId)
             .OrderByDescending(item => item.CreatedAtUtc)
+            .Take(500)
             .Select(item => new CyberCase
             {
                 Id = item.Id, CaseNumber = item.CaseNumber, Title = item.Title,
@@ -100,6 +101,7 @@ public sealed class AuthorizedCaseService : ICaseService
                  (item.AssignedOfficerId == null &&
                      (item.Status == CaseStatus.New || item.Status == CaseStatus.UnderReview))))
             .OrderByDescending(item => item.CreatedAtUtc)
+            .Take(500)
             .Select(item => new CyberCase
             {
                 Id = item.Id, CaseNumber = item.CaseNumber,

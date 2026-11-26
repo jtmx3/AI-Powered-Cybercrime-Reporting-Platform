@@ -50,6 +50,7 @@ public sealed class ForgotPasswordModel : PageModel
             return Page();
         }
 
+        var started = System.Diagnostics.Stopwatch.StartNew();
         try
         {
             // Eligibility is checked against current database roles by the
@@ -69,6 +70,19 @@ public sealed class ForgotPasswordModel : PageModel
         {
             Input = new InputModel();
             ModelState.Clear();
+        }
+
+        // Pad fast paths (unknown/staff email) to reduce timing side-channel against SMTP sends.
+        var remainingMs = 650 - (int)started.ElapsedMilliseconds;
+        if (remainingMs > 0 && !HttpContext.RequestAborted.IsCancellationRequested)
+        {
+            try
+            {
+                await Task.Delay(remainingMs, HttpContext.RequestAborted);
+            }
+            catch (OperationCanceledException)
+            {
+            }
         }
 
         RequestCompleted = true;
