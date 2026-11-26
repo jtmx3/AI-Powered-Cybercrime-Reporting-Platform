@@ -40,9 +40,14 @@
     --w-shadow-md: 0 6px 20px rgba(11, 34, 64, 0.07);
 }
 
-*, *::before, *::after {
-    box-sizing: border-box;
-}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { min-height: 100%; margin: 0; font-family: var(--wathiq-font); color: var(--wathiq-navy-950); background: var(--wathiq-surface); line-height: 1.7; -webkit-font-smoothing: antialiased; }
+body { font-size: 0.95rem; }
+button, input, select, textarea { font: inherit; }
+button, [role="button"], a { -webkit-tap-highlight-color: transparent; }
+a { color: var(--wathiq-navy-900); text-underline-offset: 0.18em; }
+a:hover { color: var(--wathiq-navy-800); }
+:focus-visible { outline: 3px solid var(--wathiq-sky-400); outline-offset: 3px; }
 
 html, body {
     font-family: var(--w-font-sans);

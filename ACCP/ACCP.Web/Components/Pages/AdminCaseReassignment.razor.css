@@ -3,13 +3,13 @@
     width: 100%;
     margin-inline: auto;
     padding: 32px 12px 48px !important;
-    color: #19324d;
+    color: #16335B;
 }
 
 .container h1 {
     margin-bottom: 26px !important;
     padding-bottom: 20px;
-    border-bottom: 1px solid #dce6ef;
+    border-bottom: 1px solid #E0F2FE;
     font-size: clamp(1.55rem, 3vw, 1.95rem);
     font-weight: 750;
     line-height: 1.6;
@@ -17,10 +17,10 @@
 
 /* بطاقة الإسناد الحالي */
 .container .card {
-    border: 1px solid #dce6ef;
-    border-top: 3px solid #176d65;
+    border: 1px solid #E0F2FE;
+    border-top: 3px solid #16335B;
     border-radius: 14px;
-    background: #fff;
+    background: #FFFFFF;
     box-shadow: none !important;
 }
 
@@ -31,27 +31,27 @@
 .container h2 {
     margin: 0 0 20px;
     padding-bottom: 15px;
-    border-bottom: 1px solid #e5edf3;
-    color: #19324d;
+    border-bottom: 1px solid #E0F2FE;
+    color: #16335B;
     font-size: 1.05rem;
     font-weight: 750;
     line-height: 1.8;
 }
 
 .container p {
-    color: #58718a;
+    color: #16335B;
     font-size: .87rem;
     line-height: 1.95;
     overflow-wrap: anywhere;
 }
 
 .container strong {
-    color: #19324d;
+    color: #16335B;
     font-weight: 700;
 }
 
 .container bdi {
-    color: #47667f;
+    color: #16335B;
     font-size: .82rem;
     unicode-bidi: isolate;
     overflow-wrap: anywhere;
@@ -69,21 +69,21 @@
 }
 
 .container .alert-warning {
-    color: #7d5e21;
-    background-color: #fff9ec;
-    border-color: #eadcba;
+    color: #16335B;
+    background-color: #F8FAFC;
+    border-color: #F1F5F9;
 }
 
 .container .alert-success {
-    color: #21674e;
-    background-color: #edf8f1;
-    border-color: #cee8d8;
+    color: #16335B;
+    background-color: #F1F5F9;
+    border-color: #E0F2FE;
 }
 
 .container .alert-info {
-    color: #315f7e;
-    background-color: #eef6fc;
-    border-color: #d5e5f1;
+    color: #16335B;
+    background-color: #F1F5F9;
+    border-color: #E0F2FE;
 }
 
 .container .alert ul {
@@ -103,15 +103,15 @@
     min-width: 0;
     margin-top: 24px;
     padding: 25px;
-    border: 1px solid #dce6ef;
+    border: 1px solid #E0F2FE;
     border-radius: 14px;
-    background: #fff;
+    background: #FFFFFF;
 }
 
 .container .form-label {
     display: block;
     margin-bottom: 10px;
-    color: #29455f;
+    color: #16335B;
     font-size: .85rem;
     font-weight: 650;
 }
@@ -120,31 +120,31 @@
 .container .form-select {
     min-height: 47px;
     padding: 12px 14px;
-    border: 1px solid #cbd9e6;
+    border: 1px solid #E0F2FE;
     border-radius: 9px;
-    background-color: #fff;
-    color: #19324d;
+    background-color: #FFFFFF;
+    color: #16335B;
     font: inherit;
     font-size: .87rem;
 }
 
 .container .form-control:focus,
 .container .form-select:focus {
-    border-color: #176d65;
+    border-color: #16335B;
     outline: 0;
-    box-shadow: 0 0 0 3px #e2f1ed;
+    box-shadow: 0 0 0 3px #E0F2FE;
 }
 
 .container .form-control:disabled,
 .container .form-select:disabled {
-    color: #75879a;
-    background-color: #f2f5f8;
+    color: #0F2744;
+    background-color: #F1F5F9;
     cursor: not-allowed;
 }
 
 .container .form-text {
     margin-top: 9px;
-    color: #71859a;
+    color: #0F2744;
     font-size: .76rem;
     line-height: 1.9;
 }
@@ -158,9 +158,9 @@
     min-height: 0;
     padding: 16px;
     padding-inline-start: 44px;
-    border: 1px solid #e2e9ef;
+    border: 1px solid #E0F2FE;
     border-radius: 10px;
-    background: #f7f9fc;
+    background: #F8FAFC;
 }
 
 .container .form-check-input {
@@ -168,22 +168,22 @@
     height: 18px;
     margin-top: 4px;
     margin-inline-start: -28px;
-    border-color: #b5c7d5;
+    border-color: #E0F2FE;
     cursor: pointer;
 }
 
 .container .form-check-input:checked {
-    border-color: #176d65;
-    background-color: #176d65;
+    border-color: #16335B;
+    background-color: #16335B;
 }
 
 .container .form-check-input:focus {
-    border-color: #176d65;
-    box-shadow: 0 0 0 3px #e2f1ed;
+    border-color: #16335B;
+    box-shadow: 0 0 0 3px #E0F2FE;
 }
 
 .container .form-check-label {
-    color: #48647d;
+    color: #16335B;
     font-size: .82rem;
     line-height: 1.95;
     cursor: pointer;
@@ -210,39 +210,39 @@
 }
 
 .container .btn-danger {
-    color: #fff;
-    background-color: #a4434e;
-    border-color: #a4434e;
+    color: #FFFFFF;
+    background-color: #16335B;
+    border-color: #16335B;
 }
 
 .container .btn-danger:hover:not(:disabled) {
-    color: #fff;
-    background-color: #8e3440;
-    border-color: #8e3440;
+    color: #FFFFFF;
+    background-color: #16335B;
+    border-color: #16335B;
 }
 
 .container .btn-outline-secondary {
-    color: #516d85;
-    background-color: #fff;
-    border-color: #cfdae5;
+    color: #16335B;
+    background-color: #FFFFFF;
+    border-color: #E0F2FE;
 }
 
 .container .btn-outline-secondary:hover:not(:disabled) {
-    color: #29455f;
-    background-color: #f2f6fa;
-    border-color: #aebfd0;
+    color: #16335B;
+    background-color: #F1F5F9;
+    border-color: #E0F2FE;
 }
 
 .container .btn-outline-primary {
-    color: #176d65;
-    background-color: #fff;
-    border-color: #c5ddd5;
+    color: #16335B;
+    background-color: #FFFFFF;
+    border-color: #E0F2FE;
 }
 
 .container .btn-outline-primary:hover {
-    color: #11564f;
-    background-color: #edf7f2;
-    border-color: #176d65;
+    color: #16335B;
+    background-color: #F1F5F9;
+    border-color: #16335B;
 }
 
 .container .btn:disabled {
@@ -251,7 +251,7 @@
 }
 
 .container .btn:focus-visible {
-    outline: 3px solid #8cc9bc;
+    outline: 3px solid #38BDF8;
     outline-offset: 3px;
     box-shadow: none;
 }
@@ -259,9 +259,9 @@
 /* التحميل */
 .container p[role="status"] {
     padding: 28px 20px;
-    border: 1px solid #dce6ef;
+    border: 1px solid #E0F2FE;
     border-radius: 12px;
-    background: #fff;
+    background: #FFFFFF;
     text-align: center;
 }
 
@@ -269,7 +269,7 @@
 .container > .mt-4 {
     margin-top: 25px !important;
     padding-top: 20px;
-    border-top: 1px solid #dce6ef;
+    border-top: 1px solid #E0F2FE;
 }
 
 /* الجوال */

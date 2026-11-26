@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 72" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">شعار وَثيق</title>
+  <desc id="desc">درع مؤسسي يضم ملف توثيق وبصمة تحقق رقمية</desc>
+  <path d="M32 3 7 12v20c0 16.4 10.4 29.1 25 36 14.6-6.9 25-19.6 25-36V12L32 3Z" fill="#0A192F" stroke="#38BDF8" stroke-width="2.5"/>
+  <path d="M32 9 13 15.8v15.7c0 12.8 7.7 23.2 19 29.1 11.3-5.9 19-16.3 19-29.1V15.8L32 9Z" stroke="#16335B" stroke-width="2"/>
+  <path d="M23 22.5h16.5l5 5V46H23V22.5Z" fill="#0F2744" stroke="#E0F2FE" stroke-width="1.7"/>
+  <path d="M39.5 22.5V28h5" stroke="#E0F2FE" stroke-width="1.7" stroke-linejoin="round"/>
+  <path d="M27.5 33h12M27.5 37h8" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="m27.5 42 3 3 6.5-6.5" stroke="#FFFFFF" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/>
+</svg>

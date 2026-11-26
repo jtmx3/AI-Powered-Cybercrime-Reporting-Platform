@@ -59,9 +59,23 @@
                             <a href="/register" class="cta-quiet-link">
                                 <span>ليس لديك حساب؟ تسجيل مستفيد جديد</span>
                             </a>
-                        </NotAuthorized>
-                    </AuthorizeView>
-                </div>
+                            <a href="/notifications" class="wathiq-button wathiq-button-quiet">عرض الإشعارات</a>
+                        }
+                        else
+                        {
+                            <a href="/cases/new" class="wathiq-button wathiq-button-primary">
+                                <span>بدء توثيق بلاغ</span><i class="bi bi-arrow-left" aria-hidden="true"></i>
+                            </a>
+                            <a href="/cases" class="wathiq-button wathiq-button-quiet">متابعة طلباتي</a>
+                        }
+                    </Authorized>
+                    <NotAuthorized>
+                        <a href="/login" class="wathiq-button wathiq-button-primary">
+                            <span>الدخول إلى الخدمة</span><i class="bi bi-arrow-left" aria-hidden="true"></i>
+                        </a>
+                        <a href="/register" class="wathiq-button wathiq-button-quiet">إنشاء حساب مستفيد</a>
+                    </NotAuthorized>
+                </AuthorizeView>
             </div>
 
             <!-- بطاقة بيانات الخدمة الرسمية (Official Service Metadata Card) -->
@@ -90,6 +104,18 @@
                 </dl>
             </aside>
         </div>
+
+        <aside class="wathiq-assurance" aria-label="ضوابط الحماية والخصوصية">
+            <div class="wathiq-assurance-heading">
+                <span class="wathiq-assurance-mark"><i class="bi bi-shield-lock" aria-hidden="true"></i></span>
+                <div><span class="wathiq-overline">وَثيق | WATHIQ</span><h2>حماية الإجراء تبدأ من التوثيق</h2></div>
+            </div>
+            <ul class="wathiq-assurance-list">
+                <li><i class="bi bi-person-lock" aria-hidden="true"></i><span><strong>خصوصية مضبوطة</strong><small>إظهار البيانات الشخصية محكوم بالموافقة والصلاحية.</small></span></li>
+                <li><i class="bi bi-file-earmark-lock" aria-hidden="true"></i><span><strong>قرائن محفوظة</strong><small>تسلسل الأدلة وإصداراتها موثق للمراجعة المختصة.</small></span></li>
+                <li><i class="bi bi-journal-check" aria-hidden="true"></i><span><strong>متابعة منظمة</strong><small>يمكن مراجعة تغييرات الحالة والرسائل المتاحة ضمن مساحة الحساب.</small></span></li>
+            </ul>
+        </aside>
     </section>
 
     <!-- خطوات البداية وآلية العمل الإجرائية -->

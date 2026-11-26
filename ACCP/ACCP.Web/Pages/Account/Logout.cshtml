@@ -31,11 +31,13 @@
 
         body {
             margin: 0;
-            background: #f4f7fb;
-            color: #19324d;
-            font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+            background: #F8FAFC;
+            color: #0F2744;
+            font-family: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
             line-height: 1.9;
         }
+
+        .portal-footer { margin-top: 10px; color: #16335B; font-size: .72rem; }
 
         .page {
             max-width: 1120px;
@@ -53,21 +55,23 @@
         }
 
         .brand {
-            color: #19324d;
+            color: #0F2744;
             font-size: 1.4rem;
             font-weight: 800;
-            letter-spacing: .08em;
+            letter-spacing: normal;
             text-decoration: none;
         }
 
+        .brand [dir="ltr"] { letter-spacing: .08em; }
+
         .back {
-            color: #647e96;
+            color: #0F2744;
             font-size: .82rem;
             text-decoration: none;
         }
 
         .back:hover {
-            color: #176d65;
+            color: #0F2744;
             text-decoration: underline;
         }
 
@@ -75,11 +79,11 @@
             max-width: 510px;
             margin-inline: auto;
             padding: 40px;
-            border: 1px solid #dce6ef;
+            border: 1px solid #E0F2FE;
             border-radius: 18px;
-            background: #fff;
+            background: #FFFFFF;
             text-align: center;
-            box-shadow: 0 12px 35px #19324d05;
+            box-shadow: 0 12px 35px #0F274405;
         }
 
         .logout-icon {
@@ -88,10 +92,10 @@
             width: 64px;
             height: 64px;
             margin: 0 auto 23px;
-            border: 1px solid #d1e6de;
+            border: 1px solid #E0F2FE;
             border-radius: 17px;
-            color: #176d65;
-            background: #eef7f3;
+            color: #0F2744;
+            background: #E0F2FE;
         }
 
         .logout-icon svg {
@@ -101,7 +105,7 @@
 
         .eyebrow {
             margin: 0 0 10px;
-            color: #176d65;
+            color: #0F2744;
             font-size: .79rem;
             font-weight: 650;
         }
@@ -115,7 +119,7 @@
 
         .description {
             margin: 0 0 26px;
-            color: #6b8095;
+            color: #0F2744;
             font-size: .88rem;
             line-height: 1.95;
         }
@@ -123,10 +127,10 @@
         .notice {
             margin-bottom: 26px;
             padding: 15px 17px;
-            border: 1px solid #e0e8ef;
+            border: 1px solid #E0F2FE;
             border-radius: 10px;
-            background: #f5f8fb;
-            color: #60788f;
+            background: #F8FAFC;
+            color: #0F2744;
             font-size: .79rem;
             line-height: 1.95;
         }
@@ -153,38 +157,38 @@
         }
 
         .danger {
-            color: #fff;
-            background: #a4434e;
-            border-color: #a4434e;
+            color: #FFFFFF;
+            background: #0F2744;
+            border-color: #0F2744;
         }
 
         .danger:hover {
-            background: #8e3440;
-            border-color: #8e3440;
+            background: #0A192F;
+            border-color: #0A192F;
         }
 
         .secondary {
-            color: #176d65;
-            background: #fff;
-            border-color: #c5ddd5;
+            color: #0F2744;
+            background: #FFFFFF;
+            border-color: #E0F2FE;
         }
 
         .secondary:hover {
-            background: #edf7f2;
-            border-color: #176d65;
+            background: #E0F2FE;
+            border-color: #0F2744;
         }
 
         a:focus-visible,
         button:focus-visible {
-            outline: 3px solid #8cc9bc;
+            outline: 3px solid #38BDF8;
             outline-offset: 4px;
         }
 
         .footer-note {
             margin: 24px 0 0;
             padding-top: 20px;
-            border-top: 1px solid #e5edf3;
-            color: #788b9e;
+            border-top: 1px solid #E0F2FE;
+            color: #0F2744;
             font-size: .75rem;
         }
 
@@ -235,12 +239,12 @@
                 </svg>
             </div>
 
-            <p class="eyebrow">حسابك في ACCP</p>
+            <p class="eyebrow">حسابك في وَثيق</p>
 
             <h1 id="logout-title">هل تريد تسجيل الخروج؟</h1>
 
             <p class="description">
-                ستحتاج إلى تسجيل الدخول مجددًا للوصول إلى مساحتك في المنصة.
+                ستحتاج إلى تسجيل الدخول مجددًا للوصول إلى مساحتك في بوابة وَثيق.
             </p>
 
             <div class="notice">
@@ -262,6 +266,7 @@
             <p class="footer-note">
                 تسجيل الخروج ينهي الجلسة الحالية، ولا يحذف حسابك أو بياناتك المحفوظة.
             </p>
+            <p class="portal-footer">وَثيق | WATHIQ · بوابة التوثيق والمتابعة</p>
         </section>
     </main>
 </body>

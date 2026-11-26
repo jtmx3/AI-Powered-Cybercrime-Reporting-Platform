@@ -2,7 +2,7 @@
     max-width: 1180px;
     margin-inline: auto;
     padding: 32px 12px 48px;
-    color: #19324d;
+    color: #16335B;
 }
 
 .page-header {
@@ -15,7 +15,7 @@
 }
 
 .eyebrow {
-    color: #176d65;
+    color: #16335B;
     font-size: .8rem;
     font-weight: 700;
 }
@@ -28,7 +28,7 @@
 
 .page-header p {
     margin: 0;
-    color: #687e95;
+    color: #0F2744;
     font-size: .87rem;
     line-height: 1.9;
 }
@@ -48,14 +48,14 @@
 
 .statistics article {
     padding: 23px;
-    border: 1px solid #dce6ef;
+    border: 1px solid #E0F2FE;
     border-radius: 14px;
-    background: #fff;
+    background: #FFFFFF;
 }
 
 .statistics span {
     display: block;
-    color: #60778e;
+    color: #0F2744;
     font-size: .83rem;
 }
 
@@ -66,11 +66,11 @@
 }
 
 .statistics .teal {
-    color: #176d65;
+    color: #16335B;
 }
 
 .statistics small {
-    color: #74879a;
+    color: #0F2744;
     font-size: .74rem;
     line-height: 1.9;
 }
@@ -81,9 +81,9 @@
     gap: 18px;
     padding: 22px;
     margin-bottom: 25px;
-    border: 1px solid #dce6ef;
+    border: 1px solid #E0F2FE;
     border-radius: 14px;
-    background: #fff;
+    background: #FFFFFF;
 }
 
 .filter-panel label {
@@ -97,18 +97,18 @@
     width: 100%;
     min-height: 45px;
     padding: 10px 12px;
-    border: 1px solid #cbd9e6;
+    border: 1px solid #E0F2FE;
     border-radius: 9px;
-    background: #fff;
-    color: #19324d;
+    background: #FFFFFF;
+    color: #16335B;
     font: inherit;
     font-size: .84rem;
 }
 
 .filter-panel select:focus {
-    border-color: #176d65;
+    border-color: #16335B;
     outline: 0;
-    box-shadow: 0 0 0 3px #e2f1ed;
+    box-shadow: 0 0 0 3px #E0F2FE;
 }
 
 .results-heading {
@@ -127,7 +127,7 @@
 }
 
 .results-heading span {
-    color: #71859a;
+    color: #0F2744;
     font-size: .79rem;
 }
 
@@ -142,14 +142,14 @@
     justify-content: space-between;
     gap: 24px;
     padding: 23px;
-    border: 1px solid #dce6ef;
+    border: 1px solid #E0F2FE;
     border-radius: 13px;
-    background: #fff;
+    background: #FFFFFF;
 }
 
 .notification-card.unread {
-    border-inline-start: 4px solid #176d65;
-    background: #fbfefc;
+    border-inline-start: 4px solid #16335B;
+    background: #F8FAFC;
 }
 
 .notification-content {
@@ -167,18 +167,18 @@
 .type-badge {
     padding: 5px 10px;
     border-radius: 7px;
-    color: #526c84;
-    background: #edf2f7;
+    color: #16335B;
+    background: #F1F5F9;
     font-size: .72rem;
 }
 
 .read-label {
-    color: #7a8b9c;
+    color: #16335B;
     font-size: .72rem;
 }
 
 .unread .read-label {
-    color: #176d65;
+    color: #16335B;
     font-weight: 700;
 }
 
@@ -192,7 +192,7 @@
 
 .notification-card p {
     margin: 0 0 13px;
-    color: #58718a;
+    color: #16335B;
     font-size: .85rem;
     line-height: 1.95;
     white-space: pre-wrap;
@@ -202,7 +202,7 @@
 .notification-card time {
     display: inline-block;
     direction: ltr;
-    color: #7a8da0;
+    color: #16335B;
     font-size: .74rem;
 }
 
@@ -229,25 +229,25 @@
 }
 
 .notification-button.primary {
-    color: #fff;
-    background: #176d65;
-    border-color: #176d65;
+    color: #FFFFFF;
+    background: #16335B;
+    border-color: #16335B;
 }
 
 .notification-button.primary:hover:not(:disabled) {
-    background: #11564f;
-    border-color: #11564f;
+    background: #16335B;
+    border-color: #16335B;
 }
 
 .notification-button.secondary {
-    color: #176d65;
-    background: #fff;
-    border-color: #c5ddd5;
+    color: #16335B;
+    background: #FFFFFF;
+    border-color: #E0F2FE;
 }
 
 .notification-button.secondary:hover:not(:disabled) {
-    background: #edf7f2;
-    border-color: #176d65;
+    background: #F1F5F9;
+    border-color: #16335B;
 }
 
 .notification-button:disabled {
@@ -256,15 +256,15 @@
 }
 
 .notification-button:focus-visible {
-    outline: 3px solid #8cc9bc;
+    outline: 3px solid #38BDF8;
     outline-offset: 3px;
 }
 
 .empty-panel {
     padding: 48px 24px;
-    border: 1px solid #dce6ef;
+    border: 1px solid #E0F2FE;
     border-radius: 14px;
-    background: #fff;
+    background: #FFFFFF;
     text-align: center;
 }
 
@@ -275,7 +275,7 @@
 
 .empty-panel p {
     margin: 0 0 20px;
-    color: #71859a;
+    color: #0F2744;
     font-size: .85rem;
     line-height: 1.9;
 }
@@ -290,15 +290,15 @@
 }
 
 .message.error {
-    color: #993b46;
-    background: #fff0f2;
-    border-color: #edcbd1;
+    color: #16335B;
+    background: #F8FAFC;
+    border-color: #F1F5F9;
 }
 
 .message.success {
-    color: #21674e;
-    background: #edf8f1;
-    border-color: #cee8d8;
+    color: #16335B;
+    background: #F1F5F9;
+    border-color: #E0F2FE;
 }
 
 @media (max-width: 640px) {
