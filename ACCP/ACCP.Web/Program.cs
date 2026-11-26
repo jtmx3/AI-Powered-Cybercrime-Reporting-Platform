@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Security.Authentication;
 using System.Security.Claims;
@@ -18,6 +19,7 @@ using ACCP.Infrastructure.Services;
 using ACCP.Web.Components;
 using ACCP.Web.Security;
 using ACCP.Web.Services.Chat;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -192,6 +194,7 @@ builder.Services.AddScoped<
 
 // المرحلة 3: تشفير كلمات المرور باستخدام Argon2id مع ترقية تلقائية للتجزئات القديمة.
 builder.Services.AddScoped<IPasswordHasher<ApplicationUser>, Argon2idPasswordHasher>();
+builder.Services.AddSingleton<IRegistrationRateLimiter, RegistrationRateLimiter>();
 
 // الهوية.
 builder.Services
@@ -214,7 +217,10 @@ builder.Services
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.Cookie.Name = "ACCP.Authentication";
+    options.Cookie.Name = builder.Environment.IsDevelopment()
+        ? "ACCP.Authentication"
+        : "__Host-ACCP.Authentication";
+    options.Cookie.Path = "/";
     options.LoginPath = "/login";
     options.AccessDeniedPath = "/access-denied";
     options.ExpireTimeSpan = TimeSpan.FromHours(2);
@@ -224,10 +230,48 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
         ? CookieSecurePolicy.SameAsRequest
         : CookieSecurePolicy.Always;
+
+    options.Events ??= new Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationEvents();
+    var previousOnSigningIn = options.Events.OnSigningIn;
+    options.Events.OnSigningIn = async context =>
+    {
+        context.Properties.Items["accp.session.issued_utc"] =
+            DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
+
+        if (previousOnSigningIn is not null)
+        {
+            await previousOnSigningIn(context);
+        }
+    };
+
+    var previousOnValidatePrincipal = options.Events.OnValidatePrincipal;
+    options.Events.OnValidatePrincipal = async context =>
+    {
+        if (previousOnValidatePrincipal is not null)
+        {
+            await previousOnValidatePrincipal(context);
+        }
+
+        if (context.Principal?.Identity?.IsAuthenticated != true)
+        {
+            return;
+        }
+
+        // حد زمني مطلق للجلسة (8 ساعات) يمنع بقاء جلسة مسروقة صالحة للأبد عبر SlidingExpiration.
+        if (!context.Properties.Items.TryGetValue("accp.session.issued_utc", out var issuedRaw) ||
+            !long.TryParse(issuedRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var issuedUnix) ||
+            DateTimeOffset.UtcNow - DateTimeOffset.FromUnixTimeSeconds(issuedUnix) > TimeSpan.FromHours(8))
+        {
+            context.RejectPrincipal();
+            await context.HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+        }
+    };
 });
 
 builder.Services.Configure<SecurityStampValidatorOptions>(options =>
 {
+    // تقليص نافذة التحقق من 30 دقيقة إلى دقيقتين لإبطال الجلسات بسرعة على مسارات HTTP والأدلة.
+    options.ValidationInterval = TimeSpan.FromMinutes(2);
     options.OnRefreshingPrincipal = context =>
     {
         var current = context.CurrentPrincipal;

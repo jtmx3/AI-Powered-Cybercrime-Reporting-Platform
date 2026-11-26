@@ -13,13 +13,16 @@ namespace ACCP.Web.Pages.Account;
 public class LogoutModel : PageModel
 {
     private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly UserManager<ApplicationUser> _userManager;
     private readonly IAuditService _auditService;
 
     public LogoutModel(
         SignInManager<ApplicationUser> signInManager,
+        UserManager<ApplicationUser> userManager,
         IAuditService auditService)
     {
         _signInManager = signInManager;
+        _userManager = userManager;
         _auditService = auditService;
     }
 
@@ -58,6 +61,13 @@ public class LogoutModel : PageModel
 
         string correlationId =
             HttpContext.TraceIdentifier;
+
+        // تدوير SecurityStamp على السيرفر لإبطال أي نسخة مسروقة من الكوكي فوراً.
+        ApplicationUser? currentUser = await _userManager.GetUserAsync(User);
+        if (currentUser is not null)
+        {
+            await _userManager.UpdateSecurityStampAsync(currentUser);
+        }
 
         await _signInManager.SignOutAsync();
 

@@ -464,6 +464,114 @@ public sealed class SecurityHardeningTests
         }
     }
 
+    [Fact]
+    public void RegistrationRateLimiter_EnforcesPerIpSlidingWindowAndResetsAfterWindow()
+    {
+        using var limiter = new RegistrationRateLimiter(
+            maxAttemptsPerWindow: 3,
+            window: TimeSpan.FromMinutes(15),
+            maxConcurrentRegistrations: 4);
+
+        var t0 = new DateTimeOffset(2026, 11, 26, 12, 0, 0, TimeSpan.Zero);
+
+        for (var i = 0; i < 3; i++)
+        {
+            using var lease = limiter.TryAcquire("203.0.113.10", t0.AddSeconds(i));
+            Assert.True(lease.IsAllowed);
+        }
+
+        // 4th attempt within the 15-minute window is rejected.
+        using (var blocked = limiter.TryAcquire("203.0.113.10", t0.AddMinutes(5)))
+        {
+            Assert.False(blocked.IsAllowed);
+            Assert.Equal("RegistrationRateLimitExceeded", blocked.Reason);
+            Assert.True(blocked.RetryAfterSeconds > 0);
+        }
+
+        // A different client IP is unaffected.
+        using (var otherClient = limiter.TryAcquire("203.0.113.20", t0.AddMinutes(5)))
+        {
+            Assert.True(otherClient.IsAllowed);
+        }
+
+        // After window expires, the original IP is allowed again.
+        using (var afterWindow = limiter.TryAcquire("203.0.113.10", t0.AddMinutes(16)))
+        {
+            Assert.True(afterWindow.IsAllowed);
+        }
+    }
+
+    [Fact]
+    public void RegistrationRateLimiter_EnforcesConcurrencyBulkheadAndReleasesOnDispose()
+    {
+        using var limiter = new RegistrationRateLimiter(
+            maxAttemptsPerWindow: 10,
+            window: TimeSpan.FromMinutes(15),
+            maxConcurrentRegistrations: 2);
+
+        var t0 = new DateTimeOffset(2026, 11, 26, 12, 0, 0, TimeSpan.Zero);
+
+        var lease1 = limiter.TryAcquire("198.51.100.1", t0);
+        var lease2 = limiter.TryAcquire("198.51.100.2", t0);
+        Assert.True(lease1.IsAllowed);
+        Assert.True(lease2.IsAllowed);
+
+        // 3rd concurrent Argon2id registration is rejected immediately while slots are busy.
+        using (var saturated = limiter.TryAcquire("198.51.100.3", t0))
+        {
+            Assert.False(saturated.IsAllowed);
+            Assert.Equal("RegistrationConcurrencySaturated", saturated.Reason);
+        }
+
+        // Releasing one slot allows the next request cleanly.
+        lease1.Dispose();
+        using (var recovered = limiter.TryAcquire("198.51.100.3", t0))
+        {
+            Assert.True(recovered.IsAllowed);
+        }
+
+        lease2.Dispose();
+    }
+
+    [Fact]
+    public void RegistrationRateLimiter_NormalizesMissingIpSoAttackerCannotBypassLimit()
+    {
+        using var limiter = new RegistrationRateLimiter(
+            maxAttemptsPerWindow: 2,
+            window: TimeSpan.FromMinutes(10),
+            maxConcurrentRegistrations: 4);
+
+        var t0 = new DateTimeOffset(2026, 11, 26, 12, 0, 0, TimeSpan.Zero);
+
+        using (var a = limiter.TryAcquire(null, t0)) Assert.True(a.IsAllowed);
+        using (var b = limiter.TryAcquire("   ", t0.AddSeconds(1))) Assert.True(b.IsAllowed);
+        using (var c = limiter.TryAcquire("", t0.AddSeconds(2)))
+        {
+            Assert.False(c.IsAllowed);
+            Assert.Equal("RegistrationRateLimitExceeded", c.Reason);
+        }
+    }
+
+    [Fact]
+    public void RegistrationRateLimiter_BoundsMemoryUnderUniqueIpFlood()
+    {
+        using var limiter = new RegistrationRateLimiter(
+            maxAttemptsPerWindow: 5,
+            window: TimeSpan.FromMinutes(15),
+            maxConcurrentRegistrations: 4,
+            maxTrackedClients: 20);
+
+        var t0 = new DateTimeOffset(2026, 11, 26, 12, 0, 0, TimeSpan.Zero);
+
+        for (var i = 0; i < 100; i++)
+        {
+            using var lease = limiter.TryAcquire($"10.0.0.{i}", t0.AddSeconds(i));
+            Assert.True(lease.IsAllowed);
+        }
+
+        Assert.True(limiter.TrackedClientCount <= 20);
+    }
+
     private sealed class EncryptedSqliteTestContext : AccpDbContext
     {
         public EncryptedSqliteTestContext(
