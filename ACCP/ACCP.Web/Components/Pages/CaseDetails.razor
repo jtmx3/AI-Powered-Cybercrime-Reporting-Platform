@@ -1,4 +1,4 @@
-@page "/cases/{Id:guid}"
+﻿@page "/cases/{Id:guid}"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "USER")]
 @rendermode InteractiveServer
 @using System.Security.Claims
@@ -11,7 +11,7 @@
 @inject ICaseService CaseService
 @inject IEvidenceService EvidenceService
 @inject AuthenticationStateProvider AuthenticationStateProvider
-<PageTitle>@DetailsTitle | ACCP</PageTitle>
+<PageTitle>@DetailsTitle | وَثيق</PageTitle>
 <main dir="rtl" class="case-details">
     @if (isLoading)
     {

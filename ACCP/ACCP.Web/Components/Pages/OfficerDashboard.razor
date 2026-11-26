@@ -1,4 +1,4 @@
-@page "/officer/dashboard"
+﻿@page "/officer/dashboard"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "OFFICER")]
 @rendermode InteractiveServer
 
@@ -12,7 +12,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
 
-<PageTitle>لوحة الموظف | ACCP</PageTitle>
+<PageTitle>لوحة الموظف | وَثيق</PageTitle>
 
 <main class="officer-dashboard" dir="rtl" aria-busy="@isBusy">
     <header class="dashboard-header">

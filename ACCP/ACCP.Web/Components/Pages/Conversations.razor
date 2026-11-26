@@ -1,4 +1,4 @@
-@page "/conversations"
+﻿@page "/conversations"
 
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "USER")]
 
@@ -11,12 +11,12 @@
 @inject IIntakeConversationService ConversationService
 @inject ILogger<Conversations> Logger
 
-<PageTitle>محادثاتي | ACCP</PageTitle>
+<PageTitle>محادثاتي | وَثيق</PageTitle>
 
 <main class="saved-chats container py-4" dir="rtl">
     <div class="heading">
         <div>
-            <span class="eyebrow">ACCP · مساحة المحادثات</span>
+            <span class="eyebrow">وَثيق · سجل المحادثات الموثقة</span>
 
             <h1>محادثاتي</h1>
 

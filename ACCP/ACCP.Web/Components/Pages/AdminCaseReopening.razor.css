@@ -1,4 +1,4 @@
-/* صفحة إعادة فتح القضايا */
+﻿/* صفحة إعادة فتح القضايا */
 .container {
     max-width: 1180px;
     margin-inline: auto;
@@ -441,3 +441,72 @@
         padding: 9px 12px;
     }
 }
+
+/* WATHIQ-GOV-THEME-START */
+header, .cases-header, .dashboard-header, .ea-header {
+    background-color: #FFFFFF;
+    border: 1px solid #D8E3F0;
+    border-right: 4px solid #0B2240;
+    border-radius: 8px;
+    padding: 1.35rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(11, 34, 64, 0.04);
+}
+
+.section-caption, .eyebrow, .ea-eyebrow {
+    display: inline-block;
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    color: #0369A1 !important;
+    background-color: #E0F2FE !important;
+    border: 1px solid #BAE6FD;
+    padding: 0.18rem 0.65rem;
+    border-radius: 4px;
+    margin-bottom: 0.35rem;
+}
+
+.summary-card, .stat-card, .ea-stat {
+    background-color: #FFFFFF !important;
+    border: 1px solid #D8E3F0 !important;
+    border-top: 3px solid #0284C7 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 6px rgba(11, 34, 64, 0.04) !important;
+}
+
+.summary-card strong, .stat-card strong, .ea-stat strong {
+    color: #0B2240 !important;
+}
+
+.ea-panel {
+    background-color: #FFFFFF !important;
+    border: 1px solid #D8E3F0 !important;
+    border-top: 3px solid #0B2240 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 8px rgba(11, 34, 64, 0.04) !important;
+}
+
+.dashboard-button {
+    background-color: #0B2240 !important;
+    color: #FFFFFF !important;
+    border: 1px solid #0B2240 !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+}
+
+.dashboard-button:hover {
+    background-color: #0284C7 !important;
+    border-color: #0284C7 !important;
+}
+
+.dashboard-button.secondary {
+    background-color: #FFFFFF !important;
+    color: #0B2240 !important;
+    border: 1px solid #C3D2E5 !important;
+}
+
+.dashboard-button.secondary:hover {
+    background-color: #F0F9FF !important;
+    border-color: #0284C7 !important;
+    color: #0284C7 !important;
+}
+/* WATHIQ-GOV-THEME-END */

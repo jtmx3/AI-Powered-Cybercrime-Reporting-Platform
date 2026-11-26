@@ -1,4 +1,4 @@
-@page "/login/two-factor"
+﻿@page "/login/two-factor"
 @model ACCP.Web.Pages.Account.LoginTwoFactorModel
 
 @{
@@ -11,7 +11,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="referrer" content="no-referrer" />
-    <title>التحقق بخطوتين | ACCP</title>
+    <title>التحقق بخطوتين | وَثيق</title>
     <style>
 :root { color-scheme: light; }
 * { box-sizing: border-box; }
@@ -43,11 +43,15 @@ label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .5re
 .validation-summary-errors ul { margin: 0; padding-inline-start: 1.15rem; }
 @@media (max-width: 480px) { .card { padding: 1.5rem 1.2rem; } }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Readex+Pro:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/wathiq-auth.css" />
 </head>
 <body>
     <main class="shell">
         <section class="card" aria-labelledby="verify-title">
-            <span class="brand" dir="ltr">ACCP</span>
+            <span class="brand" dir="ltr">وَثيق</span>
             <h1 id="verify-title">أدخل رمز التحقق</h1>
             <div asp-validation-summary="All" role="alert"></div>
 

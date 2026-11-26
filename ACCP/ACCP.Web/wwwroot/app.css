@@ -1,36 +1,43 @@
 ﻿:root {
-    /* Official WATHIQ Palette: Sovereign Navy, Official Sky Blue, Crisp White */
-    --wathiq-navy-950: #071324;
-    --wathiq-navy-900: #0B1F3A;
-    --wathiq-navy-800: #122B4D;
-    --wathiq-navy-700: #1B3B66;
+    /* WATHIQ Official Government Color System (White + Sovereign Navy + Sky Blue) */
+    --w-navy-950: #06152B;
+    --w-navy-900: #0B2240;
+    --w-navy-800: #13335C;
+    --w-navy-700: #1E467A;
 
-    --wathiq-sky-600: #0284C7;
-    --wathiq-sky-500: #0EA5E9;
-    --wathiq-sky-400: #38BDF8;
-    --wathiq-sky-100: #E0F2FE;
-    --wathiq-sky-50:  #F0F9FF;
+    --w-sky-700:  #0369A1;
+    --w-sky-600:  #0284C7;
+    --w-sky-500:  #0EA5E9;
+    --w-sky-400:  #38BDF8;
+    --w-sky-200:  #BAE6FD;
+    --w-sky-100:  #E0F2FE;
+    --w-sky-50:   #F0F9FF;
 
-    --wathiq-bg:      #F4F7FA;
-    --wathiq-surface: #FFFFFF;
-    --wathiq-subtle:  #F8FAFC;
-    --wathiq-border:  #D8E2EE;
-    --wathiq-border-strong: #CBD5E1;
+    --w-canvas:   #F4F7FB;
+    --w-surface:  #FFFFFF;
+    --w-subtle:   #F8FAFC;
+    --w-border:   #D8E3F0;
+    --w-border-strong: #C3D2E5;
 
-    --wathiq-text-primary:   #0B1F3A;
-    --wathiq-text-secondary: #334155;
-    --wathiq-text-muted:     #64748B;
+    --w-text-main:      #0B2240;
+    --w-text-secondary: #334155;
+    --w-text-muted:     #64748B;
 
-    --wathiq-success: #059669;
-    --wathiq-warning: #D97706;
-    --wathiq-danger:  #DC2626;
+    --w-success: #047857;
+    --w-warning: #B45309;
+    --w-danger:  #B91C1C;
 
-    --wathiq-font: 'IBM Plex Sans Arabic', system-ui, -apple-system, 'Segoe UI', sans-serif;
-    --wathiq-radius-sm: 6px;
-    --wathiq-radius-md: 8px;
-    --wathiq-radius-lg: 10px;
-    --wathiq-shadow-sm: 0 1px 2px rgba(11, 31, 58, 0.05);
-    --wathiq-shadow-md: 0 4px 12px rgba(11, 31, 58, 0.06);
+    --w-font-sans:    'IBM Plex Sans Arabic', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --w-font-heading: 'Readex Pro', 'IBM Plex Sans Arabic', sans-serif;
+
+    --w-radius-xs: 4px;
+    --w-radius-sm: 6px;
+    --w-radius-md: 8px;
+    --w-radius-lg: 12px;
+
+    --w-shadow-xs: 0 1px 2px rgba(11, 34, 64, 0.04);
+    --w-shadow-sm: 0 2px 8px rgba(11, 34, 64, 0.05);
+    --w-shadow-md: 0 6px 20px rgba(11, 34, 64, 0.07);
 }
 
 *, *::before, *::after {
@@ -38,229 +45,437 @@
 }
 
 html, body {
-    font-family: var(--wathiq-font);
-    background-color: var(--wathiq-bg);
-    color: var(--wathiq-text-primary);
+    font-family: var(--w-font-sans);
+    background-color: var(--w-canvas);
+    color: var(--w-text-main);
     margin: 0;
     padding: 0;
-    line-height: 1.65;
     font-size: 15.5px;
+    line-height: 1.7;
     -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3, h4, h5, h6 {
-    font-family: var(--wathiq-font);
-    color: var(--wathiq-navy-900);
+    font-family: var(--w-font-heading);
+    color: var(--w-navy-900);
     font-weight: 700;
+    line-height: 1.35;
     letter-spacing: -0.01em;
 }
 
+p {
+    color: var(--w-text-secondary);
+}
+
 a {
-    color: var(--wathiq-sky-600);
+    color: var(--w-sky-600);
     text-decoration: none;
     transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
 }
 
 a:hover {
-    color: var(--wathiq-navy-900);
+    color: var(--w-navy-900);
 }
 
-/* Global Institutional Overrides for All Platform Pages */
-.card,
-.summary-card,
-.stat-card,
-.ea-panel,
-.ea-stat,
-.empty-state,
-.empty-panel {
-    background-color: var(--wathiq-surface) !important;
-    border: 1px solid var(--wathiq-border) !important;
-    border-radius: var(--wathiq-radius-md) !important;
-    box-shadow: var(--wathiq-shadow-sm) !important;
+.muted, .text-muted {
+    color: var(--w-text-muted) !important;
 }
 
-.card-header {
-    background-color: var(--wathiq-subtle) !important;
-    border-bottom: 1px solid var(--wathiq-border) !important;
-    font-weight: 600;
-    color: var(--wathiq-navy-900);
-    padding: 0.875rem 1.25rem;
+/* Accessible WCAG 2.2 AA Focus Ring */
+:focus-visible {
+    outline: 3px solid rgba(14, 165, 233, 0.45);
+    outline-offset: 2px;
 }
 
-/* Official Buttons Across All Pages */
+/* ==========================================================================
+   GLOBAL BUTTONS & CONTROLS (DGA / GOV.UK Institutional Standard)
+   ========================================================================== */
 .btn {
-    font-family: var(--wathiq-font);
+    font-family: var(--w-font-sans);
     font-weight: 600;
-    border-radius: var(--wathiq-radius-sm);
-    padding: 0.55rem 1.15rem;
     font-size: 0.92rem;
-    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    padding: 0.58rem 1.2rem;
+    border-radius: var(--w-radius-sm);
     box-shadow: none !important;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
 }
 
 .btn-primary {
-    background-color: var(--wathiq-navy-900) !important;
-    border-color: var(--wathiq-navy-900) !important;
+    background-color: var(--w-navy-900) !important;
+    border: 1px solid var(--w-navy-900) !important;
     color: #FFFFFF !important;
 }
 
 .btn-primary:hover, .btn-primary:focus {
-    background-color: var(--wathiq-sky-600) !important;
-    border-color: var(--wathiq-sky-600) !important;
+    background-color: var(--w-sky-600) !important;
+    border-color: var(--w-sky-600) !important;
     color: #FFFFFF !important;
+}
+
+.btn-primary:disabled {
+    background-color: #94A3B8 !important;
+    border-color: #94A3B8 !important;
+    opacity: 0.75;
 }
 
 .btn-outline-primary {
-    color: var(--wathiq-sky-600) !important;
-    border-color: var(--wathiq-sky-600) !important;
     background-color: #FFFFFF !important;
+    border: 1px solid var(--w-sky-600) !important;
+    color: var(--w-sky-700) !important;
 }
 
 .btn-outline-primary:hover {
-    background-color: var(--wathiq-sky-50) !important;
-    color: var(--wathiq-navy-900) !important;
-    border-color: var(--wathiq-navy-900) !important;
+    background-color: var(--w-sky-50) !important;
+    border-color: var(--w-navy-900) !important;
+    color: var(--w-navy-900) !important;
 }
 
 .btn-outline-secondary {
-    color: var(--wathiq-text-secondary) !important;
-    border-color: var(--wathiq-border-strong) !important;
     background-color: #FFFFFF !important;
+    border: 1px solid var(--w-border-strong) !important;
+    color: var(--w-text-secondary) !important;
 }
 
 .btn-outline-secondary:hover {
-    background-color: var(--wathiq-subtle) !important;
-    color: var(--wathiq-navy-900) !important;
-    border-color: var(--wathiq-navy-800) !important;
+    background-color: var(--w-subtle) !important;
+    border-color: var(--w-navy-800) !important;
+    color: var(--w-navy-900) !important;
 }
 
-/* Official Government Action Buttons */
-.btn-gov-primary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.6rem;
-    background-color: var(--wathiq-sky-600);
-    color: #FFFFFF !important;
-    border: 1px solid var(--wathiq-sky-600);
-    padding: 0.72rem 1.5rem;
-    font-size: 0.95rem;
-    font-weight: 600;
-    border-radius: var(--wathiq-radius-sm);
-    cursor: pointer;
-}
-
-.btn-gov-primary:hover {
-    background-color: #0369A1;
-    border-color: #0369A1;
-    color: #FFFFFF !important;
-}
-
-.btn-gov-secondary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.6rem;
-    background-color: rgba(255, 255, 255, 0.08);
-    color: #FFFFFF !important;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    padding: 0.72rem 1.5rem;
-    font-size: 0.95rem;
-    font-weight: 500;
-    border-radius: var(--wathiq-radius-sm);
-    cursor: pointer;
-}
-
-.btn-gov-secondary:hover {
-    background-color: rgba(255, 255, 255, 0.16);
-    border-color: #FFFFFF;
-    color: #FFFFFF !important;
-}
-
-/* Forms & Inputs Across All Pages */
+/* ==========================================================================
+   FORMS, INPUTS & VALIDATION
+   ========================================================================== */
 .form-label {
     font-weight: 600;
-    font-size: 0.9rem;
-    color: var(--wathiq-navy-900);
-    margin-bottom: 0.4rem;
+    font-size: 0.88rem;
+    color: var(--w-navy-900);
+    margin-bottom: 0.38rem;
 }
 
 .form-control, .form-select {
-    font-family: var(--wathiq-font);
-    border: 1px solid var(--wathiq-border-strong);
-    border-radius: var(--wathiq-radius-sm);
-    padding: 0.58rem 0.85rem;
-    font-size: 0.93rem;
-    color: var(--wathiq-text-primary);
+    font-family: var(--w-font-sans);
     background-color: #FFFFFF;
+    border: 1px solid var(--w-border-strong);
+    border-radius: var(--w-radius-sm);
+    padding: 0.6rem 0.85rem;
+    font-size: 0.93rem;
+    color: var(--w-text-main);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .form-control:focus, .form-select:focus {
-    border-color: var(--wathiq-sky-600);
-    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    border-color: var(--w-sky-600);
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.14);
     outline: none;
 }
 
-/* Official Tables */
+.form-check-input:checked {
+    background-color: var(--w-sky-600);
+    border-color: var(--w-sky-600);
+}
+
+/* ==========================================================================
+   CARDS, TABLES, ALERTS & BADGES ACROSS ALL PAGES
+   ========================================================================== */
+.card {
+    background-color: var(--w-surface) !important;
+    border: 1px solid var(--w-border) !important;
+    border-radius: var(--w-radius-md) !important;
+    box-shadow: var(--w-shadow-xs) !important;
+}
+
+.card-header {
+    background-color: var(--w-subtle) !important;
+    border-bottom: 1px solid var(--w-border) !important;
+    font-weight: 700;
+    color: var(--w-navy-900);
+    padding: 0.9rem 1.25rem;
+}
+
 .table {
-    border-color: var(--wathiq-border);
+    margin-bottom: 0;
     vertical-align: middle;
 }
 
 .table thead th {
-    background-color: var(--wathiq-subtle);
-    color: var(--wathiq-navy-900);
+    background-color: var(--w-subtle);
+    color: var(--w-navy-900);
     font-weight: 700;
-    font-size: 0.85rem;
-    border-bottom: 2px solid var(--wathiq-border);
+    font-size: 0.84rem;
+    border-bottom: 2px solid var(--w-border);
     padding: 0.85rem 1rem;
+    white-space: nowrap;
 }
 
 .table tbody td {
     padding: 0.85rem 1rem;
-    color: var(--wathiq-text-secondary);
-    font-size: 0.92rem;
+    border-bottom: 1px solid #EEF2F7;
+    color: var(--w-text-secondary);
+    font-size: 0.91rem;
 }
 
-/* Institutional Alerts (Right-bordered RTL Gov Pattern) */
+.table tbody tr:hover {
+    background-color: #FAFBFD;
+}
+
 .alert {
-    border-radius: var(--wathiq-radius-sm);
-    border: 1px solid var(--wathiq-border);
+    border-radius: var(--w-radius-sm);
+    border: 1px solid var(--w-border);
     border-right-width: 4px;
+    padding: 0.95rem 1.15rem;
     font-size: 0.92rem;
 }
 
 .alert-info {
-    background-color: var(--wathiq-sky-50);
-    border-color: #BAE6FD;
-    border-right-color: var(--wathiq-sky-600);
-    color: var(--wathiq-navy-900);
+    background-color: var(--w-sky-50);
+    border-color: var(--w-sky-200);
+    border-right-color: var(--w-sky-600);
+    color: var(--w-navy-900);
 }
 
 .alert-warning {
     background-color: #FFFBEB;
     border-color: #FDE68A;
-    border-right-color: var(--wathiq-warning);
+    border-right-color: #D97706;
     color: #78350F;
 }
 
 .alert-danger {
     background-color: #FEF2F2;
     border-color: #FECACA;
-    border-right-color: var(--wathiq-danger);
+    border-right-color: #DC2626;
     color: #7F1D1D;
 }
 
 .alert-success {
     background-color: #ECFDF5;
     border-color: #A7F3D0;
-    border-right-color: var(--wathiq-success);
+    border-right-color: #059669;
     color: #064E3B;
 }
 
-/* Badges */
 .badge {
     font-weight: 600;
-    padding: 0.38em 0.7em;
-    border-radius: 4px;
+    font-size: 0.78rem;
+    padding: 0.35em 0.7em;
+    border-radius: var(--w-radius-xs);
+}
+
+/* ==========================================================================
+   INTAKE CONVERSATION & REPORT CREATION PAGE (CreateCase.razor)
+   ========================================================================== */
+.intake {
+    max-width: 980px;
+    margin: 0 auto;
+}
+
+.intake .heading,
+.saved-chats .heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--w-border);
+}
+
+.intake .heading h1,
+.saved-chats .heading h1 {
+    font-size: 1.65rem;
+    margin: 0.35rem 0 0.4rem 0;
+}
+
+.intake .eyebrow,
+.saved-chats .eyebrow {
+    display: inline-block;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: var(--w-sky-700);
+    background-color: var(--w-sky-100);
+    border: 1px solid var(--w-sky-200);
+    padding: 0.2rem 0.7rem;
+    border-radius: var(--w-radius-xs);
+}
+
+.conversation {
+    background-color: #FFFFFF;
+    border: 1px solid var(--w-border);
+    border-radius: var(--w-radius-md);
+    box-shadow: var(--w-shadow-sm);
+    overflow: hidden;
+}
+
+.chat-header {
+    background: linear-gradient(135deg, var(--w-navy-900) 0%, var(--w-navy-800) 100%);
+    color: #FFFFFF;
+    padding: 1rem 1.35rem;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    border-bottom: 2px solid var(--w-sky-500);
+}
+
+.chat-header strong {
+    color: #FFFFFF;
+    font-size: 0.98rem;
+}
+
+.chat-header .muted {
+    color: #CBD5E1 !important;
+    font-size: 0.8rem;
+}
+
+.chat-header .avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--w-radius-sm);
+    background-color: rgba(14, 165, 233, 0.2);
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    color: #38BDF8;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.chat-header .status {
+    margin-right: auto;
+    background-color: rgba(14, 165, 233, 0.16);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: #E0F2FE;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--w-radius-xs);
+}
+
+.conversation .history {
+    background-color: var(--w-subtle);
+    padding: 1.5rem;
+    min-height: 340px;
+    max-height: 520px;
+    overflow-y: auto;
+}
+
+.conversation .messages {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.conversation .message {
+    max-width: 82%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.28rem;
+}
+
+.conversation .message.assistant {
+    align-self: flex-start;
+}
+
+.conversation .message.user {
+    align-self: flex-end;
+}
+
+.conversation .message .speaker {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--w-text-muted);
+    padding: 0 0.25rem;
+}
+
+.conversation .message.assistant .bubble {
+    background-color: #FFFFFF;
+    color: var(--w-text-main);
+    border: 1px solid var(--w-border);
+    border-right: 3.5px solid var(--w-sky-600);
+    border-radius: var(--w-radius-sm);
+    padding: 0.9rem 1.15rem;
+    box-shadow: var(--w-shadow-xs);
+    white-space: pre-wrap;
+}
+
+.conversation .message.user .bubble {
+    background-color: var(--w-navy-900);
+    color: #FFFFFF;
+    border: 1px solid var(--w-navy-800);
+    border-radius: var(--w-radius-sm);
+    padding: 0.9rem 1.15rem;
+    white-space: pre-wrap;
+}
+
+.conversation .controls {
+    background-color: #FFFFFF;
+    border-top: 1px solid var(--w-border);
+    padding: 1.25rem 1.5rem;
+}
+
+.conversation .assessment,
+.conversation .review {
+    background-color: var(--w-sky-50);
+    border: 1px solid var(--w-sky-200);
+    border-right: 4px solid var(--w-sky-600);
+    border-radius: var(--w-radius-sm);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.conversation .actions,
+.saved-chats .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    align-items: center;
+}
+
+/* ==========================================================================
+   SAVED CONVERSATIONS, EMPTY STATES & AUTH PANELS
+   ========================================================================== */
+.saved-chats {
+    max-width: 1080px;
+    margin: 0 auto;
+}
+
+.empty-state,
+.empty-panel,
+.loading-state,
+.notice {
+    background-color: #FFFFFF;
+    border: 1px solid var(--w-border);
+    border-radius: var(--w-radius-md);
+    padding: 2.5rem 1.75rem;
+    text-align: center;
+    box-shadow: var(--w-shadow-xs);
+}
+
+.empty-symbol {
+    display: inline-flex;
+    width: 52px;
+    height: 52px;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--w-sky-50);
+    color: var(--w-sky-600);
+    border: 1px solid var(--w-sky-200);
+    border-radius: var(--w-radius-md);
+    margin-bottom: 1rem;
+}
+
+.empty-symbol svg {
+    width: 26px;
+    height: 26px;
+}
+
+@media (max-width: 768px) {
+    .conversation .message {
+        max-width: 94%;
+    }
 }

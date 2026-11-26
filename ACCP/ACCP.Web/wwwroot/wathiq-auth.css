@@ -1,0 +1,63 @@
+﻿:root {
+    --w-navy-900: #0B2240;
+    --w-sky-600: #0284C7;
+    --w-sky-50: #F0F9FF;
+    --w-border: #D8E3F0;
+}
+
+html, body {
+    font-family: 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif !important;
+    background-color: #F4F7FB !important;
+    color: #0B2240 !important;
+    border-top: 4px solid #0B2240;
+}
+
+h1, h2, h3, h4 {
+    font-family: 'Readex Pro', 'IBM Plex Sans Arabic', sans-serif !important;
+    color: #0B2240 !important;
+    font-weight: 700 !important;
+}
+
+.card, .auth-card, .login-card, main > section, .auth-panel {
+    background-color: #FFFFFF !important;
+    border: 1px solid #D8E3F0 !important;
+    border-top: 3px solid #0284C7 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 6px 24px rgba(11, 34, 64, 0.07) !important;
+}
+
+button[type="submit"], .btn-primary {
+    background-color: #0B2240 !important;
+    border-color: #0B2240 !important;
+    color: #FFFFFF !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+    padding: 0.65rem 1.25rem !important;
+    transition: background-color 0.15s ease !important;
+}
+
+button[type="submit"]:hover, .btn-primary:hover {
+    background-color: #0284C7 !important;
+    border-color: #0284C7 !important;
+}
+
+input.form-control, input[type="email"], input[type="password"], input[type="text"] {
+    border: 1px solid #C3D2E5 !important;
+    border-radius: 6px !important;
+    padding: 0.62rem 0.85rem !important;
+}
+
+input:focus {
+    border-color: #0284C7 !important;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
+    outline: none !important;
+}
+
+a {
+    color: #0284C7 !important;
+    font-weight: 500;
+}
+
+a:hover {
+    color: #0B2240 !important;
+}

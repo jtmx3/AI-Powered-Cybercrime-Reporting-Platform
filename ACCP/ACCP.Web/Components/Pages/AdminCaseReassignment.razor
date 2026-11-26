@@ -1,4 +1,4 @@
-@page "/admin/cases/{CaseId:guid}/reassign"
+﻿@page "/admin/cases/{CaseId:guid}/reassign"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "ADMIN")]
 @rendermode InteractiveServer
 
@@ -9,7 +9,7 @@
 @inject EmployeeManagementService Employees
 @inject ILogger<AdminCaseReassignment> Logger
 
-<PageTitle>نقل مسؤولية القضية | ACCP</PageTitle>
+<PageTitle>نقل مسؤولية القضية | وَثيق</PageTitle>
 
 <main class="container py-4" dir="rtl" style="max-width: 850px;">
     <h1 class="h3 mb-3">نقل مسؤولية القضية</h1>

@@ -1,4 +1,4 @@
-@page "/admin/employees"
+﻿@page "/admin/employees"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "ADMIN")]
 @rendermode InteractiveServer
 @implements IDisposable
@@ -8,7 +8,7 @@
 @inject EmployeeManagementService Employees
 @inject CaseAuthorizationService Authorization
 
-<PageTitle>إدارة الموظفين | ACCP</PageTitle>
+<PageTitle>إدارة الموظفين | وَثيق</PageTitle>
 
 <section class="employee-admin" dir="rtl" aria-busy="@isBusy.ToString().ToLowerInvariant()">
     <header class="ea-header">

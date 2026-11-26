@@ -1,4 +1,4 @@
-@page "/account/two-factor"
+﻿@page "/account/two-factor"
 @model ACCP.Web.Pages.Account.EnableTwoFactorModel
 
 @{
@@ -12,7 +12,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="referrer" content="no-referrer" />
-    <title>حماية الحساب | ACCP</title>
+    <title>حماية الحساب | وَثيق</title>
     <style>
 :root { color-scheme: light; --navy: #20324a; --teal: #146c60; --muted: #617087; --line: #e0e7ef; }
 * { box-sizing: border-box; }
@@ -96,11 +96,15 @@ label { display: block; font-weight: 600; margin-bottom: .5rem; font-size: .85re
     .recovery-codes { grid-template-columns: minmax(0, 1fr); }
 }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Readex+Pro:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/wathiq-auth.css" />
 </head>
 <body>
     <main class="page">
         <nav class="topbar" aria-label="التنقل">
-            <a class="brand" href="/" dir="ltr">ACCP</a>
+            <a class="brand" href="/" dir="ltr">وَثيق</a>
             <a class="back" href="@(Model.EnrollmentCompleted ? "/login" : "/")">@(Model.EnrollmentCompleted ? "تسجيل الدخول" : "العودة إلى المنصة")</a>
         </nav>
 
@@ -169,7 +173,7 @@ label { display: block; font-weight: 600; margin-bottom: .5rem; font-size: .85re
                     <h2 id="section-title">اربط تطبيق المصادقة</h2>
                     <ol class="instructions">
                         <li>افتح تطبيق مصادقة يدعم الرموز المستندة إلى الوقت، واختر إضافة حساب بإدخال مفتاح الإعداد يدويًا.</li>
-                        <li>اكتب اسمًا للحساب مثل <strong dir="ltr">ACCP</strong>، وأدخل المفتاح أدناه. اختر نوع المفتاح <strong>مستندًا إلى الوقت</strong>.</li>
+                        <li>اكتب اسمًا للحساب مثل <strong dir="ltr">وَثيق</strong>، وأدخل المفتاح أدناه. اختر نوع المفتاح <strong>مستندًا إلى الوقت</strong>.</li>
                         <li>أدخل الرمز المكوّن من 6 أرقام الذي يظهر في التطبيق لتأكيد الربط.</li>
                     </ol>
                     <div class="key-box">

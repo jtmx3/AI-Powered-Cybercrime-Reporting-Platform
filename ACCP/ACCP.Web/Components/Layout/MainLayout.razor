@@ -2,74 +2,96 @@
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Components.Authorization
 
-<div class="gov-portal-shell" dir="rtl">
-    <aside class="gov-sidebar-area">
+<div class="wathiq-shell" dir="rtl">
+    <aside class="wathiq-aside">
         <NavMenu />
     </aside>
 
-    <div class="gov-main-area">
-        <div class="gov-official-banner">
-            <div class="gov-banner-inner">
-                <div class="gov-banner-right">
-                    <i class="bi bi-shield-lock-fill gov-banner-icon" aria-hidden="true"></i>
-                    <span>البوابة الرسمية لمنظومة «وَثيق» — اتصال مشفر ومؤمّن وفق المعايير الوطنية</span>
+    <div class="wathiq-viewport">
+        <!-- شريط التحقق الحكومي الرسمي (معيار DGA / USWDS) -->
+        <details class="gov-trust-bar">
+            <summary class="gov-trust-summary">
+                <div class="gov-trust-right">
+                    <i class="bi bi-shield-lock-fill gov-trust-shield" aria-hidden="true"></i>
+                    <span>بوابة إلكترونية رسمية لمنظومة <strong>«وَثيق»</strong> لتوثيق ومتابعة الجرائم السيبرانية</span>
                 </div>
-                <div class="gov-banner-left">
-                    <span>WATHIQ OFFICIAL PORTAL</span>
+                <span class="gov-trust-trigger">
+                    <span>كيف تتحقق من موثوقية المنصة؟</span>
+                    <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                </span>
+            </summary>
+            <div class="gov-trust-panel">
+                <div class="gov-trust-item">
+                    <i class="bi bi-lock-fill" aria-hidden="true"></i>
+                    <div>
+                        <strong>اتصال مشفر وحفظ جنائي للقرائن</strong>
+                        <p>تُشفر جلسات التواصل وتُحفظ المرفقات ببصمة رقمية (SHA-256) تمنع التعديل غير المصرح به وتضمن سلامة سلسلة الحيازة.</p>
+                    </div>
+                </div>
+                <div class="gov-trust-item">
+                    <i class="bi bi-eye-slash-fill" aria-hidden="true"></i>
+                    <div>
+                        <strong>حجب تلقائي للهوية وفصل للصلاحيات</strong>
+                        <p>لا تُكشف بياناتك الشخصية للمحقق إلا بموافقتك الصريحة، ولا تملك الإدارة التشغيلية صلاحية قراءة نصوص الشكاوى.</p>
+                    </div>
                 </div>
             </div>
-        </div>
+        </details>
 
-        <header class="gov-topbar">
-            <div class="gov-topbar-title">
-                <span class="gov-org-label">منظومة مكافحة الجرائم السيبرانية</span>
-                <span class="gov-divider" aria-hidden="true">|</span>
-                <span class="gov-system-label">بوابة التوثيق والمتابعة الإجرائية</span>
+        <!-- الشريط العلوي المؤسسي -->
+        <header class="wathiq-header">
+            <div class="wathiq-header-context">
+                <span class="context-org">منظومة وَثيق (WATHIQ)</span>
+                <span class="context-sep" aria-hidden="true">/</span>
+                <span class="context-sub">الخدمات الإلكترونية للبلاغات الرقمية</span>
             </div>
 
-            <div class="gov-topbar-user">
+            <div class="wathiq-header-user">
                 <AuthorizeView Context="authState">
                     <Authorized>
-                        <div class="gov-user-chip">
-                            <i class="bi bi-person-badge" aria-hidden="true"></i>
-                            <span class="gov-user-email">@(authState.User.Identity?.Name ?? "حساب موثّق")</span>
-                            <span class="gov-role-tag">@GetRoleLabel(authState.User)</span>
+                        <a href="/notifications" class="header-icon-link" title="الإشعارات">
+                            <i class="bi bi-bell" aria-hidden="true"></i>
+                        </a>
+                        <div class="header-account-pill">
+                            <i class="bi bi-person-check-fill" aria-hidden="true"></i>
+                            <span class="account-name">@(authState.User.Identity?.Name ?? "مستخدم موثّق")</span>
+                            <span class="account-role">@GetRoleTitle(authState.User)</span>
                         </div>
                     </Authorized>
                     <NotAuthorized>
-                        <div class="gov-guest-actions">
-                            <a href="/login" class="gov-top-link">
-                                <i class="bi bi-box-arrow-in-left" aria-hidden="true"></i>
-                                <span>تسجيل الدخول</span>
-                            </a>
-                            <a href="/register" class="gov-top-btn">
-                                <span>حساب مستفيد جديد</span>
-                            </a>
+                        <div class="header-guest-btns">
+                            <a href="/login" class="header-btn-outline">تسجيل الدخول</a>
+                            <a href="/register" class="header-btn-solid">حساب مستفيد جديد</a>
                         </div>
                     </NotAuthorized>
                 </AuthorizeView>
             </div>
         </header>
 
-        <main class="gov-content-body">
+        <main class="wathiq-main-content">
             @Body
         </main>
 
-        <footer class="gov-footer">
-            <div class="gov-footer-inner">
-                <span>© @DateTime.UtcNow.Year منظومة «وَثيق» (WATHIQ) — البوابة الرسمية لتوثيق الجرائم السيبرانية.</span>
-                <span class="gov-footer-meta">تخضع جميع المرفقات والسجلات لضوابط السرية وسلسلة الحيازة الرقمية المعتمدة.</span>
+        <footer class="wathiq-footer">
+            <div class="wathiq-footer-grid">
+                <div class="footer-brand-col">
+                    <strong>منظومة وَثيق | WATHIQ</strong>
+                    <span>المنصة الرسمية لاستقبال وتوثيق ومتابعة البلاغات السيبرانية وفق ضوابط السرية وحماية البيانات.</span>
+                </div>
+                <div class="footer-meta-col">
+                    <span>جميع الحقوق محفوظة © @DateTime.UtcNow.Year منظومة وَثيق</span>
+                </div>
             </div>
         </footer>
     </div>
 </div>
 
 @code {
-    private static string GetRoleLabel(ClaimsPrincipal user)
+    private static string GetRoleTitle(ClaimsPrincipal user)
     {
         if (user.IsInRole("ADMIN")) return "إدارة النظام";
         if (user.IsInRole("OFFICER")) return "ضابط تحقيق";
         if (user.IsInRole("USER")) return "مستفيد";
-        return "مستخدم";
+        return "حساب نشط";
     }
 }
