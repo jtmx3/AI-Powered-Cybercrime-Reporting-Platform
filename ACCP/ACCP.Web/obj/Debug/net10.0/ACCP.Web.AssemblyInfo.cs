@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ACCP.Web")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c8ecb7065c30f6579655b33777ad2062cd7eb845")]
 [assembly: System.Reflection.AssemblyProductAttribute("ACCP.Web")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ACCP.Web")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
