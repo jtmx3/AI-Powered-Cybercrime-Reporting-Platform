@@ -18,6 +18,9 @@ namespace ACCP.Web.Security;
 public sealed class AuthorizedEvidenceService : IEvidenceService
 {
     private const long MaximumFileSize = 10 * 1024 * 1024;
+    // Bulkhead: caps concurrent 10 MB evidence upload/sanitization/AES-GCM operations per node
+    // to prevent Out-Of-Memory exhaustion under payload floods.
+    private static readonly SemaphoreSlim UploadBulkhead = new(16, 16);
     private readonly CaseAuthorizationService _authorization;
     private readonly IServiceScopeFactory _scopeFactory;
 
@@ -30,24 +33,33 @@ public sealed class AuthorizedEvidenceService : IEvidenceService
     public async Task<Evidence> UploadAsync(EvidenceUploadRequest request, Guid reporterId)
     {
         ArgumentNullException.ThrowIfNull(request);
-        // Capture mutable form values before awaiting authentication or reading a file.
-        var clean = new EvidenceUploadRequest
+        if (!await UploadBulkhead.WaitAsync(TimeSpan.FromSeconds(10)))
+            throw new InvalidOperationException("الخادم مزدحم حالياً بمعالجة المرفقات. حاول مجدداً بعد لحظات.");
+        try
         {
-            CyberCaseId = request.CyberCaseId, OriginalFileName = request.OriginalFileName,
-            ContentType = request.ContentType, FileSizeBytes = request.FileSizeBytes,
-            Content = request.Content, IsRestricted = request.IsRestricted
-        };
-        await using var scope = _scopeFactory.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AccpDbContext>();
-        await RequireOwnedCaseAsync(scope.ServiceProvider, db, clean.CyberCaseId, reporterId);
-        var bytes = await ReadBoundedAsync(clean.Content, clean.FileSizeBytes);
-        // Reading a browser upload can take time. Check again before passing bytes
-        // to the core service, which validates type/signature/hash and writes the file.
-        var path = await RequireOwnedCaseAsync(scope.ServiceProvider, db, clean.CyberCaseId, reporterId);
-        clean.IsRestricted = path == CasePath.Assistance || clean.IsRestricted;
-        using var content = new MemoryStream(bytes, writable: false);
-        clean.Content = content;
-        return await Core(scope.ServiceProvider, db).UploadAsync(clean, reporterId);
+            // Capture mutable form values before awaiting authentication or reading a file.
+            var clean = new EvidenceUploadRequest
+            {
+                CyberCaseId = request.CyberCaseId, OriginalFileName = request.OriginalFileName,
+                ContentType = request.ContentType, FileSizeBytes = request.FileSizeBytes,
+                Content = request.Content, IsRestricted = request.IsRestricted
+            };
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<AccpDbContext>();
+            await RequireOwnedCaseAsync(scope.ServiceProvider, db, clean.CyberCaseId, reporterId);
+            var bytes = await ReadBoundedAsync(clean.Content, clean.FileSizeBytes);
+            // Reading a browser upload can take time. Check again before passing bytes
+            // to the core service, which validates type/signature/hash and writes the file.
+            var path = await RequireOwnedCaseAsync(scope.ServiceProvider, db, clean.CyberCaseId, reporterId);
+            clean.IsRestricted = path == CasePath.Assistance || clean.IsRestricted;
+            using var content = new MemoryStream(bytes, writable: false);
+            clean.Content = content;
+            return await Core(scope.ServiceProvider, db).UploadAsync(clean, reporterId);
+        }
+        finally
+        {
+            UploadBulkhead.Release();
+        }
     }
 
     public async Task<List<Evidence>> GetByCaseIdAsync(Guid cyberCaseId, Guid reporterId)
@@ -79,27 +91,36 @@ public sealed class AuthorizedEvidenceService : IEvidenceService
     public async Task<EvidenceRevision> UploadRevisionAsync(EvidenceRevisionUploadRequest request, Guid reporterId)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var clean = new EvidenceRevisionUploadRequest
+        if (!await UploadBulkhead.WaitAsync(TimeSpan.FromSeconds(10)))
+            throw new InvalidOperationException("الخادم مزدحم حالياً بمعالجة المرفقات. حاول مجدداً بعد لحظات.");
+        try
         {
-            EvidenceId = request.EvidenceId, OriginalFileName = request.OriginalFileName,
-            FileSizeBytes = request.FileSizeBytes, Content = request.Content,
-            ChangeType = request.ChangeType, ChangeReason = request.ChangeReason,
-            IsOriginalEvidenceAccessAcknowledged = request.IsOriginalEvidenceAccessAcknowledged
-        };
-        await using var scope = _scopeFactory.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AccpDbContext>();
-        var caseId = await OwnedEvidenceCaseAsync(scope.ServiceProvider, db, clean.EvidenceId, reporterId);
-        if (caseId is null) throw DeniedException();
-        var path = await RequireOwnedCaseAsync(scope.ServiceProvider, db, caseId.Value, reporterId);
-        if (path == CasePath.FormalReport && !clean.IsOriginalEvidenceAccessAcknowledged)
-            throw new InvalidOperationException("يجب قراءة إشعار الاحتفاظ بالنسخ والموافقة عليه قبل تعديل الدليل.");
-        var bytes = await ReadBoundedAsync(clean.Content, clean.FileSizeBytes);
-        path = await RequireOwnedCaseAsync(scope.ServiceProvider, db, caseId.Value, reporterId);
-        if (path == CasePath.FormalReport && !clean.IsOriginalEvidenceAccessAcknowledged)
-            throw new InvalidOperationException("يجب الموافقة على إشعار الاحتفاظ بالنسخ قبل تعديل الدليل.");
-        using var content = new MemoryStream(bytes, writable: false);
-        clean.Content = content;
-        return await Core(scope.ServiceProvider, db).UploadRevisionAsync(clean, reporterId);
+            var clean = new EvidenceRevisionUploadRequest
+            {
+                EvidenceId = request.EvidenceId, OriginalFileName = request.OriginalFileName,
+                FileSizeBytes = request.FileSizeBytes, Content = request.Content,
+                ChangeType = request.ChangeType, ChangeReason = request.ChangeReason,
+                IsOriginalEvidenceAccessAcknowledged = request.IsOriginalEvidenceAccessAcknowledged
+            };
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<AccpDbContext>();
+            var caseId = await OwnedEvidenceCaseAsync(scope.ServiceProvider, db, clean.EvidenceId, reporterId);
+            if (caseId is null) throw DeniedException();
+            var path = await RequireOwnedCaseAsync(scope.ServiceProvider, db, caseId.Value, reporterId);
+            if (path == CasePath.FormalReport && !clean.IsOriginalEvidenceAccessAcknowledged)
+                throw new InvalidOperationException("يجب قراءة إشعار الاحتفاظ بالنسخ والموافقة عليه قبل تعديل الدليل.");
+            var bytes = await ReadBoundedAsync(clean.Content, clean.FileSizeBytes);
+            path = await RequireOwnedCaseAsync(scope.ServiceProvider, db, caseId.Value, reporterId);
+            if (path == CasePath.FormalReport && !clean.IsOriginalEvidenceAccessAcknowledged)
+                throw new InvalidOperationException("يجب الموافقة على إشعار الاحتفاظ بالنسخ قبل تعديل الدليل.");
+            using var content = new MemoryStream(bytes, writable: false);
+            clean.Content = content;
+            return await Core(scope.ServiceProvider, db).UploadRevisionAsync(clean, reporterId);
+        }
+        finally
+        {
+            UploadBulkhead.Release();
+        }
     }
 
     private async Task<CasePath> RequireOwnedCaseAsync(IServiceProvider services, AccpDbContext db, Guid caseId, Guid reporterId)
@@ -137,7 +158,12 @@ public sealed class AuthorizedEvidenceService : IEvidenceService
     }
 
     private static EvidenceService Core(IServiceProvider services, AccpDbContext db)
-        => new(db, services.GetRequiredService<IHostEnvironment>(), services.GetRequiredService<IAuditService>());
+        => new(
+            db,
+            services.GetRequiredService<IHostEnvironment>(),
+            services.GetRequiredService<IAuditService>(),
+            services.GetService<IDataEncryptionService>(),
+            services.GetService<IEvidenceMalwareScanner>());
 
     private static Task<AuditLog> DeniedAsync(IServiceProvider services, CaseAccessActor? actor,
         Guid? caseId, Guid? evidenceId, string reason)

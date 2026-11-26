@@ -10,11 +10,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace ACCP.Web.Pages.Account;
 
 [AllowAnonymous]
+[EnableRateLimiting("auth-login")]
 [ResponseCache(
     Duration = 0,
     Location = ResponseCacheLocation.None,
@@ -26,6 +28,8 @@ public class LoginModel : PageModel
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IAuditService _auditService;
     private readonly AccpDbContext _db;
+    private static readonly ApplicationUser DummyUser = new() { Id = Guid.Empty, UserName = "dummy@invalid.local" };
+    private static string? _dummyHash;
 
     public LoginModel(
         SignInManager<ApplicationUser> signInManager,
@@ -86,6 +90,10 @@ public class LoginModel : PageModel
 
         if (user is null)
         {
+            // Perform a dummy password verification to equalize Argon2id timing against unknown emails.
+            _dummyHash ??= _userManager.PasswordHasher.HashPassword(DummyUser, "Dummy!Timing#Guard2026");
+            _ = _userManager.PasswordHasher.VerifyHashedPassword(DummyUser, _dummyHash, Input.Password);
+
             await WriteLoginAuditAsync(
                 AuditAction.UserLoginFailed,
                 null,
@@ -105,6 +113,10 @@ public class LoginModel : PageModel
 
         if (!user.IsActive)
         {
+            // Verify against dummy hash and return the exact same message to prevent account enumeration.
+            _dummyHash ??= _userManager.PasswordHasher.HashPassword(DummyUser, "Dummy!Timing#Guard2026");
+            _ = _userManager.PasswordHasher.VerifyHashedPassword(DummyUser, _dummyHash, Input.Password);
+
             await WriteLoginAuditAsync(
                 AuditAction.UserLoginFailed,
                 user,
@@ -115,7 +127,7 @@ public class LoginModel : PageModel
 
             ModelState.AddModelError(
                 string.Empty,
-                "هذا الحساب غير فعال.");
+                "البريد الإلكتروني أو كلمة المرور غير صحيحة.");
 
             return LoginPage();
         }

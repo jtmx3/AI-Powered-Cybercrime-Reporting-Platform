@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -17,6 +18,7 @@ namespace ACCP.Web.Pages.Account;
 // The page is anonymous because the password step has not issued an application
 // login yet. The protected Identity two-factor cookie identifies the account.
 [AllowAnonymous]
+[EnableRateLimiting("auth-login")]
 [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
 [RequestSizeLimit(16 * 1024)]
 public sealed class LoginTwoFactorModel : PageModel

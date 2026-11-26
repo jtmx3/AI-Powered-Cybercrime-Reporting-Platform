@@ -1,11 +1,24 @@
-﻿using ACCP.Domain.Entities;
+using ACCP.Application.Security;
+using ACCP.Domain.Entities;
 using ACCP.Domain.Enums;
 using ACCP.Infrastructure.Identity;
+using ACCP.Infrastructure.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace ACCP.Infrastructure.Data;
+
+public sealed class AccpModelCacheKeyFactory : IModelCacheKeyFactory
+{
+    public object Create(DbContext context, bool designTime) =>
+        context is AccpDbContext accp
+            ? (context.GetType(), accp.IsFieldEncryptionEnabled, designTime)
+            : (context.GetType(), designTime);
+}
 
 public class AccpDbContext
     : IdentityDbContext<
@@ -13,10 +26,16 @@ public class AccpDbContext
         IdentityRole<Guid>,
         Guid>
 {
+    private readonly IDataEncryptionService? _encryptionService;
+
+    public bool IsFieldEncryptionEnabled => _encryptionService is not null;
+
     public AccpDbContext(
-        DbContextOptions<AccpDbContext> options)
+        DbContextOptions<AccpDbContext> options,
+        IDataEncryptionService? encryptionService = null)
         : base(options)
     {
+        _encryptionService = encryptionService;
     }
 
     public DbSet<PlatformUser> UserProfiles =>
@@ -60,6 +79,46 @@ public class AccpDbContext
 
     public DbSet<IntakeRiskAssessment> IntakeRiskAssessments =>
         Set<IntakeRiskAssessment>();
+
+    private void ApplyEncryptedStringConverter(
+        PropertyBuilder<string> property,
+        string purpose)
+    {
+        if (Database.IsSqlServer())
+        {
+            property.HasColumnType("nvarchar(max)");
+        }
+
+        if (_encryptionService is null)
+        {
+            return;
+        }
+
+        var crypto = _encryptionService;
+        property.HasConversion(new ValueConverter<string, string>(
+            plain => crypto.EncryptString(plain, purpose),
+            stored => crypto.DecryptString(stored, purpose)));
+    }
+
+    private void ApplyEncryptedNullableStringConverter(
+        PropertyBuilder<string?> property,
+        string purpose)
+    {
+        if (Database.IsSqlServer())
+        {
+            property.HasColumnType("nvarchar(max)");
+        }
+
+        if (_encryptionService is null)
+        {
+            return;
+        }
+
+        var crypto = _encryptionService;
+        property.HasConversion(new ValueConverter<string?, string?>(
+            plain => plain == null ? null : crypto.EncryptString(plain, purpose),
+            stored => stored == null ? null : crypto.DecryptString(stored, purpose)));
+    }
 
     protected override void OnModelCreating(
         ModelBuilder builder)
@@ -126,9 +185,12 @@ public class AccpDbContext
                     "([Role] IN (0, 2) AND [AuthorUserId] IS NOT NULL) OR ([Role] IN (1, 3) AND [AuthorUserId] IS NULL)");
             });
 
-            entity.Property(item => item.Content)
-                .HasMaxLength(6000)
+            var contentProperty = entity.Property(item => item.Content)
                 .IsRequired();
+
+            ApplyEncryptedStringConverter(
+                contentProperty,
+                "db:intake:message");
 
             entity.HasOne(item => item.Conversation)
                 .WithMany()
@@ -186,17 +248,21 @@ public class AccpDbContext
                 .HasMaxLength(200)
                 .IsRequired();
 
-            entity.Property(item => item.Summary)
-                .HasMaxLength(4000)
+            var summaryProp = entity.Property(item => item.Summary)
                 .IsRequired();
+            ApplyEncryptedStringConverter(
+                summaryProp,
+                "db:intake:assessment:summary");
 
             entity.Property(item => item.IncidentType)
                 .HasMaxLength(50)
                 .IsRequired();
 
-            entity.Property(item => item.RiskExplanation)
-                .HasMaxLength(2000)
+            var explanationProp = entity.Property(item => item.RiskExplanation)
                 .IsRequired();
+            ApplyEncryptedStringConverter(
+                explanationProp,
+                "db:intake:assessment:explanation");
 
             entity.HasOne<IntakeConversation>()
                 .WithMany()
@@ -253,42 +319,67 @@ public class AccpDbContext
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.Entity<CyberCase>()
-            .Property(item => item.Path)
-            .HasDefaultValue(CasePath.FormalReport)
-            .HasSentinel(CasePath.FormalReport);
+        builder.Entity<CyberCase>(entity =>
+        {
+            entity.Property(item => item.Path)
+                .HasDefaultValue(CasePath.FormalReport)
+                .HasSentinel(CasePath.FormalReport);
 
-        builder.Entity<CyberCase>()
-            .HasIndex(item => item.CaseNumber)
-            .IsUnique();
+            var titleProp = entity.Property(item => item.Title)
+                .IsRequired();
+            ApplyEncryptedStringConverter(titleProp, "db:cybercase:title");
 
-        builder.Entity<CyberCase>()
-            .HasIndex(item => new
+            var descriptionProp = entity.Property(item => item.Description)
+                .IsRequired();
+            ApplyEncryptedStringConverter(descriptionProp, "db:cybercase:description");
+
+            var disclosedNameProp = entity.Property(item => item.DisclosedReporterName);
+            ApplyEncryptedNullableStringConverter(disclosedNameProp, "db:cybercase:identity");
+
+            var disclosedEmailProp = entity.Property(item => item.DisclosedReporterEmail);
+            ApplyEncryptedNullableStringConverter(disclosedEmailProp, "db:cybercase:identity");
+
+            entity.HasIndex(item => item.CaseNumber)
+                .IsUnique();
+
+            entity.HasIndex(item => new
             {
                 item.ReporterId,
                 item.CreatedAtUtc
             });
 
-        builder.Entity<CyberCase>()
-            .HasIndex(item => new
+            entity.HasIndex(item => new
             {
                 item.AssignedOfficerId,
                 item.Status
             });
+        });
 
-        builder.Entity<CaseMessage>()
-            .HasIndex(item => new
+        builder.Entity<CaseMessage>(entity =>
+        {
+            var contentProp = entity.Property(item => item.Content)
+                .IsRequired();
+            ApplyEncryptedStringConverter(contentProp, "db:casemessage:content");
+
+            entity.HasIndex(item => new
             {
                 item.CyberCaseId,
                 item.CreatedAtUtc
             });
+        });
 
-        builder.Entity<CaseNote>()
-            .HasIndex(item => new
+        builder.Entity<CaseNote>(entity =>
+        {
+            var contentProp = entity.Property(item => item.Content)
+                .IsRequired();
+            ApplyEncryptedStringConverter(contentProp, "db:casenote:content");
+
+            entity.HasIndex(item => new
             {
                 item.CyberCaseId,
                 item.CreatedAtUtc
             });
+        });
 
         builder.Entity<AuditLog>()
             .HasIndex(item => new
