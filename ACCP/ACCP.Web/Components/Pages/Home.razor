@@ -1,60 +1,112 @@
 ﻿@page "/"
 @using Microsoft.AspNetCore.Components.Authorization
 
-<PageTitle>الرئيسية | وَثيق | WATHIQ</PageTitle>
+<PageTitle>الصفحة الرئيسية | وَثيق | WATHIQ</PageTitle>
 
 <div class="wathiq-home" dir="rtl">
     <section class="wathiq-hero" aria-labelledby="hero-title">
-        <span class="wathiq-eyebrow">وَثيق | WATHIQ</span>
-        <h1 id="hero-title">توثيق البلاغات السيبرانية ومتابعتها</h1>
-        <p class="wathiq-hero-lead">منصة لتسجيل تفاصيل الواقعة ومتابعة الطلبات من مساحة الحساب.</p>
+        <div class="wathiq-hero-copy">
+            <div class="wathiq-eyebrow"><i class="bi bi-shield-check" aria-hidden="true"></i><span>منصة التوثيق والمتابعة</span></div>
+            <h1 id="hero-title">مسار موثوق لتوثيق الوقائع السيبرانية ومتابعتها</h1>
+            <p class="wathiq-hero-lead">
+                مساحة منظّمة لتوثيق الوقائع السيبرانية ومتابعتها. تُعرض البيانات وفق صلاحيات الحساب،
+                وتتيح المنصة مراجعة أدلة البلاغ وسجل إصداراتها.
+            </p>
 
-        <div class="wathiq-hero-actions">
-            <AuthorizeView Context="auth">
-                <Authorized>
-                    @if (auth.User.IsInRole("ADMIN"))
-                    {
-                        <a href="/admin/employees" class="wathiq-button wathiq-button-primary">لوحة الإدارة</a>
-                        <a href="/admin/audit-logs" class="wathiq-button wathiq-button-secondary">سجل التدقيق</a>
-                    }
-                    else if (auth.User.IsInRole("OFFICER"))
-                    {
-                        <a href="/officer/dashboard" class="wathiq-button wathiq-button-primary">لوحة القضايا</a>
-                        <a href="/notifications" class="wathiq-button wathiq-button-secondary">الإشعارات</a>
-                    }
-                    else
-                    {
-                        <a href="/cases/new" class="wathiq-button wathiq-button-primary">تقديم بلاغ</a>
-                        <a href="/cases" class="wathiq-button wathiq-button-secondary">متابعة الطلبات</a>
-                    }
-                </Authorized>
-                <NotAuthorized>
-                    <a href="/login" class="wathiq-button wathiq-button-primary">تسجيل الدخول</a>
-                    <a href="/register" class="wathiq-button wathiq-button-secondary">إنشاء حساب</a>
-                </NotAuthorized>
-            </AuthorizeView>
+            <div class="wathiq-hero-actions">
+                <AuthorizeView Context="auth">
+                    <Authorized>
+                        @if (auth.User.IsInRole("ADMIN"))
+                        {
+                            <a href="/admin/employees" class="wathiq-button wathiq-button-primary">
+                                <span>الانتقال إلى إدارة المنصة</span><i class="bi bi-arrow-left" aria-hidden="true"></i>
+                            </a>
+                            <a href="/admin/audit-logs" class="wathiq-button wathiq-button-quiet">سجل التدقيق</a>
+                        }
+                        else if (auth.User.IsInRole("OFFICER"))
+                        {
+                            <a href="/officer/dashboard" class="wathiq-button wathiq-button-primary">
+                                <span>فتح لوحة القضايا</span><i class="bi bi-arrow-left" aria-hidden="true"></i>
+                            </a>
+                            <a href="/notifications" class="wathiq-button wathiq-button-quiet">عرض الإشعارات</a>
+                        }
+                        else
+                        {
+                            <a href="/cases/new" class="wathiq-button wathiq-button-primary">
+                                <span>بدء توثيق بلاغ</span><i class="bi bi-arrow-left" aria-hidden="true"></i>
+                            </a>
+                            <a href="/cases" class="wathiq-button wathiq-button-quiet">متابعة طلباتي</a>
+                        }
+                    </Authorized>
+                    <NotAuthorized>
+                        <a href="/login" class="wathiq-button wathiq-button-primary">
+                            <span>الدخول إلى الخدمة</span><i class="bi bi-arrow-left" aria-hidden="true"></i>
+                        </a>
+                        <a href="/register" class="wathiq-button wathiq-button-quiet">إنشاء حساب مستفيد</a>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </div>
+        </div>
+
+        <aside class="wathiq-assurance" aria-label="ضوابط الحماية والخصوصية">
+            <div class="wathiq-assurance-heading">
+                <span class="wathiq-assurance-mark"><i class="bi bi-shield-lock" aria-hidden="true"></i></span>
+                <div><span class="wathiq-overline">وَثيق | WATHIQ</span><h2>حماية الإجراء تبدأ من التوثيق</h2></div>
+            </div>
+            <ul class="wathiq-assurance-list">
+                <li><i class="bi bi-person-lock" aria-hidden="true"></i><span><strong>خصوصية مضبوطة</strong><small>إظهار البيانات الشخصية محكوم بالموافقة والصلاحية.</small></span></li>
+                <li><i class="bi bi-file-earmark-lock" aria-hidden="true"></i><span><strong>قرائن محفوظة</strong><small>تسلسل الأدلة وإصداراتها موثق للمراجعة المختصة.</small></span></li>
+                <li><i class="bi bi-journal-check" aria-hidden="true"></i><span><strong>متابعة منظمة</strong><small>يمكن مراجعة تغييرات الحالة والرسائل المتاحة ضمن مساحة الحساب.</small></span></li>
+            </ul>
+        </aside>
+    </section>
+
+    <section class="wathiq-section" aria-labelledby="steps-title">
+        <div class="wathiq-section-heading">
+            <div><span class="wathiq-section-kicker">آلية العمل</span><h2 id="steps-title">من التوثيق إلى المتابعة</h2></div>
+            <p>ثلاث محطات واضحة تساعدك على معرفة ما يحدث في كل مرحلة.</p>
+        </div>
+
+        <div class="wathiq-stepper">
+            <div class="wathiq-stepper-track" aria-hidden="true"></div>
+            <article class="wathiq-step">
+                <div class="wathiq-step-marker"><span>١</span><i class="bi bi-chat-square-text" aria-hidden="true"></i></div>
+                <div class="wathiq-step-content"><span class="wathiq-step-label">المرحلة الأولى</span><h3>توثيق الوقائع</h3><p>دوّن التسلسل الزمني وتفاصيل الواقعة في مساحة حسابك، ويمكنك حفظ المحادثة والعودة إليها لاحقاً.</p></div>
+            </article>
+            <article class="wathiq-step">
+                <div class="wathiq-step-marker"><span>٢</span><i class="bi bi-folder2-open" aria-hidden="true"></i></div>
+                <div class="wathiq-step-content"><span class="wathiq-step-label">المرحلة الثانية</span><h3>إرفاق القرائن</h3><p>أضف الملفات ذات الصلة، وراجع صلاحيات الإفصاح وسجل الإصدارات قبل اعتماد الإرسال.</p></div>
+            </article>
+            <article class="wathiq-step">
+                <div class="wathiq-step-marker"><span>٣</span><i class="bi bi-clipboard2-check" aria-hidden="true"></i></div>
+                <div class="wathiq-step-content"><span class="wathiq-step-label">المرحلة الثالثة</span><h3>متابعة الإجراء</h3><p>بعد استيفاء شروط التقديم واعتمادك، تُتابع الحالة والرسائل المتاحة من مساحة حسابك.</p></div>
+            </article>
         </div>
     </section>
 
-    <section class="wathiq-steps-section" aria-labelledby="steps-title">
+    <section class="wathiq-section" aria-labelledby="guidance-title">
         <div class="wathiq-section-heading">
-            <span class="wathiq-section-kicker">خطوات الخدمة</span>
-            <h2 id="steps-title">من التوثيق إلى المتابعة</h2>
+            <div><span class="wathiq-section-kicker">دليل المستفيد</span><h2 id="guidance-title">إجابات تساعدك على المتابعة</h2></div>
+            <p>معلومات موجزة عن الخصوصية والأدلة وحالة الطلب.</p>
         </div>
 
-        <ol class="wathiq-steps">
-            <li>
-                <span class="wathiq-step-number">١</span>
-                <div><h3>وثّق الواقعة</h3><p>سجّل التفاصيل الأساسية للطلب.</p></div>
-            </li>
-            <li>
-                <span class="wathiq-step-number">٢</span>
-                <div><h3>أرفق المعلومات</h3><p>أضف الملفات ذات الصلة عند الحاجة.</p></div>
-            </li>
-            <li>
-                <span class="wathiq-step-number">٣</span>
-                <div><h3>تابع الطلب</h3><p>راجع الحالة والتحديثات من حسابك.</p></div>
-            </li>
-        </ol>
+        <div class="wathiq-guidance-grid">
+            <details class="wathiq-guidance-card" open>
+                <summary><span class="wathiq-guidance-icon"><i class="bi bi-person-lock" aria-hidden="true"></i></span><span class="wathiq-guidance-question">من يمكنه الاطلاع على بياناتي الشخصية؟</span><i class="bi bi-plus-lg wathiq-guidance-toggle" aria-hidden="true"></i></summary>
+                <div class="wathiq-guidance-answer">تُتاح البيانات وفق الصلاحيات والموافقات المسجلة. لا تمنح الصلاحيات الإدارية وحدها حق قراءة محتوى الشكوى أو فتح الأدلة الخاصة.</div>
+            </details>
+            <details class="wathiq-guidance-card">
+                <summary><span class="wathiq-guidance-icon"><i class="bi bi-chat-square-check" aria-hidden="true"></i></span><span class="wathiq-guidance-question">هل حفظ المحادثة يعني إرسال بلاغ رسمي؟</span><i class="bi bi-plus-lg wathiq-guidance-toggle" aria-hidden="true"></i></summary>
+                <div class="wathiq-guidance-answer">لا. حفظ المحادثة يتيح لك استكمال التوثيق لاحقاً، ولا ينشئ بلاغاً رسمياً أو يحيله للتحقيق بحد ذاته. اتبع خطوات التقديم الظاهرة في حسابك عند توفرها.</div>
+            </details>
+            <details class="wathiq-guidance-card">
+                <summary><span class="wathiq-guidance-icon"><i class="bi bi-file-earmark-lock" aria-hidden="true"></i></span><span class="wathiq-guidance-question">كيف تُحفظ الأدلة عند تحديثها؟</span><i class="bi bi-plus-lg wathiq-guidance-toggle" aria-hidden="true"></i></summary>
+                <div class="wathiq-guidance-answer">تُحفظ النسخ السابقة ضمن سجل الإصدارات، ويُطلب توضيح سبب التحديث حيث ينطبق. لا تشارك بيانات الدخول أو رموز التحقق ضمن أي مرفق أو محادثة.</div>
+            </details>
+            <details class="wathiq-guidance-card">
+                <summary><span class="wathiq-guidance-icon"><i class="bi bi-list-check" aria-hidden="true"></i></span><span class="wathiq-guidance-question">ما المعلومات التي أجهزها قبل التوثيق؟</span><i class="bi bi-plus-lg wathiq-guidance-toggle" aria-hidden="true"></i></summary>
+                <div class="wathiq-guidance-answer">جهّز التسلسل الزمني وروابط الحسابات ذات الصلة ولقطات واضحة للوقائع. امتنع عن إرسال كلمات المرور أو رموز الاستخدام لمرة واحدة أو بيانات البطاقات.</div>
+            </details>
+        </div>
     </section>
 </div>
