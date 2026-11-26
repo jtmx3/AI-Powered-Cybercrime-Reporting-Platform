@@ -1,132 +1,159 @@
 ﻿@page "/"
+@using ACCP.Application.Cases
+@using ACCP.Domain.Entities
 @using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
-<PageTitle>الصفحة الرئيسية | ACCP</PageTitle>
+<PageTitle>وَثيق | المنصة الآمنة لتوثيق ومتابعة البلاغات السيبرانية</PageTitle>
 
-<main class="landing" dir="rtl">
-    <section class="landing-hero" aria-labelledby="landing-title">
-        <div class="landing-introduction">
-            <span class="landing-eyebrow"><span class="landing-dot" aria-hidden="true"></span>منصة ACCP</span>
-
-            <AuthorizeView>
-                <Authorized Context="homeState">
-                    @if (homeState.User.IsInRole("ADMIN"))
-                    {
-                        <h1 id="landing-title">نظرة أوضح.<br /><span>وإدارة أكثر تنظيمًا.</span></h1>
-                        <p class="landing-description">انتقل إلى إدارة الموظفين، وراجع توزيع القضايا وطلبات الفريق من مساحة الإدارة.</p>
-                        <div class="landing-actions">
-                            <a href="/admin/workload" class="btn btn-primary">متابعة توزيع القضايا <span aria-hidden="true">←</span></a>
-                            <a href="/admin/employees" class="btn btn-outline-primary">إدارة الموظفين</a>
-                        </div>
-                        <p class="landing-footnote">تظهر أدوات الإدارة وفق صلاحيات حسابك الحالية.</p>
-                    }
-                    else if (homeState.User.IsInRole("OFFICER"))
-                    {
-                        <h1 id="landing-title">متابعة منظّمة.<br /><span>لكل خطوة في القضية.</span></h1>
-                        <p class="landing-description">راجع القضايا المتاحة لك، وتابع الرسائل والأدلة وسجل التغييرات من لوحة الموظف.</p>
-                        <div class="landing-actions">
-                            <a href="/officer/dashboard" class="btn btn-primary">الانتقال إلى لوحة الموظف <span aria-hidden="true">←</span></a>
-                            <a href="/notifications" class="btn btn-outline-primary">عرض الإشعارات</a>
-                        </div>
-                        <p class="landing-footnote">الوصول إلى تفاصيل القضية يخضع للإسناد وصلاحيات المشاركة.</p>
-                    }
-                    else if (homeState.User.IsInRole("USER"))
-                    {
-                        <h1 id="landing-title">احكِ ما حدث.<br /><span>وتابع الخطوة التالية.</span></h1>
-                        <p class="landing-description">ابدأ بتوثيق تفاصيل المشكلة في محادثة جديدة، أو ارجع إلى طلباتك وبلاغاتك لمتابعة مستجداتها.</p>
-                        <div class="landing-actions">
-                            <a href="/cases/new" class="btn btn-primary">بدء محادثة جديدة <span aria-hidden="true">←</span></a>
-                            <a href="/cases" class="btn btn-outline-primary">طلباتي وبلاغاتي</a>
-                        </div>
-                        <p class="landing-footnote">حفظ المحادثة وحده لا يرسل بلاغًا رسميًا؛ الإرسال يتطلب موافقتك.</p>
-                    }
-                    else
-                    {
-                        <h1 id="landing-title">مرحبًا بك<br /><span>في منصة ACCP.</span></h1>
-                        <p class="landing-description">تعذر تحديد مساحة العمل لهذا الحساب. أعد تسجيل الدخول للتحقق من صلاحياتك الحالية.</p>
-                        <div class="landing-actions">
-                            <a href="/logout" data-enhance-nav="false" class="btn btn-primary">تسجيل الخروج</a>
-                        </div>
-                    }
-                </Authorized>
-                <NotAuthorized>
-                    <h1 id="landing-title">احكِ ما حدث.<br /><span>وتابع الخطوة التالية.</span></h1>
-                    <p class="landing-description">مساحة لتوثيق تفاصيل المشكلة ومتابعة البلاغات والإشعارات من حسابك، بخطوات واضحة ومنظّمة.</p>
-                    <div class="landing-actions">
-                        <a href="/register" data-enhance-nav="false" class="btn btn-primary">إنشاء حساب والبدء <span aria-hidden="true">←</span></a>
-                        <a href="/login" data-enhance-nav="false" class="btn btn-outline-primary">لدي حساب بالفعل</a>
-                    </div>
-                    <p class="landing-footnote">لديك حساب موظف أو مدير؟ استخدم تسجيل الدخول للوصول إلى مساحة عملك.</p>
-                </NotAuthorized>
-                <Authorizing>
-                    <h1 id="landing-title">مرحبًا بك<br /><span>في منصة ACCP.</span></h1>
-                    <p class="landing-description" role="status">جارٍ التحقق من مساحة حسابك...</p>
-                </Authorizing>
-            </AuthorizeView>
-        </div>
-
-        <aside class="landing-guide" aria-labelledby="guide-heading">
-            <div class="guide-heading">
-                <span class="guide-symbol" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M7 3h10a2 2 0 0 1 2 2v16H5V5a2 2 0 0 1 2-2Z" />
-                        <path d="M9 8h6M9 12h6M9 16h3" />
-                    </svg>
-                </span>
-                <div><span class="guide-caption">خطوات البداية</span><h2 id="guide-heading">من التفاصيل إلى المتابعة</h2></div>
+<div class="home-container" dir="rtl">
+    <section class="hero-card">
+        <div class="hero-content">
+            <div class="brand-pill">
+                <span class="pill-dot"></span>
+                <span>المنصة الوطنية للتوثيق السيبراني الجنائي</span>
             </div>
-            <ol class="guide-steps">
-                <li><span class="step-number" aria-hidden="true">01</span><div><h3>وثّق ما حدث</h3><p>اكتب التفاصيل التي تعرفها، وحدّد ما لا تتذكره أو لست متأكدًا منه.</p></div></li>
-                <li><span class="step-number" aria-hidden="true">02</span><div><h3>راجع قرار الإرسال</h3><p>إذا عُرض عليك تقديم بلاغ رسمي، راجع ملخصه وأكّد موافقتك قبل إرساله.</p></div></li>
-                <li><span class="step-number" aria-hidden="true">03</span><div><h3>تابع المستجدات</h3><p>بعد إرسال البلاغ، تابع حالته ورسائله والإشعارات المرتبطة به من حسابك.</p></div></li>
-            </ol>
-            <div class="guide-note">ابدأ بما تعرفه، واترك التفاصيل غير المؤكدة واضحة كما هي.</div>
-        </aside>
-    </section>
 
-    <AuthorizeView>
-        <Authorized Context="shortcutsState">
-            @if (shortcutsState.User.IsInRole("ADMIN"))
-            {
-                <section class="landing-section" aria-labelledby="shortcuts-heading">
-                    <div class="section-heading"><span class="section-caption">مساحة الإدارة</span><h2 id="shortcuts-heading">أدواتك الأقرب</h2></div>
-                    <div class="landing-shortcuts">
-                        <a class="shortcut-card" href="/admin/staff-requests"><span class="shortcut-number">01</span><h3>طلبات الموظفين</h3><p>راجع طلبات نقل المسؤولية وإضافة موظف مشارك.</p><span class="shortcut-action">عرض الطلبات <span aria-hidden="true">←</span></span></a>
-                        <a class="shortcut-card" href="/admin/case-reopening"><span class="shortcut-number">02</span><h3>إعادة فتح القضايا</h3><p>أعد قضية محلولة أو مغلقة إلى المتابعة مع توثيق السبب.</p><span class="shortcut-action">عرض القضايا <span aria-hidden="true">←</span></span></a>
-                        <a class="shortcut-card" href="/admin/audit-logs"><span class="shortcut-number">03</span><h3>سجل التدقيق</h3><p>راجع العمليات المسجّلة ونتائجها داخل المنصة.</p><span class="shortcut-action">عرض السجل <span aria-hidden="true">←</span></span></a>
-                    </div>
-                </section>
-            }
-            else if (shortcutsState.User.IsInRole("OFFICER"))
-            {
-                <section class="landing-section" aria-labelledby="officer-shortcuts-heading">
-                    <div class="section-heading"><span class="section-caption">مساحة الموظف</span><h2 id="officer-shortcuts-heading">ابدأ متابعة عملك</h2></div>
-                    <div class="landing-shortcuts two-columns">
-                        <a class="shortcut-card" href="/officer/dashboard"><span class="shortcut-number">01</span><h3>القضايا والمتابعة</h3><p>افتح لوحة الموظف للاطلاع على القضايا والإجراءات المتاحة لك.</p><span class="shortcut-action">فتح لوحة الموظف <span aria-hidden="true">←</span></span></a>
-                        <a class="shortcut-card" href="/notifications"><span class="shortcut-number">02</span><h3>الإشعارات</h3><p>راجع تحديثات الإسناد والرسائل والعمليات المرتبطة بحسابك.</p><span class="shortcut-action">عرض الإشعارات <span aria-hidden="true">←</span></span></a>
-                    </div>
-                </section>
-            }
-            else if (shortcutsState.User.IsInRole("USER"))
-            {
-                <section class="landing-section" aria-labelledby="user-shortcuts-heading">
-                    <div class="section-heading"><span class="section-caption">مساحتك الشخصية</span><h2 id="user-shortcuts-heading">كل خطوة من مكانها</h2></div>
-                    <div class="landing-shortcuts">
-                        <a class="shortcut-card" href="/cases/new"><span class="shortcut-number">01</span><h3>محادثة جديدة</h3><p>ابدأ بتوثيق تفاصيل مشكلة جديدة وما حدث معك.</p><span class="shortcut-action">بدء المحادثة <span aria-hidden="true">←</span></span></a>
-                        <a class="shortcut-card" href="/cases"><span class="shortcut-number">02</span><h3>طلباتي وبلاغاتي</h3><p>ارجع إلى البلاغات المرتبطة بحسابك واطّلع على تفاصيلها.</p><span class="shortcut-action">عرض البلاغات <span aria-hidden="true">←</span></span></a>
-                        <a class="shortcut-card" href="/notifications"><span class="shortcut-number">03</span><h3>مستجدات حسابك</h3><p>تابع الإشعارات المرتبطة بالقضايا والرسائل الجديدة.</p><span class="shortcut-action">عرض الإشعارات <span aria-hidden="true">←</span></span></a>
-                    </div>
-                </section>
-            }
-        </Authorized>
-    </AuthorizeView>
+            <h1 class="hero-title">
+                منصة <span class="highlight-wathiq">وَثـيـق</span> للبلاغات الرقمية
+            </h1>
 
-    <section class="landing-section landing-faq" aria-labelledby="questions-heading">
-        <div class="section-heading"><span class="section-caption">قبل أن تبدأ</span><h2 id="questions-heading">إجابات تساعدك على المتابعة</h2></div>
-        <div class="faq-list">
-            <details><summary>هل بدء المحادثة يعني إرسال بلاغ رسمي؟</summary><p>لا. بدء المحادثة وحفظ رسائلها لا يعنيان إرسال بلاغ رسمي. إذا عُرض خيار البلاغ، تحتاج إلى مراجعة الملخص والموافقة على إرساله.</p></details>
-            <details><summary>ما التفاصيل التي أحتاج إلى تجهيزها؟</summary><p>ما حدث، والتوقيت التقريبي، والتطبيق أو الموقع المرتبط بالمشكلة، وأي رسائل أو أدلة متوفرة. اذكر بوضوح ما لا تعرفه أو لا تتذكره.</p></details>
-            <details><summary>أين أجد تحديثات بلاغي؟</summary><p>بعد تسجيل الدخول بحساب المشتكي، افتح «طلباتي وبلاغاتي» لمراجعة التفاصيل، و«الإشعارات» للاطلاع على التحديثات المرتبطة بحسابك.</p></details>
+            <p class="hero-lead">
+                حقك الرقمي محفوظ بسرية تامة. نوفر لك بيئة رسمية ومحمية لتوثيق حالات الابتزاز، 
+                الاحتيال المالي، واختراق الحسابات، مع ربط بلاغك بمحققين مختصين لمتابعة الإجراءات فوراً.
+            </p>
+
+            <div class="hero-actions">
+                <AuthorizeView>
+                    <Authorized>
+                        <a href="/cases/new" class="btn-wathiq-primary">
+                            <span>بدء توثيق بلاغ جديد</span>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/cases" class="btn-wathiq-secondary">
+                            <span>متابعة بلاغاتي</span>
+                        </a>
+                    </Authorized>
+                    <NotAuthorized>
+                        <a href="/login" class="btn-wathiq-primary">
+                            <span>تسجيل الدخول لتقديم بلاغ</span>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </a>
+                        <a href="/register" class="btn-wathiq-secondary">
+                            <span>إنشاء حساب مشتكي آمن</span>
+                        </a>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </div>
+
+            <div class="trust-strip">
+                <div class="trust-item">
+                    <span class="trust-icon">🔒</span>
+                    <div>
+                        <strong>سرية وحماية مطلقة</strong>
+                        <small>بياناتك وهويتك محمية ولا تكشف إلا بموافقتك</small>
+                    </div>
+                </div>
+                <div class="trust-item">
+                    <span class="trust-icon">🛡️</span>
+                    <div>
+                        <strong>تحقيق رسمي ومخول</strong>
+                        <small>متابعة مباشرة من موظفين أمنيين مختصين</small>
+                    </div>
+                </div>
+                <div class="trust-item">
+                    <span class="trust-icon">📑</span>
+                    <div>
+                        <strong>حفظ مشفر للأدلة</strong>
+                        <small>سجل جنائي للأدلة والروابط لمنع التلاعب</small>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
-</main>
+
+    <section class="section-block">
+        <div class="section-header text-center">
+            <span class="section-badge">كيف تعمل المنصة</span>
+            <h2 class="section-heading">خطوات توثيق ومتابعة بلاغك</h2>
+            <p class="section-desc">آلية واضحة ومبسطة تضمن سرعة الاستجابة لشكواك وحفظ حقوقك</p>
+        </div>
+
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-number">01</div>
+                <div class="step-icon">💬</div>
+                <h3>سرد الواقعة وحفظ المحادثة</h3>
+                <p>اكتب ما تعرضت له بأمان وتفصيل. يتم حفظ أقوالك وتوثيق تسلسل الأحداث بنظام رقمي سري.</p>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">02</div>
+                <div class="step-icon">📎</div>
+                <h3>إرفاق وتوثيق الأدلة</h3>
+                <p>ارفع لقطات الشاشة، أرقام الهواتف، والروابط المشبوهة، مع حفظ بصمة رقمية مشفرة (Hash) لكل ملف.</p>
+            </div>
+
+            <div class="step-card highlight">
+                <div class="step-number">03</div>
+                <div class="step-icon">👮</div>
+                <h3>استلام المحقق والمتابعة</h3>
+                <p>يستلم موظف مختص ملف القضية لدراسته والتواصل المباشر معك ومتابعة سير الإجراءات لحظة بلحظة.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section-block">
+        <div class="section-header text-center">
+            <span class="section-badge">إرشادات وأسئلة</span>
+            <h2 class="section-heading">إجابات تساعدك على حماية حقك</h2>
+            <p class="section-desc">كل ما تحتاج معرفته عن خصوصية بلاغك وإجراءات المتابعة</p>
+        </div>
+
+        <div class="faq-grid">
+            <div class="faq-card">
+                <div class="faq-q">
+                    <span class="q-icon">؟</span>
+                    <h4>هل تظهر هويتي أو اسمي للموظف فور تقديم البلاغ؟</h4>
+                </div>
+                <p class="faq-a">
+                    لا، المنصة مصممة بسياسة خصوصية صارمة؛ تظل هويتك محجوبة عن الموظف ومسجلة برمز مشفر، 
+                    ولا يتم إظهار اسمك أو بريدك إلا إذا منحت موافقة صريحة بكشف الهوية للتحقيق.
+                </p>
+            </div>
+
+            <div class="faq-card">
+                <div class="faq-q">
+                    <span class="q-icon">؟</span>
+                    <h4>ما هي أنواع البلاغات التي تختص بها « وَثيق »؟</h4>
+                </div>
+                <p class="faq-a">
+                    تشمل جرائم الابتزاز الإلكتروني، الاحتيال المالي وسرقة البطاقات، اختراق الحسابات 
+                    الشخصية أو المؤسسية، انتحال الشخصية، والتهديدات الرقمية عبر شبكات التواصل.
+                </p>
+            </div>
+
+            <div class="faq-card">
+                <div class="faq-q">
+                    <span class="q-icon">؟</span>
+                    <h4>ماذا أفعل في حال تم تعديل الدليل أو إضافة دليل جديد لاحقاً؟</h4>
+                </div>
+                <p class="faq-a">
+                    تتيح لك المنصة رفع نسخ جديدة من الأدلة مع تسجيل سبب التعديل، مع بقاء النسخة 
+                    الأصلية محفوظة وموثقة جنائياً لضمان سلامة سلسلة الأدلة (Chain of Custody).
+                </p>
+            </div>
+
+            <div class="faq-card">
+                <div class="faq-q">
+                    <span class="q-icon">؟</span>
+                    <h4>كيف أعرف التحديثات على بلاغي بعد إرساله؟</h4>
+                </div>
+                <p class="faq-a">
+                    ستصلك إشعارات فورية على حسابك عند استلام القضية من محقق، أو عند كتابة رسالة لك، 
+                    أو عند انتقال البلاغ لمرحلة قيد المعالجة أو الحل.
+                </p>
+            </div>
+        </div>
+    </section>
+</div>

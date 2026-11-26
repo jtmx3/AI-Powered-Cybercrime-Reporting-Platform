@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Web\\ACCP.Web.csproj": {}
+    "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Web\\ACCP.Web.csproj": {}
   },
   "projects": {
-    "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Application\\ACCP.Application.csproj": {
+    "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Application\\ACCP.Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Application\\ACCP.Application.csproj",
+        "projectUniqueName": "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Application\\ACCP.Application.csproj",
         "projectName": "ACCP.Application",
-        "projectPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Application\\ACCP.Application.csproj",
+        "projectPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Application\\ACCP.Application.csproj",
         "packagesPath": "C:\\Users\\abdul\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Application\\obj\\",
+        "outputPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Application\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\abdul\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -27,8 +27,8 @@
             "framework": "net10.0",
             "targetAlias": "net10.0",
             "projectReferences": {
-              "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Domain\\ACCP.Domain.csproj": {
-                "projectPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Domain\\ACCP.Domain.csproj"
+              "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Domain\\ACCP.Domain.csproj": {
+                "projectPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Domain\\ACCP.Domain.csproj"
               }
             }
           }
@@ -343,14 +343,14 @@
         }
       }
     },
-    "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Domain\\ACCP.Domain.csproj": {
+    "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Domain\\ACCP.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Domain\\ACCP.Domain.csproj",
+        "projectUniqueName": "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Domain\\ACCP.Domain.csproj",
         "projectName": "ACCP.Domain",
-        "projectPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Domain\\ACCP.Domain.csproj",
+        "projectPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Domain\\ACCP.Domain.csproj",
         "packagesPath": "C:\\Users\\abdul\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Domain\\obj\\",
+        "outputPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\abdul\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -678,14 +678,14 @@
         }
       }
     },
-    "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Infrastructure\\ACCP.Infrastructure.csproj": {
+    "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Infrastructure\\ACCP.Infrastructure.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Infrastructure\\ACCP.Infrastructure.csproj",
+        "projectUniqueName": "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Infrastructure\\ACCP.Infrastructure.csproj",
         "projectName": "ACCP.Infrastructure",
-        "projectPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Infrastructure\\ACCP.Infrastructure.csproj",
+        "projectPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Infrastructure\\ACCP.Infrastructure.csproj",
         "packagesPath": "C:\\Users\\abdul\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Infrastructure\\obj\\",
+        "outputPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Infrastructure\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\abdul\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -701,11 +701,11 @@
             "framework": "net10.0",
             "targetAlias": "net10.0",
             "projectReferences": {
-              "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Application\\ACCP.Application.csproj": {
-                "projectPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Application\\ACCP.Application.csproj"
+              "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Application\\ACCP.Application.csproj": {
+                "projectPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Application\\ACCP.Application.csproj"
               },
-              "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Domain\\ACCP.Domain.csproj": {
-                "projectPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Domain\\ACCP.Domain.csproj"
+              "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Domain\\ACCP.Domain.csproj": {
+                "projectPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Domain\\ACCP.Domain.csproj"
               }
             }
           }
@@ -1040,14 +1040,14 @@
         }
       }
     },
-    "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Web\\ACCP.Web.csproj": {
+    "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Web\\ACCP.Web.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Web\\ACCP.Web.csproj",
+        "projectUniqueName": "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Web\\ACCP.Web.csproj",
         "projectName": "ACCP.Web",
-        "projectPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Web\\ACCP.Web.csproj",
+        "projectPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Web\\ACCP.Web.csproj",
         "packagesPath": "C:\\Users\\abdul\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Web\\obj\\",
+        "outputPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Web\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\abdul\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -1063,11 +1063,11 @@
             "framework": "net10.0",
             "targetAlias": "net10.0",
             "projectReferences": {
-              "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Application\\ACCP.Application.csproj": {
-                "projectPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Application\\ACCP.Application.csproj"
+              "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Application\\ACCP.Application.csproj": {
+                "projectPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Application\\ACCP.Application.csproj"
               },
-              "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Infrastructure\\ACCP.Infrastructure.csproj": {
-                "projectPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Infrastructure\\ACCP.Infrastructure.csproj"
+              "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Infrastructure\\ACCP.Infrastructure.csproj": {
+                "projectPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Infrastructure\\ACCP.Infrastructure.csproj"
               }
             }
           }

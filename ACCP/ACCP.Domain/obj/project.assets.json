@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Domain\\ACCP.Domain.csproj",
+      "projectUniqueName": "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Domain\\ACCP.Domain.csproj",
       "projectName": "ACCP.Domain",
-      "projectPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Domain\\ACCP.Domain.csproj",
+      "projectPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Domain\\ACCP.Domain.csproj",
       "packagesPath": "C:\\Users\\abdul\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\ACCP\\ACCP.Domain\\obj\\",
+      "outputPath": "C:\\Users\\abdul\\OneDrive\\Desktop\\AI-Powered-Cybercrime-Reporting-Platform\\ACCP\\ACCP.Domain\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\abdul\\AppData\\Roaming\\NuGet\\NuGet.Config"
