@@ -1,65 +1,204 @@
-﻿.wathiq-app-layout {
+﻿.gov-portal-shell {
     display: flex;
     min-height: 100vh;
-    background-color: #F8FAFC;
+    background-color: #F4F7FA;
 }
-.sidebar-wrapper {
+
+.gov-sidebar-area {
     position: sticky;
     top: 0;
     height: 100vh;
     z-index: 100;
+    flex-shrink: 0;
 }
-.content-wrapper {
+
+.gov-main-area {
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow-x: hidden;
+    min-width: 0;
 }
-.top-nav-bar {
-    height: 64px;
-    background: #FFFFFF;
-    border-bottom: 1px solid #E2E8F0;
+
+.gov-official-banner {
+    background-color: #071324;
+    color: #CBD5E1;
+    font-size: 0.76rem;
+    border-bottom: 1px solid #122B4D;
+    padding: 0.38rem 2rem;
+}
+
+.gov-banner-inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 2rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    gap: 1rem;
 }
-.header-safety-tag {
+
+.gov-banner-right {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.82rem;
-    color: #475569;
+}
+
+.gov-banner-icon {
+    color: #38BDF8;
+    font-size: 0.85rem;
+}
+
+.gov-banner-left {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #94A3B8;
+    letter-spacing: 0.08em;
+}
+
+.gov-topbar {
+    min-height: 62px;
+    background-color: #FFFFFF;
+    border-bottom: 1px solid #D8E2EE;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 2rem;
+    gap: 1rem;
+}
+
+.gov-topbar-title {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.gov-org-label {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: #0B1F3A;
+}
+
+.gov-divider {
+    color: #CBD5E1;
+}
+
+.gov-system-label {
+    font-size: 0.86rem;
+    color: #64748B;
+}
+
+.gov-user-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    background-color: #F8FAFC;
+    border: 1px solid #D8E2EE;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: #0B1F3A;
+}
+
+.gov-user-chip i {
+    color: #0284C7;
+}
+
+.gov-user-email {
     font-weight: 500;
 }
-.safety-dot {
-    width: 8px;
-    height: 8px;
-    background-color: #10B981;
-    border-radius: 50%;
-    box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+
+.gov-role-tag {
+    background-color: #E0F2FE;
+    color: #0369A1;
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 0.12rem 0.5rem;
+    border-radius: 4px;
 }
-.user-greeting { font-size: 0.88rem; color: #334155; }
-.login-quick-link {
-    font-size: 0.88rem;
+
+.gov-guest-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.gov-top-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.86rem;
     font-weight: 600;
-    color: #0EA5E9;
-    padding: 0.4rem 1rem;
-    border-radius: 8px;
-    background: #E0F2FE;
-    transition: all 0.2s ease;
+    color: #0B1F3A;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
 }
-.login-quick-link:hover {
-    background: #0EA5E9;
+
+.gov-top-link:hover {
+    background-color: #F1F5F9;
+}
+
+.gov-top-btn {
+    background-color: #0B1F3A;
     color: #FFFFFF !important;
+    font-size: 0.84rem;
+    font-weight: 600;
+    padding: 0.42rem 0.95rem;
+    border-radius: 6px;
 }
-.page-body {
+
+.gov-top-btn:hover {
+    background-color: #0284C7;
+}
+
+.gov-content-body {
     flex: 1;
     padding: 2rem;
 }
+
+.gov-footer {
+    background-color: #FFFFFF;
+    border-top: 1px solid #D8E2EE;
+    padding: 1rem 2rem;
+    font-size: 0.82rem;
+    color: #64748B;
+}
+
+.gov-footer-inner {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.gov-footer-meta {
+    color: #94A3B8;
+}
+
 @media (max-width: 992px) {
-    .wathiq-app-layout { flex-direction: column; }
-    .sidebar-wrapper { height: auto; position: relative; }
-    .page-body { padding: 1rem; }
+    .gov-portal-shell {
+        flex-direction: column;
+    }
+
+    .gov-sidebar-area {
+        position: relative;
+        height: auto;
+    }
+
+    .gov-official-banner {
+        padding: 0.4rem 1rem;
+    }
+
+    .gov-banner-left {
+        display: none;
+    }
+
+    .gov-topbar {
+        padding: 0.65rem 1rem;
+    }
+
+    .gov-content-body {
+        padding: 1.25rem 1rem;
+    }
+
+    .gov-footer {
+        padding: 1rem;
+    }
 }

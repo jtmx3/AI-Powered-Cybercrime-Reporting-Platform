@@ -1,122 +1,149 @@
-﻿@using ACCP.Application.Notifications
-@using ACCP.Domain.Entities
+﻿@using System.Security.Claims
+@using ACCP.Application.Notifications
 @using ACCP.Web.Security
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Routing
+
 @inject NavigationManager NavigationManager
 @inject INotificationService NotificationService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @implements IDisposable
 
-<div class="wathiq-sidebar">
-    <div class="sidebar-header">
-        <a href="" class="brand-container">
-            <div class="logo-shield">
-                <svg viewBox="0 0 32 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M16 1L3 6V16.5C3 25.5 8.5 33.5 16 35C23.5 33.5 29 25.5 29 16.5V6L16 1Z" 
-                          fill="url(#shield-grad)" stroke="#38BDF8" stroke-width="1.5" />
-                    <path d="M10 17.5L14 21.5L22 13.5" 
-                          stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    <defs>
-                        <linearGradient id="shield-grad" x1="16" y1="1" x2="16" y2="35" gradientUnits="userSpaceOnUse">
-                            <stop stop-color="#0EA5E9"/>
-                            <stop offset="1" stop-color="#0F2744"/>
-                        </linearGradient>
-                    </defs>
+<div class="gov-sidebar">
+    <div class="gov-sidebar-brand">
+        <a href="" class="gov-brand-link" @onclick="CloseMenu">
+            <div class="gov-crest" aria-hidden="true">
+                <svg viewBox="0 0 40 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 2L5 8.5V20.5C5 30.8 11.4 39.6 20 42C28.6 39.6 35 30.8 35 20.5V8.5L20 2Z"
+                          fill="#0F294A" stroke="#38BDF8" stroke-width="1.75"/>
+                    <path d="M20 6.5L9 11.2V20.2C9 28.1 13.7 35.1 20 37.2C26.3 35.1 31 28.1 31 20.2V11.2L20 6.5Z"
+                          stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+                    <path d="M14.5 21.5L18.2 25.2L26 17.4"
+                          stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="square"/>
+                    <line x1="14" y1="29.5" x2="26" y2="29.5" stroke="#38BDF8" stroke-width="1.8"/>
                 </svg>
             </div>
-            <div class="brand-text">
-                <span class="brand-title">وَثيـق</span>
-                <span class="brand-subtitle">WATHIQ</span>
+            <div class="gov-brand-titles">
+                <div class="gov-brand-name-row">
+                    <span class="gov-brand-ar">وَثيق</span>
+                    <span class="gov-brand-en">WATHIQ</span>
+                </div>
+                <span class="gov-brand-caption">منظومة البلاغات السيبرانية</span>
             </div>
         </a>
+
+        <button type="button"
+                class="gov-mobile-toggle"
+                aria-label="تبديل القائمة"
+                @onclick="ToggleMenu">
+            <i class="bi @(menuOpen ? "bi-x-lg" : "bi-list")"></i>
+        </button>
     </div>
 
-    <nav class="sidebar-nav">
-        <NavLink class="nav-item-link" href="" Match="NavLinkMatch.All">
-            <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></span>
-            <span>الرئيسية</span>
-        </NavLink>
+    <nav class="gov-nav-container @(menuOpen ? "is-open" : "")" aria-label="القائمة الرئيسية">
+        <div class="gov-nav-group">
+            <span class="gov-nav-heading">البوابة العامة</span>
+            <NavLink class="gov-nav-link" href="" Match="NavLinkMatch.All" @onclick="CloseMenu">
+                <i class="bi bi-house-door gov-nav-icon" aria-hidden="true"></i>
+                <span>الصفحة الرئيسية</span>
+            </NavLink>
+        </div>
 
         <AuthorizeView Roles="USER" Context="userRoleState">
             <Authorized>
-                <div class="nav-section-title">مساحة المشتكي</div>
-                <NavLink class="nav-item-link" href="/cases/new" Match="NavLinkMatch.All">
-                    <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg></span>
-                    <span>توثيق بلاغ جديد</span>
-                </NavLink>
-                <NavLink class="nav-item-link" href="/cases" Match="NavLinkMatch.Prefix">
-                    <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></span>
-                    <span>طلباتي وبلاغاتي</span>
-                </NavLink>
-                <NavLink class="nav-item-link" href="/conversations" Match="NavLinkMatch.Prefix">
-                    <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></span>
-                    <span>المحادثات المحفوظة</span>
-                </NavLink>
+                <div class="gov-nav-group">
+                    <span class="gov-nav-heading">خدمات المشتكي</span>
+                    <NavLink class="gov-nav-link" href="/cases/new" Match="NavLinkMatch.All" @onclick="CloseMenu">
+                        <i class="bi bi-file-earmark-plus gov-nav-icon" aria-hidden="true"></i>
+                        <span>تقديم وتوثيق بلاغ</span>
+                    </NavLink>
+                    <NavLink class="gov-nav-link" href="/cases" Match="NavLinkMatch.All" @onclick="CloseMenu">
+                        <i class="bi bi-folder2-open gov-nav-icon" aria-hidden="true"></i>
+                        <span>سجل الطلبات والبلاغات</span>
+                    </NavLink>
+                    <NavLink class="gov-nav-link" href="/conversations" Match="NavLinkMatch.Prefix" @onclick="CloseMenu">
+                        <i class="bi bi-chat-square-text gov-nav-icon" aria-hidden="true"></i>
+                        <span>المحادثات الموثقة</span>
+                    </NavLink>
+                </div>
             </Authorized>
         </AuthorizeView>
 
         <AuthorizeView Roles="OFFICER" Context="officerRoleState">
             <Authorized>
-                <div class="nav-section-title">بوابة المحقق المختص</div>
-                <NavLink class="nav-item-link" href="/officer/dashboard" Match="NavLinkMatch.Prefix">
-                    <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg></span>
-                    <span>لوحة القضايا</span>
-                </NavLink>
+                <div class="gov-nav-group">
+                    <span class="gov-nav-heading">أعمال التحقيق</span>
+                    <NavLink class="gov-nav-link" href="/officer/dashboard" Match="NavLinkMatch.Prefix" @onclick="CloseMenu">
+                        <i class="bi bi-briefcase gov-nav-icon" aria-hidden="true"></i>
+                        <span>لوحة متابعة القضايا</span>
+                    </NavLink>
+                </div>
             </Authorized>
         </AuthorizeView>
 
         <AuthorizeView Roles="ADMIN" Context="adminRoleState">
             <Authorized>
-                <div class="nav-section-title">إدارة المنصة</div>
-                <NavLink class="nav-item-link" href="/admin/employees" Match="NavLinkMatch.Prefix">
-                    <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path></svg></span>
-                    <span>إدارة الموظفين</span>
-                </NavLink>
-                <NavLink class="nav-item-link" href="/admin/workload" Match="NavLinkMatch.Prefix">
-                    <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></span>
-                    <span>توزيع الأحمال</span>
-                </NavLink>
-                <NavLink class="nav-item-link" href="/admin/case-reopening" Match="NavLinkMatch.Prefix">
-                    <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg></span>
-                    <span>إعادة الفتح</span>
-                </NavLink>
-                <NavLink class="nav-item-link" href="/admin/audit-logs" Match="NavLinkMatch.Prefix">
-                    <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></span>
-                    <span>سجل التدقيق</span>
-                </NavLink>
+                <div class="gov-nav-group">
+                    <span class="gov-nav-heading">الإدارة والرقابة</span>
+                    <NavLink class="gov-nav-link" href="/admin/employees" Match="NavLinkMatch.Prefix" @onclick="CloseMenu">
+                        <i class="bi bi-people gov-nav-icon" aria-hidden="true"></i>
+                        <span>إدارة الكوادر والموظفين</span>
+                    </NavLink>
+                    <NavLink class="gov-nav-link" href="/admin/workload" Match="NavLinkMatch.Prefix" @onclick="CloseMenu">
+                        <i class="bi bi-diagram-3 gov-nav-icon" aria-hidden="true"></i>
+                        <span>توزيع القضايا والأحمال</span>
+                    </NavLink>
+                    <NavLink class="gov-nav-link" href="/admin/staff-requests" Match="NavLinkMatch.Prefix" @onclick="CloseMenu">
+                        <i class="bi bi-arrow-left-right gov-nav-icon" aria-hidden="true"></i>
+                        <span>طلبات النقل والمشاركة</span>
+                    </NavLink>
+                    <NavLink class="gov-nav-link" href="/admin/case-reopening" Match="NavLinkMatch.Prefix" @onclick="CloseMenu">
+                        <i class="bi bi-arrow-counterclockwise gov-nav-icon" aria-hidden="true"></i>
+                        <span>إعادة فتح القضايا</span>
+                    </NavLink>
+                    <NavLink class="gov-nav-link" href="/admin/audit-logs" Match="NavLinkMatch.Prefix" @onclick="CloseMenu">
+                        <i class="bi bi-shield-check gov-nav-icon" aria-hidden="true"></i>
+                        <span>سجل التدقيق الأمني</span>
+                    </NavLink>
+                </div>
             </Authorized>
         </AuthorizeView>
 
-        <AuthorizeView>
+        <AuthorizeView Context="accountState">
             <Authorized>
-                <div class="nav-section-title">الحساب</div>
-                <NavLink class="nav-item-link" href="/notifications">
-                    <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></span>
-                    <span>الإشعارات</span>
-                    @if (unreadCount > 0)
-                    {
-                        <span class="badge-count">@unreadCount</span>
-                    }
-                </NavLink>
-                <form action="account/logout" method="post" class="mt-2">
-                    <AntiforgeryToken />
-                    <button type="submit" class="logout-button">
-                        <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></span>
-                        <span>تسجيل الخروج</span>
-                    </button>
-                </form>
+                <div class="gov-nav-group gov-nav-footer">
+                    <span class="gov-nav-heading">إدارة الحساب</span>
+                    <NavLink class="gov-nav-link" href="/notifications" @onclick="CloseMenu">
+                        <i class="bi bi-bell gov-nav-icon" aria-hidden="true"></i>
+                        <span>الإشعارات الرسمية</span>
+                        @if (unreadCount > 0)
+                        {
+                            <span class="gov-unread-badge">@unreadCount</span>
+                        }
+                    </NavLink>
+
+                    <form action="account/logout" method="post" class="gov-logout-form">
+                        <AntiforgeryToken />
+                        <button type="submit" class="gov-logout-btn">
+                            <i class="bi bi-box-arrow-right gov-nav-icon" aria-hidden="true"></i>
+                            <span>إنهاء الجلسة والخروج</span>
+                        </button>
+                    </form>
+                </div>
             </Authorized>
             <NotAuthorized>
-                <div class="nav-section-title">تسجيل الدخول</div>
-                <NavLink class="nav-item-link" href="/login">
-                    <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg></span>
-                    <span>دخول المنصة</span>
-                </NavLink>
-                <NavLink class="nav-item-link" href="/register">
-                    <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line></svg></span>
-                    <span>تسجيل حساب جديد</span>
-                </NavLink>
+                <div class="gov-nav-group gov-nav-footer">
+                    <span class="gov-nav-heading">النفاذ للمنصة</span>
+                    <NavLink class="gov-nav-link" href="/login" @onclick="CloseMenu">
+                        <i class="bi bi-box-arrow-in-left gov-nav-icon" aria-hidden="true"></i>
+                        <span>تسجيل الدخول</span>
+                    </NavLink>
+                    <NavLink class="gov-nav-link" href="/register" @onclick="CloseMenu">
+                        <i class="bi bi-person-plus gov-nav-icon" aria-hidden="true"></i>
+                        <span>تسجيل حساب مستفيد</span>
+                    </NavLink>
+                </div>
             </NotAuthorized>
         </AuthorizeView>
     </nav>
@@ -124,35 +151,67 @@
 
 @code {
     private int unreadCount;
+    private bool menuOpen;
+    private bool componentDisposed;
     private AuthorizedNotificationService? notificationEvents;
 
     protected override async Task OnInitializedAsync()
     {
+        NavigationManager.LocationChanged += HandleLocationChanged;
+        AuthenticationStateProvider.AuthenticationStateChanged += HandleAuthenticationStateChanged;
+
         notificationEvents = NotificationService as AuthorizedNotificationService;
         if (notificationEvents is not null)
         {
             notificationEvents.ReadStateChanged += HandleNotificationReadChanged;
         }
+
         await RefreshUnreadCountAsync();
     }
 
+    private void ToggleMenu() => menuOpen = !menuOpen;
+    private void CloseMenu() => menuOpen = false;
+
     private async Task RefreshUnreadCountAsync()
     {
+        if (componentDisposed) return;
+
         try
         {
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var user = authState.User;
             if (user.Identity?.IsAuthenticated == true)
             {
-                var idClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var idClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (Guid.TryParse(idClaim, out var userId))
                 {
                     unreadCount = await NotificationService.GetUnreadCountAsync(userId);
-                    await InvokeAsync(StateHasChanged);
+                    if (!componentDisposed)
+                    {
+                        await InvokeAsync(StateHasChanged);
+                    }
                 }
             }
+            else
+            {
+                unreadCount = 0;
+            }
         }
-        catch { }
+        catch
+        {
+            unreadCount = 0;
+        }
+    }
+
+    private async void HandleLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        menuOpen = false;
+        await RefreshUnreadCountAsync();
+    }
+
+    private async void HandleAuthenticationStateChanged(Task<AuthenticationState> task)
+    {
+        await RefreshUnreadCountAsync();
     }
 
     private async void HandleNotificationReadChanged()
@@ -162,6 +221,9 @@
 
     public void Dispose()
     {
+        componentDisposed = true;
+        NavigationManager.LocationChanged -= HandleLocationChanged;
+        AuthenticationStateProvider.AuthenticationStateChanged -= HandleAuthenticationStateChanged;
         if (notificationEvents is not null)
         {
             notificationEvents.ReadStateChanged -= HandleNotificationReadChanged;
