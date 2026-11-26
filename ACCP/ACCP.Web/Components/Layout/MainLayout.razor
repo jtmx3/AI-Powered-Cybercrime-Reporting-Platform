@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
 
 <div class="wathiq-app-layout" dir="rtl">
     <aside class="sidebar-wrapper">
@@ -11,6 +12,7 @@
                 <span class="safety-dot"></span>
                 <span>نظام مشفر ومحمي لمكافحة الجرائم السيبرانية</span>
             </div>
+
             <div class="header-actions">
                 <AuthorizeView>
                     <Authorized>

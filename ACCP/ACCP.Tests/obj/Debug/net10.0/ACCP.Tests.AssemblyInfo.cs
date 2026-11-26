@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ACCP.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c8ecb7065c30f6579655b33777ad2062cd7eb845")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+332a5c9ffb0acc0dc0429e318202ad240264f913")]
 [assembly: System.Reflection.AssemblyProductAttribute("ACCP.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ACCP.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

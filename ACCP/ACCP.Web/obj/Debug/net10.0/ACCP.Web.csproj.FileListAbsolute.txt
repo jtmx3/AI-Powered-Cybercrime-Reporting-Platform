@@ -427,7 +427,6 @@ C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\AC
 C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\scopedcss\Components\Shared\StatusPanel.razor.rz.scp.css
 C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\scopedcss\bundle\ACCP.Web.styles.css
 C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\scopedcss\projectbundle\ACCP.Web.bundle.scp.css
-C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\compressed\6dcvkfcow3-{0}-9ysh5ogqpm-9ysh5ogqpm.gz
 C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\compressed\wt7i94u3nq-{0}-5ipweew5fc-5ipweew5fc.gz
 C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\compressed\lj10miwg1g-{0}-t1cqhe9u97-t1cqhe9u97.gz
 C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\compressed\73calgr298-{0}-c2jlpeoesf-c2jlpeoesf.gz
@@ -476,8 +475,6 @@ C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\AC
 C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\compressed\td58m318iq-{0}-abdmv1u4y3-abdmv1u4y3.gz
 C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\compressed\0klg0oqix3-{0}-9hsif5t8mt-9hsif5t8mt.gz
 C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\compressed\d2bs9wnkbn-{0}-dwu72t6gfx-dwu72t6gfx.gz
-C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\compressed\wm2sr0n4cw-{0}-dbgvonerh5-dbgvonerh5.gz
-C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\compressed\gl5sjcnh1q-{0}-dbgvonerh5-dbgvonerh5.gz
 C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\staticwebassets.build.json
 C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\staticwebassets.build.json.cache
 C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\staticwebassets.development.json
@@ -489,3 +486,6 @@ C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\AC
 C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\ACCP.Web.pdb
 C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\ACCP.Web.genruntimeconfig.cache
 C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\ref\ACCP.Web.dll
+C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\compressed\6dcvkfcow3-{0}-sgo53i5erg-sgo53i5erg.gz
+C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\compressed\wm2sr0n4cw-{0}-lr3zrfx0bk-lr3zrfx0bk.gz
+C:\Users\abdul\OneDrive\Desktop\AI-Powered-Cybercrime-Reporting-Platform\ACCP\ACCP.Web\obj\Debug\net10.0\compressed\gl5sjcnh1q-{0}-lr3zrfx0bk-lr3zrfx0bk.gz
