@@ -19,8 +19,9 @@ public static class StaffTwoFactorFlow
     private const string Purpose =
         "ACCP.StaffEnrollment.PasswordVerified.v1";
 
-    private static readonly TimeSpan Lifetime =
-        TimeSpan.FromMinutes(10);
+    public static readonly TimeSpan EnrollmentLifetime =
+        TimeSpan.FromMinutes(15);
+    private static readonly TimeSpan Lifetime = EnrollmentLifetime;
 
     public static async Task BeginEnrollmentAsync(
         HttpContext context,

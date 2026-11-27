@@ -195,7 +195,7 @@ label { display: block; font-weight: 600; margin-bottom: .5rem; font-size: .85re
                         <input id="confirm-code" name="Input.Code" type="text" dir="ltr" class="input code-input"
                                inputmode="numeric" autocomplete="one-time-code" minlength="6" maxlength="12"
                                pattern="[0-9 -]{6,12}" required aria-describedby="code-help" />
-                        <p id="code-help" class="help">جلسة الربط صالحة لمدة 5 دقائق من تأكيد كلمة المرور. إذا انتهت، ابدأ التفعيل مجددًا.</p>
+                        <p id="code-help" class="help">جلسة الربط صالحة لمدة 15 دقيقة من تأكيد كلمة المرور. استخدم الرمز الحالي من التطبيق خلال هذه المدة.</p>
                         <button type="submit" class="button primary wide">تأكيد الرمز وتفعيل الحماية</button>
                     </form>
                     <form method="post" asp-page="/Account/EnableTwoFactor" asp-page-handler="Cancel" asp-antiforgery="true" class="cancel-form">

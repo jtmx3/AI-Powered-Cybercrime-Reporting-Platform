@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace ACCP.Web.Pages.Account;
 
@@ -31,10 +32,12 @@ public sealed class EnableTwoFactorModel : PageModel
     private readonly IUserStore<ApplicationUser> _store;
     private readonly AccpDbContext _db;
     private readonly IAuditService _audit;
+    private readonly ILogger<EnableTwoFactorModel> _logger;
 
     public EnableTwoFactorModel(CaseAuthorizationService authorization,
         SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> users,
-        IUserStore<ApplicationUser> store, AccpDbContext db, IAuditService audit)
+        IUserStore<ApplicationUser> store, AccpDbContext db, IAuditService audit,
+        ILogger<EnableTwoFactorModel> logger)
     {
         _authorization = authorization;
         _signInManager = signInManager;
@@ -42,6 +45,7 @@ public sealed class EnableTwoFactorModel : PageModel
         _store = store;
         _db = db;
         _audit = audit;
+        _logger = logger;
     }
 
     [BindProperty]
@@ -209,12 +213,14 @@ public sealed class EnableTwoFactorModel : PageModel
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
+            _logger.LogError(exception,
+                "Failed to confirm two-factor enrollment for account {UserId}.", user?.Id);
             _db.ChangeTracker.Clear();
-            HideEnrollment();
-            DeleteEnrollment();
             // Transaction disposal rolls back the key, MFA flag, codes and stamps.
-            if (EnrollmentOnly) return await EndSessionAsync();
-            return Error("تعذر إكمال التفعيل. أعد المحاولة من خطوة كلمة المرور.");
+            // Preserve the password-verified ticket and pending key so a transient
+            // persistence failure does not force a new authenticator enrollment.
+            return Error(
+                "تعذر حفظ التفعيل الآن. احتفظ بمفتاح الربط نفسه، ثم أدخل الرمز الحالي من التطبيق وحاول مجددًا.");
         }
 
         if (incorrectCode)
@@ -292,7 +298,7 @@ public sealed class EnableTwoFactorModel : PageModel
     {
         var enrollment = new Enrollment(user.Id, user.SecurityStamp!, _users.GenerateNewAuthenticatorKey());
         Response.Cookies.Append(EnrollmentCookie,
-            Protector().Protect(JsonSerializer.Serialize(enrollment), TimeSpan.FromMinutes(5)), CookieOptions());
+            Protector().Protect(JsonSerializer.Serialize(enrollment), StaffTwoFactorFlow.EnrollmentLifetime), CookieOptions());
         ShowEnrollment(user, enrollment);
     }
 
@@ -342,7 +348,7 @@ public sealed class EnableTwoFactorModel : PageModel
     private CookieOptions CookieOptions() => new()
     {
         HttpOnly = true, Secure = Request.IsHttps, SameSite = SameSiteMode.Strict,
-        Path = "/", IsEssential = true, MaxAge = TimeSpan.FromMinutes(5)
+        Path = "/", IsEssential = true, MaxAge = StaffTwoFactorFlow.EnrollmentLifetime
     };
 
     private void DeleteEnrollment()
