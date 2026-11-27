@@ -31,16 +31,16 @@
         <div class="card-body">
             <div class="row g-3 align-items-end">
                 <div class="col-12 col-xl-4">
-                    <label class="form-label">البحث</label>
-                    <input class="form-control"
+                    <label class="form-label" for="audit-search">البحث</label>
+                    <input id="audit-search" class="form-control"
                            placeholder="البريد، رقم القضية، الوصف أو المعرّف"
                            @bind="searchTerm"
                            @bind:event="oninput" />
                 </div>
 
                 <div class="col-12 col-md-4 col-xl-3">
-                    <label class="form-label">نوع العملية</label>
-                    <select class="form-select"
+                    <label class="form-label" for="audit-action">نوع العملية</label>
+                    <select id="audit-action" class="form-select"
                             @bind="selectedActionValue">
                         <option value="">جميع العمليات</option>
 
@@ -55,8 +55,8 @@
                 </div>
 
                 <div class="col-12 col-md-4 col-xl-2">
-                    <label class="form-label">النتيجة</label>
-                    <select class="form-select"
+                    <label class="form-label" for="audit-result">النتيجة</label>
+                    <select id="audit-result" class="form-select"
                             @bind="selectedResultValue">
                         <option value="">الكل</option>
                         <option value="success">ناجحة</option>
@@ -65,8 +65,8 @@
                 </div>
 
                 <div class="col-12 col-md-4 col-xl-1">
-                    <label class="form-label">العدد</label>
-                    <select class="form-select"
+                    <label class="form-label" for="audit-limit">العدد</label>
+                    <select id="audit-limit" class="form-select"
                             @bind="resultLimit">
                         <option value="100">100</option>
                         <option value="200">200</option>

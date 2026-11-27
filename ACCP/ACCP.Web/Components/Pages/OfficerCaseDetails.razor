@@ -252,9 +252,9 @@
 
                         <div class="row g-3">
                             <div class="col-md-5">
-                                <label class="form-label">نوع الطلب</label>
+                                <label class="form-label" for="staff-request-type">نوع الطلب</label>
 
-                                <InputSelect class="form-select"
+                                <InputSelect id="staff-request-type" class="form-select"
                                              @bind-Value="selectedStaffRequestType">
                                     <option value="@CaseStaffRequestType.TransferAssignment">
                                         نقل مسؤولية القضية إلى موظف آخر
@@ -266,9 +266,9 @@
                             </div>
 
                             <div class="col-md-7">
-                                <label class="form-label">سبب الطلب</label>
+                                <label class="form-label" for="staff-request-reason">سبب الطلب</label>
 
-                                <textarea class="form-control"
+                                <textarea id="staff-request-reason" class="form-control"
                                           rows="4"
                                           maxlength="1000"
                                           placeholder="اشرح سبب الطلب بوضوح، 10 أحرف على الأقل."
@@ -572,9 +572,9 @@
                 }
 
                 <div class="mb-3">
-                    <label class="form-label">الملاحظة الجديدة</label>
+                    <label class="form-label" for="internal-note-content">الملاحظة الجديدة</label>
 
-                    <textarea class="form-control"
+                    <textarea id="internal-note-content" class="form-control"
                               rows="4"
                               maxlength="2000"
                               placeholder="اكتب الملاحظة الداخلية هنا..."

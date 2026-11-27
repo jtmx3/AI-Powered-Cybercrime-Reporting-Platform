@@ -1,0 +1,22 @@
+<section class="status-panel" aria-labelledby="status-panel-title">
+    <p class="status-panel-code">@Code</p>
+    <h1 id="status-panel-title">@Title</h1>
+    <p class="status-panel-description">@Description</p>
+    <div class="status-panel-content">
+        @ChildContent
+    </div>
+</section>
+
+@code {
+    [Parameter]
+    public string Code { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Description { get; set; } = string.Empty;
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

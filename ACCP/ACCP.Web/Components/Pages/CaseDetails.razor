@@ -732,6 +732,7 @@ private bool isUploadingRevision;
                 cyberCase = null;
                 return;
             }
+            pageErrorMessage = string.Empty;
             cyberCase = await CaseService.GetByIdForReporterAsync(
                 Id,
                 reporterId);

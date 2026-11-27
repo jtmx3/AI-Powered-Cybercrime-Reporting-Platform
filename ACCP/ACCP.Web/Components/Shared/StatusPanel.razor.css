@@ -1,1 +1,100 @@
 /* WATHIQ */
+.status-panel {
+    max-width: 52rem;
+    margin-inline: auto;
+    padding: clamp(1.25rem, 3vw, 2rem);
+    border: 1px solid var(--wathiq-border, #E0F2FE);
+    border-radius: .75rem;
+    background: var(--wathiq-paper, #FFFFFF);
+    color: var(--wathiq-navy-950, #0F2744);
+    box-shadow: 0 8px 26px #0F27440A;
+    text-align: center;
+}
+
+.status-panel-code {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3.25rem;
+    min-height: 2rem;
+    margin: 0 0 .85rem;
+    padding: .25rem .7rem;
+    border: 1px solid var(--wathiq-border, #E0F2FE);
+    border-radius: 999px;
+    background: var(--wathiq-surface, #F8FAFC);
+    color: var(--wathiq-navy-800, #16335B);
+    font-size: .78rem;
+    font-weight: 700;
+}
+
+.status-panel h1 {
+    margin: 0 0 .6rem;
+    color: var(--wathiq-navy-950, #0F2744);
+    font-size: clamp(1.35rem, 2.3vw, 1.8rem);
+    line-height: 1.6;
+}
+
+.status-panel-description {
+    max-width: 42rem;
+    margin: 0 auto 1rem;
+    color: var(--wathiq-navy-800, #16335B);
+    font-size: .9rem;
+    line-height: 1.9;
+}
+
+.status-panel-content {
+    color: var(--wathiq-navy-800, #16335B);
+    font-size: .88rem;
+    line-height: 1.9;
+}
+
+.status-panel-content ::deep .status-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: .7rem;
+    margin-top: 1.4rem;
+}
+
+.status-panel-content ::deep .status-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    padding: .55rem 1rem;
+    border: 1px solid var(--wathiq-navy-900, #16335B);
+    border-radius: .5rem;
+    background: var(--wathiq-navy-900, #16335B);
+    color: var(--wathiq-paper, #FFFFFF);
+    font-size: .84rem;
+    font-weight: 650;
+    text-decoration: none;
+}
+
+.status-panel-content ::deep .status-link:hover {
+    border-color: var(--wathiq-navy-950, #0F2744);
+    background: var(--wathiq-navy-950, #0F2744);
+    color: var(--wathiq-paper, #FFFFFF);
+}
+
+.status-panel-content ::deep .status-link.secondary {
+    border-color: var(--wathiq-border, #E0F2FE);
+    background: var(--wathiq-paper, #FFFFFF);
+    color: var(--wathiq-navy-900, #16335B);
+}
+
+.status-panel-content ::deep .status-link:focus-visible {
+    outline: 3px solid var(--wathiq-sky-400, #38BDF8);
+    outline-offset: 3px;
+}
+
+@media (max-width: 480px) {
+    .status-panel-content ::deep .status-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .status-panel-content ::deep .status-link {
+        width: 100%;
+    }
+}
