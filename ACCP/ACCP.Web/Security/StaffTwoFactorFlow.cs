@@ -6,6 +6,7 @@ using ACCP.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -199,10 +200,33 @@ public static class StaffTwoFactorFlow
             return false;
         }
 
-        if (!await IsStaffAsync(
-                db,
-                user.Id,
-                context.RequestAborted))
+        var roleNames = await db.UserRoles
+            .Where(membership => membership.UserId == user.Id)
+            .Join(
+                db.Roles,
+                membership => membership.RoleId,
+                role => role.Id,
+                (_, role) => role.NormalizedName)
+            .ToListAsync(context.RequestAborted);
+
+        var isOfficer = roleNames.Contains(IdentityRoles.Officer);
+        var isAdmin = roleNames.Contains(IdentityRoles.Admin);
+        if (!isOfficer && !isAdmin)
+        {
+            return true;
+        }
+
+        var environment = context.RequestServices
+            .GetRequiredService<IWebHostEnvironment>();
+        var localExemption =
+            LocalDevelopmentMfaExemption.HasValidPrincipalClaim(
+                context.User,
+                environment,
+                user.Email,
+                isAdmin && !isOfficer) &&
+            LocalDevelopmentMfaExemption.IsLoopbackRequest(context);
+
+        if (localExemption)
         {
             return true;
         }

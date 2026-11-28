@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Security.Claims;
 using ACCP.Application.Auditing;
 using ACCP.Domain.Enums;
@@ -7,6 +8,7 @@ using ACCP.Infrastructure.Identity;
 using ACCP.Web.Security;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -26,17 +28,20 @@ public class LoginModel : PageModel
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IAuditService _auditService;
     private readonly AccpDbContext _db;
+    private readonly IWebHostEnvironment _environment;
 
     public LoginModel(
         SignInManager<ApplicationUser> signInManager,
         UserManager<ApplicationUser> userManager,
         IAuditService auditService,
-        AccpDbContext db)
+        AccpDbContext db,
+        IWebHostEnvironment environment)
     {
         _signInManager = signInManager;
         _userManager = userManager;
         _auditService = auditService;
         _db = db;
+        _environment = environment;
     }
 
     [BindProperty]
@@ -122,17 +127,25 @@ public class LoginModel : PageModel
 
         var expectedStamp = user.SecurityStamp;
         var expectedTwoFactor = user.TwoFactorEnabled;
+        var isOfficer = await _userManager.IsInRoleAsync(
+            user,
+            IdentityRoles.Officer);
+        var isAdmin = await _userManager.IsInRoleAsync(
+            user,
+            IdentityRoles.Admin);
+        var localMfaExempt =
+            LocalDevelopmentMfaExemption.IsEnabledForLogin(
+                HttpContext,
+                _environment,
+                user.Email,
+                isAdmin && !isOfficer);
 
         var enrollmentRequired = !user.TwoFactorEnabled &&
-            (await _userManager.IsInRoleAsync(
-                user,
-                IdentityRoles.Officer) ||
-             await _userManager.IsInRoleAsync(
-                user,
-                IdentityRoles.Admin));
+            (isOfficer || isAdmin) &&
+            !localMfaExempt;
 
         Microsoft.AspNetCore.Identity.SignInResult result =
-            enrollmentRequired
+            enrollmentRequired || localMfaExempt
                 ? await _signInManager.CheckPasswordSignInAsync(
                     user,
                     Input.Password,
@@ -158,7 +171,8 @@ public class LoginModel : PageModel
                 (result.RequiresTwoFactor &&
                  !user.TwoFactorEnabled) ||
                 (result.Succeeded &&
-                 user.TwoFactorEnabled))
+                 user.TwoFactorEnabled &&
+                 !localMfaExempt))
             {
                 await _signInManager.SignOutAsync();
                 await _signInManager.ForgetTwoFactorClientAsync();
@@ -185,13 +199,44 @@ public class LoginModel : PageModel
 
         if (result.Succeeded)
         {
-            var currentStaff =
-                await _userManager.IsInRoleAsync(
+            var currentOfficer = await _userManager.IsInRoleAsync(
+                user,
+                IdentityRoles.Officer);
+            var currentAdmin = await _userManager.IsInRoleAsync(
+                user,
+                IdentityRoles.Admin);
+            var currentStaff = currentOfficer || currentAdmin;
+
+            if (localMfaExempt &&
+                !LocalDevelopmentMfaExemption.IsEnabledForLogin(
+                    HttpContext,
+                    _environment,
+                    user.Email,
+                    currentAdmin && !currentOfficer))
+            {
+                return await RejectChangedEnrollmentAsync(
                     user,
-                    IdentityRoles.Officer) ||
-                await _userManager.IsInRoleAsync(
+                    attemptedEmail,
+                    actorRole);
+            }
+
+            if (localMfaExempt)
+            {
+                await _signInManager.SignInWithClaimsAsync(
                     user,
-                    IdentityRoles.Admin);
+                    Input.RememberMe,
+                    [
+                        new Claim(
+                            LocalDevelopmentMfaExemption.ClaimType,
+                            LocalDevelopmentMfaExemption.ClaimValue),
+                        new Claim(
+                            LocalDevelopmentMfaExemption.ExpiresAtClaimType,
+                            DateTimeOffset.UtcNow
+                                .Add(LocalDevelopmentMfaExemption.Lifetime)
+                                .ToUnixTimeSeconds()
+                                .ToString(CultureInfo.InvariantCulture))
+                    ]);
+            }
 
             if (enrollmentRequired && !currentStaff)
             {
@@ -201,7 +246,8 @@ public class LoginModel : PageModel
                     actorRole);
             }
 
-            if (!user.TwoFactorEnabled && currentStaff)
+            if (!user.TwoFactorEnabled && currentStaff &&
+                !localMfaExempt)
             {
                 try
                 {

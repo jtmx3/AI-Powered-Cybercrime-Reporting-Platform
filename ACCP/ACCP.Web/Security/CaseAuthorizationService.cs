@@ -4,6 +4,7 @@ using ACCP.Domain.Entities;
 using ACCP.Infrastructure.Data;
 using ACCP.Infrastructure.Identity;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -29,17 +30,20 @@ public sealed class CaseAuthorizationService
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IdentityOptions _identityOptions;
+    private readonly IWebHostEnvironment _environment;
 
     public CaseAuthorizationService(
         AuthenticationStateProvider authenticationStateProvider,
         IHttpContextAccessor httpContextAccessor,
         IServiceScopeFactory scopeFactory,
-        IOptions<IdentityOptions> identityOptions)
+        IOptions<IdentityOptions> identityOptions,
+        IWebHostEnvironment environment)
     {
         _authenticationStateProvider = authenticationStateProvider;
         _httpContextAccessor = httpContextAccessor;
         _scopeFactory = scopeFactory;
         _identityOptions = identityOptions.Value;
+        _environment = environment;
     }
 
     public async Task<CaseAccessActor?> GetCurrentActorAsync(
@@ -128,7 +132,7 @@ public sealed class CaseAuthorizationService
         var account = await db.Users
             .AsNoTracking()
             .Where(user => user.Id == userId)
-            .Select(user => new { user.Id, user.IsActive, user.SecurityStamp, user.TwoFactorEnabled, user.LockoutEnabled, user.LockoutEnd })
+            .Select(user => new { user.Id, user.Email, user.IsActive, user.SecurityStamp, user.TwoFactorEnabled, user.LockoutEnabled, user.LockoutEnd })
             .FirstOrDefaultAsync(cancellationToken);
 
         var sessionStamp = principal.FindFirstValue(
@@ -153,13 +157,25 @@ public sealed class CaseAuthorizationService
             .Select(name => name!)
             .ToListAsync(cancellationToken);
 
-        // A Blazor circuit can outlive its HTTP request and retain an old
-        // principal. Require both the current MFA flag and factor proof on
-        // every operation, including accounts with ADMIN and OFFICER roles.
-if ((roles.Contains(IdentityRoles.Officer) ||
-     roles.Contains(IdentityRoles.Admin)) &&
-    (!account.TwoFactorEnabled ||
-     !HasOfficerMfa(principal, account.Id, sessionStamp)))
+        // A Blazor circuit can outlive its HTTP request. The exemption claim is
+        // signed at localhost login, time-limited, and revalidated per operation.
+        var isOfficer = roles.Contains(IdentityRoles.Officer);
+        var isAdmin = roles.Contains(IdentityRoles.Admin);
+        var currentHttpContext = _httpContextAccessor.HttpContext;
+        var localExemption =
+            LocalDevelopmentMfaExemption.HasValidPrincipalClaim(
+                principal,
+                _environment,
+                account.Email,
+                isAdmin && !isOfficer) &&
+            (currentHttpContext is null ||
+             LocalDevelopmentMfaExemption.IsLoopbackRequest(
+                 currentHttpContext));
+
+        if ((isOfficer || isAdmin) &&
+            !localExemption &&
+            (!account.TwoFactorEnabled ||
+             !HasOfficerMfa(principal, account.Id, sessionStamp)))
         {
             return null;
         }

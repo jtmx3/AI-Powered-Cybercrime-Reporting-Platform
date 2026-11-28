@@ -158,6 +158,35 @@ builder.Services.Configure<SecurityStampValidatorOptions>(options =>
             identity.AddClaim(new Claim("amr", "mfa"));
         }
 
+        if (Guid.TryParse(oldId, out var exemptAccountId) &&
+            exemptAccountId != Guid.Empty &&
+            Guid.TryParse(newId, out var refreshedExemptId) &&
+            refreshedExemptId == exemptAccountId &&
+            !string.IsNullOrWhiteSpace(oldStamp) &&
+            string.Equals(
+                oldStamp,
+                newStamp,
+                StringComparison.Ordinal) &&
+            current.HasClaim(
+                LocalDevelopmentMfaExemption.ClaimType,
+                LocalDevelopmentMfaExemption.ClaimValue) &&
+            current.FindFirst(
+                LocalDevelopmentMfaExemption.ExpiresAtClaimType) is { } expiryClaim &&
+            refreshed.Identity is ClaimsIdentity exemptIdentity &&
+            exemptIdentity.AuthenticationType ==
+                IdentityConstants.ApplicationScheme &&
+            !exemptIdentity.HasClaim(
+                LocalDevelopmentMfaExemption.ClaimType,
+                LocalDevelopmentMfaExemption.ClaimValue))
+        {
+            exemptIdentity.AddClaim(new Claim(
+                LocalDevelopmentMfaExemption.ClaimType,
+                LocalDevelopmentMfaExemption.ClaimValue));
+            exemptIdentity.AddClaim(new Claim(
+                LocalDevelopmentMfaExemption.ExpiresAtClaimType,
+                expiryClaim.Value));
+        }
+
         return Task.CompletedTask;
     };
 });

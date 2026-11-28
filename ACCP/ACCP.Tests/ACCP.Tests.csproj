@@ -23,6 +23,7 @@
     <ProjectReference Include="..\ACCP.Domain\ACCP.Domain.csproj" />
     <ProjectReference Include="..\ACCP.Application\ACCP.Application.csproj" />
     <ProjectReference Include="..\ACCP.Infrastructure\ACCP.Infrastructure.csproj" />
+    <ProjectReference Include="..\ACCP.Web\ACCP.Web.csproj" />
   </ItemGroup>
 
 </Project>
