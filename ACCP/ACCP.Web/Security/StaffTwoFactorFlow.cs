@@ -223,7 +223,7 @@ public static class StaffTwoFactorFlow
                 context.User,
                 environment,
                 user.Email,
-                isAdmin && !isOfficer) &&
+                isAdmin) &&
             LocalDevelopmentMfaExemption.IsLoopbackRequest(context);
 
         if (localExemption)

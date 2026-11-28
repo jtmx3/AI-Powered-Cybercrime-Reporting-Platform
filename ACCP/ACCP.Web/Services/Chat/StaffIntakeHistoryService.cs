@@ -8,6 +8,7 @@ using ACCP.Application.Security;
 using ACCP.Domain.Entities;
 using ACCP.Domain.Enums;
 using ACCP.Infrastructure.Data;
+using ACCP.Infrastructure.Identity;
 using ACCP.Web.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -75,7 +76,8 @@ public sealed class StaffIntakeHistoryService : IStaffIntakeHistoryService
 
                 if (account is null ||
                     !account.IsActive ||
-                    !account.TwoFactorEnabled ||
+                    (!account.TwoFactorEnabled &&
+                     !roles.Contains(IdentityRoles.Admin)) ||
                     !roles.Contains("OFFICER") ||
                     (account.LockoutEnabled &&
                      account.LockoutEnd > DateTimeOffset.UtcNow))

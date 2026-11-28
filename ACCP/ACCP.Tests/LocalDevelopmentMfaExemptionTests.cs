@@ -33,17 +33,17 @@ public sealed class LocalDevelopmentMfaExemptionTests
                 context,
                 environment,
                 "LOCAL-ADMIN@example.test",
-                isAdminOnly: true));
+                hasAdminRole: true));
             Assert.False(LocalDevelopmentMfaExemption.IsEnabledForLogin(
                 context,
                 environment,
                 "another-admin@example.test",
-                isAdminOnly: true));
+                hasAdminRole: true));
             Assert.False(LocalDevelopmentMfaExemption.IsEnabledForLogin(
                 context,
                 environment,
                 "local-admin@example.test",
-                isAdminOnly: false));
+                hasAdminRole: false));
 
             var principal = NewExemptionPrincipal(
                 DateTimeOffset.UtcNow.AddMinutes(5));
@@ -51,24 +51,24 @@ public sealed class LocalDevelopmentMfaExemptionTests
                 principal,
                 environment,
                 "local-admin@example.test",
-                isAdminOnly: true));
+                hasAdminRole: true));
             Assert.False(LocalDevelopmentMfaExemption.HasValidPrincipalClaim(
                 NewExemptionPrincipal(DateTimeOffset.UtcNow.AddMinutes(-1)),
                 environment,
                 "local-admin@example.test",
-                isAdminOnly: true));
+                hasAdminRole: true));
 
             environment.EnvironmentName = Environments.Production;
             Assert.False(LocalDevelopmentMfaExemption.IsEnabledForLogin(
                 context,
                 environment,
                 "local-admin@example.test",
-                isAdminOnly: true));
+                hasAdminRole: true));
             Assert.False(LocalDevelopmentMfaExemption.HasValidPrincipalClaim(
                 principal,
                 environment,
                 "local-admin@example.test",
-                isAdminOnly: true));
+                hasAdminRole: true));
 
             environment.EnvironmentName = Environments.Development;
             context.Request.Host = new HostString("dev.example.test");
@@ -76,7 +76,7 @@ public sealed class LocalDevelopmentMfaExemptionTests
                 context,
                 environment,
                 "local-admin@example.test",
-                isAdminOnly: true));
+                hasAdminRole: true));
 
             context.Request.Host = new HostString("localhost");
             context.Connection.RemoteIpAddress = IPAddress.Parse("192.0.2.8");
@@ -84,7 +84,7 @@ public sealed class LocalDevelopmentMfaExemptionTests
                 context,
                 environment,
                 "local-admin@example.test",
-                isAdminOnly: true));
+                hasAdminRole: true));
         }
         finally
         {

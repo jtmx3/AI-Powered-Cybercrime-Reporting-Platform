@@ -138,7 +138,7 @@ public class LoginModel : PageModel
                 HttpContext,
                 _environment,
                 user.Email,
-                isAdmin && !isOfficer);
+                isAdmin);
 
         var enrollmentRequired = !user.TwoFactorEnabled &&
             (isOfficer || isAdmin) &&
@@ -212,7 +212,7 @@ public class LoginModel : PageModel
                     HttpContext,
                     _environment,
                     user.Email,
-                    currentAdmin && !currentOfficer))
+                    currentAdmin))
             {
                 return await RejectChangedEnrollmentAsync(
                     user,

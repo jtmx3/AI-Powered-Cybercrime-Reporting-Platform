@@ -167,7 +167,7 @@ public sealed class CaseAuthorizationService
                 principal,
                 _environment,
                 account.Email,
-                isAdmin && !isOfficer) &&
+                isAdmin) &&
             (currentHttpContext is null ||
              LocalDevelopmentMfaExemption.IsLoopbackRequest(
                  currentHttpContext));

@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Http;
 namespace ACCP.Web.Security;
 
 /// <summary>
-/// Allows one explicitly named ADMIN-only account to skip MFA in local
+/// Allows one explicitly named ADMIN account to skip MFA in local
 /// Development, only when the login request is addressed to loopback.
 /// This exemption is supplied by a per-process environment variable and is
 /// never persisted to the account or database.
@@ -28,17 +28,17 @@ public static class LocalDevelopmentMfaExemption
         HttpContext context,
         IWebHostEnvironment environment,
         string? accountEmail,
-        bool isAdminOnly) =>
-        IsConfigured(environment, accountEmail, isAdminOnly) &&
+        bool hasAdminRole) =>
+        IsConfigured(environment, accountEmail, hasAdminRole) &&
         IsLoopbackRequest(context);
 
     public static bool HasValidPrincipalClaim(
         ClaimsPrincipal principal,
         IWebHostEnvironment environment,
         string? accountEmail,
-        bool isAdminOnly)
+        bool hasAdminRole)
     {
-        if (!IsConfigured(environment, accountEmail, isAdminOnly) ||
+        if (!IsConfigured(environment, accountEmail, hasAdminRole) ||
             principal.FindAll(ClaimType).Count() != 1 ||
             !principal.HasClaim(ClaimType, ClaimValue) ||
             principal.FindAll(ExpiresAtClaimType).Count() != 1)
@@ -59,9 +59,9 @@ public static class LocalDevelopmentMfaExemption
     private static bool IsConfigured(
         IWebHostEnvironment environment,
         string? accountEmail,
-        bool isAdminOnly)
+        bool hasAdminRole)
     {
-        if (!environment.IsDevelopment() || !isAdminOnly ||
+        if (!environment.IsDevelopment() || !hasAdminRole ||
             string.IsNullOrWhiteSpace(accountEmail))
         {
             return false;
