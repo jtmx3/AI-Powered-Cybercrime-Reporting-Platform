@@ -58,6 +58,8 @@ public sealed class EnableTwoFactorModel : PageModel
     public string AuthenticatorUri { get; private set; } = string.Empty;
     public IReadOnlyList<string> RecoveryCodes { get; private set; } = Array.Empty<string>();
     public bool EnrollmentCompleted { get; private set; }
+    public bool SignedInAfterEnrollment { get; private set; }
+    public string ContinueUrl { get; private set; } = "/admin/employees";
 
     private bool EnrollmentOnly => User.Identity?.IsAuthenticated != true;
 
@@ -144,6 +146,7 @@ public sealed class EnableTwoFactorModel : PageModel
 
         bool incorrectCode = false;
         string[] codes = [];
+        string continueUrl = "/admin/employees";
         try
         {
             await using var transaction = await _db.Database.BeginTransactionAsync(
@@ -172,6 +175,8 @@ public sealed class EnableTwoFactorModel : PageModel
             {
                 var roles = await _users.GetRolesAsync(user);
                 var isOfficer = roles.Contains(IdentityRoles.Officer);
+                if (!roles.Contains(IdentityRoles.Admin))
+                    continueUrl = "/officer/dashboard";
                 Ensure(await _users.SetTwoFactorEnabledAsync(user, true));
                 if (isOfficer)
                 {
@@ -239,9 +244,28 @@ public sealed class EnableTwoFactorModel : PageModel
         HideEnrollment();
         DeleteEnrollment();
         TwoFactorEnabled = true;
-        // Stamp rotation revokes every old session. Show credentials only in this
-        // response, never in cookies, TempData, URLs, logs or subsequent requests.
-        await _signInManager.SignOutAsync();
+        // The password was verified before enrollment and this request has just
+        // verified a current authenticator code. Issue a normal application
+        // session with Identity's MFA proof instead of sending the new admin back
+        // through login and another authenticator challenge.
+        try
+        {
+            await _signInManager.SignInWithClaimsAsync(
+                user,
+                isPersistent: false,
+                additionalClaims: [new Claim("amr", "mfa")]);
+            SignedInAfterEnrollment = true;
+            ContinueUrl = continueUrl;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.LogError(exception,
+                "Two-factor enrollment succeeded, but sign-in could not be issued for account {UserId}.", user.Id);
+            await _signInManager.SignOutAsync();
+        }
+
+        // Show recovery credentials only in this response, never in cookies,
+        // TempData, URLs, logs or subsequent requests.
         StaffTwoFactorFlow.ClearEnrollment(HttpContext);
         RecoveryCodes = codes;
         EnrollmentCompleted = true;

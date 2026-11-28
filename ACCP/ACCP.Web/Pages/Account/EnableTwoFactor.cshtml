@@ -150,19 +150,41 @@ label { display: block; font-weight: 600; margin-bottom: .5rem; font-size: .85re
                         <ul class="recovery-codes" id="recovery-codes" dir="ltr" aria-label="رموز الاسترداد">
                             @foreach (var code in Model.RecoveryCodes) { <li><code>@code</code></li> }
                         </ul>
-                        <p class="help">تم تسجيل خروجك بعد التفعيل. عند الدخول مجددًا، ستحتاج كلمة المرور ورمز تطبيق المصادقة.</p>
+                        @if (Model.SignedInAfterEnrollment)
+                        {
+                            <p class="help">تم تسجيل دخولك بعد التحقق من الرمز. احفظ رموز الاسترداد، ثم تابع إلى لوحة الإدارة.</p>
+                        }
+                        else
+                        {
+                            <p class="help">اكتمل تفعيل المصادقة، لكن تعذر إصدار جلسة الدخول تلقائيًا. سجّل الدخول باستخدام كلمة المرور ورمز التطبيق.</p>
+                        }
                         <div class="actions">
                             <button type="button" class="button secondary" id="download-recovery" hidden>حفظ الرموز في ملف</button>
-                            <a href="/login" class="button primary">حفظت الرموز، تسجيل الدخول</a>
+                            @if (Model.SignedInAfterEnrollment)
+                            {
+                                <a href="@Model.ContinueUrl" class="button primary">حفظت الرموز، متابعة إلى لوحة الإدارة</a>
+                            }
+                            else
+                            {
+                                <a href="/login" class="button primary">حفظت الرموز، تسجيل الدخول</a>
+                            }
                         </div>
                         <p id="download-status" class="copy-status" role="status" aria-live="polite"></p>
                         <noscript><p class="no-script">انسخ رموز الاسترداد يدويًا واحفظها قبل تسجيل الدخول.</p></noscript>
                     }
                     else
                     {
-                        <p class="description">تم ربط حساب الموظف بتطبيق المصادقة بنجاح. عند كل تسجيل دخول، أدخل كلمة المرور ثم الرمز الحالي من التطبيق.</p>
-                        <p class="help">تم تسجيل خروجك بعد التفعيل. سجّل الدخول مجددًا لإكمال الدخول إلى حسابك.</p>
-                        <a href="/login" class="button primary">تسجيل الدخول</a>
+                        <p class="description">تم ربط الحساب بتطبيق المصادقة بنجاح.</p>
+                        @if (Model.SignedInAfterEnrollment)
+                        {
+                            <p class="help">تم تسجيل دخولك بعد التحقق من الرمز.</p>
+                            <a href="@Model.ContinueUrl" class="button primary">متابعة إلى لوحة الموظف</a>
+                        }
+                        else
+                        {
+                            <p class="help">اكتمل التفعيل، لكن تعذر إصدار جلسة الدخول تلقائيًا.</p>
+                            <a href="/login" class="button primary">تسجيل الدخول</a>
+                        }
                     }
                 }
                 else if (Model.TwoFactorEnabled)
